@@ -1,0 +1,41 @@
+import * as z from "zod";
+
+export const signUpSchema = z
+  .object({
+    fullName: z
+      .string()
+      .min(1, { message: "Full name is required" }),
+
+    email: z
+      .string()
+      .min(1, { message: "Email is required" })
+      .email({ message: "Please enter a valid email address" }),
+
+    username: z
+      .string()
+      .min(3, { message: "Username must be at least 3 characters" })
+      .max(20, { message: "Username must be 20 characters or less" }),
+
+    password: z
+      .string()
+      .min(1, { message: "Password is required" })
+      .min(8, { message: "Password must be at least 8 characters" }),
+
+    passwordConfirmation: z
+      .string()
+      .min(1, { message: "Please confirm your password" }),
+
+    avatar: z
+      .string()
+      .url({ message: "Avatar must be a valid URL" })
+      .optional(),
+
+    githubUrl: z
+      .string()
+      .url({ message: "GitHub URL must be valid" })
+      .optional(),
+  })
+  .refine((data) => data.password === data.passwordConfirmation, {
+    message: "Passwords do not match",
+    path: ["passwordConfirmation"],
+  });
