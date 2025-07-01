@@ -6,7 +6,7 @@ import {
   import { NextResponse } from "next/server";
   
   
-  const isPublicRoute = createRouteMatcher([ "/sign-in(.*)", "/sign-up(.*)"]);
+  const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
   
   export default clerkMiddleware(async (auth, request) => {
     const user = auth();
@@ -19,9 +19,7 @@ import {
   
     // Protect non-public routes
     if (!isPublicRoute(request)) {
-      await auth.protect({
-        
-      });
+      await auth.protect();
     }
   });
   

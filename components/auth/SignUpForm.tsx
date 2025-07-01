@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { saveUserToDB } from "@/lib/actions/saveUser";
+import { saveUserToDB } from "@/lib/actions/userActions";
 import { showToast } from "../main/Toast";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setUser } from "@/lib/redux/features/userSlice";
 
 export default function SignUpForm() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function SignUpForm() {
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const dispatch = useAppDispatch();
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
     defaultValues: { email: "", password: "", passwordConfirmation: "", username: "", fullName: "" },
@@ -60,16 +62,24 @@ export default function SignUpForm() {
     try {
       const res = await signUp.attemptEmailAddressVerification({ code });
       if (res.status === "complete") {
-        console.log(form.getValues("fullName"))
         resp = await saveUserToDB({
           fullName: form.getValues("fullName"),
           email: form.getValues("email"),
           username: form.getValues("username"),
           password: form.getValues("password"),
           passwordConfirmation: form.getValues("passwordConfirmation"),
-        });        
-        await setActive({ session: res.createdSessionId });
-        router.push("/");
+        });
+        if (resp.success && resp.user) {
+          dispatch(setUser({
+            fullName: resp.user.fullName,
+            email: resp.user.email,
+            id:resp.user.id,
+            username: resp.user.username,
+            isAuthenticated: true,
+          }));
+          await setActive({ session: res.createdSessionId });
+          router.push("/");
+        }
       } else throw new Error("Incomplete");
     } catch (err: any) {
       setVerificationError(err.errors?.[0]?.message || "Verification failed.");
@@ -113,14 +123,14 @@ export default function SignUpForm() {
             >
               Resend
             </button>
-          
+
           </p>
           <Button
-              className="mt-3  bg-primary rounded-xl w-full cursor-pointer border-secondary text-primary text-sm px-3 py-2"
-              onClick={()=>setVerifying(false)}
-            >
-              Go back
-            </Button>
+            className="mt-3  bg-primary rounded-xl w-full cursor-pointer border-secondary text-primary text-sm px-3 py-2"
+            onClick={() => setVerifying(false)}
+          >
+            Go back
+          </Button>
         </CardContent>
       </Card>
     );
@@ -228,10 +238,10 @@ export default function SignUpForm() {
               </p>
             )}
           </div>
-            <div>
+          <div>
             <div id="clerk-captcha" />
 
-            </div>
+          </div>
           <div className="flex items-center space-x-2">
             <CheckCircle className="w-5 h-5 text-brand-accent" />
             <p className="text-sm text-muted-foreground">

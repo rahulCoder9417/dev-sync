@@ -2,10 +2,10 @@
 import { useState } from "react";
 import { Calendar, Users, GitBranch, Plus, Github, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import { FilterDropdown } from "@/components/project/FilterDropdown";
 import { ProjectCard } from "@/components/project/ProjectCard";
 import LaptopNotify from "@/components/main/LaptopNotify";
+import Link from "next/link";
 
 const recentProjects = [
   {
@@ -92,7 +92,6 @@ const allProjects = [
 ];
 
 const Index = () => {
-    const navigate=useRouter()
   const [showAllProjects, setShowAllProjects] = useState(false);
   const [filteredProjects, setFilteredProjects] = useState(allProjects);
 
@@ -159,16 +158,17 @@ const Index = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
-                onClick={() => navigate.push('/projects/create')}
                 variant={"secondary"}
                 className="flex items-center gap-2 cursor-pointer px-6 py-3"
               >
                 <FolderPlus className="w-5 h-5" />
+                
+                <Link href={"/import-project"}>
                 Create New Project
+                </Link>
               </Button>
               
               <Button
-                onClick={() => navigate.push('/import-project')}
                 variant="outline"
                 className="flex items-center gap-2 px-6 py-3"
                 style={{ 
@@ -178,7 +178,9 @@ const Index = () => {
                 }}
               >
                 <Github className="w-5 h-5" />
+                <Link href={"/import-project"}>
                 Import from Git
+                </Link>
               </Button>
             </div>
           </div>

@@ -20,6 +20,9 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { setUser } from "@/lib/redux/features/userSlice";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { getUserByIdentifier } from "@/lib/actions/userActions";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -27,7 +30,7 @@ export default function SignInForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-
+  const dispatch = useAppDispatch()
   const {
     register,
     handleSubmit,
@@ -53,6 +56,16 @@ export default function SignInForm() {
       });
 
       if (result.status === "complete") {
+        const resp = await getUserByIdentifier(data.identifier);
+        if( !resp.user) {setAuthError("Sign-in could not be completed. Please try again.");return}
+          dispatch(setUser({
+          fullName: resp.user.fullName,
+          email: resp.user.email,
+          id:resp.user.id,
+          username: resp.user.username,
+          isAuthenticated: true,
+        }));
+        
         await setActive({ session: result.createdSessionId });
         router.push("/");
       } else {
@@ -87,11 +100,11 @@ export default function SignInForm() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="identifier">Email</Label>
+            <Label htmlFor="identifier">Username or Email</Label>
             <Input
               className="border-primary text-secondary"
               id="identifier"
-              type="email"
+              type="identifier"
               placeholder="your.email@example.com"
               {...register("identifier")}
             />
