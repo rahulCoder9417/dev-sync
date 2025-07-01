@@ -1,3 +1,4 @@
+"use client";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,23 +26,26 @@ export default function SignUpForm() {
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
-const form = useForm<z.infer<typeof signUpSchema>>({
+  const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { email: "", password: "", passwordConfirmation: "", username: "", fullName: "" ,avatar: "",githubUrl: ""},
+    defaultValues: { email: "", password: "", passwordConfirmation: "", username: "", fullName: "" },
   });
 
-  const onSubmit = async (data: typeof form["formState"]["defaultValues"]) => {
+
+
+  const onSubmit = async (data: z.infer<typeof signUpSchema>) => {
     if (!isLoaded || !data) return;
     setIsSubmitting(true); setAuthError(null);
     try {
       await signUp.create({
-      emailAddress: data.email,
-      password: data.password,
-    });
-    
+        emailAddress: data.email,
+        password: data.password,
+        username: data.username,
+      });
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       setVerifying(true);
     } catch (err: any) {
+      console.error("Clerk signUp error:", err);
       setAuthError(err.errors?.[0]?.message || "Sign‑up failed.");
     } finally {
       setIsSubmitting(false);
@@ -56,15 +60,15 @@ const form = useForm<z.infer<typeof signUpSchema>>({
     try {
       const res = await signUp.attemptEmailAddressVerification({ code });
       if (res.status === "complete") {
-        await setActive({ session: res.createdSessionId });
-         resp = await saveUserToDB({
+        console.log(form.getValues("fullName"))
+        resp = await saveUserToDB({
           fullName: form.getValues("fullName"),
           email: form.getValues("email"),
           username: form.getValues("username"),
           password: form.getValues("password"),
-          avatar: "",
-          githubUrl: "",
-        });
+          passwordConfirmation: form.getValues("passwordConfirmation"),
+        });        
+        await setActive({ session: res.createdSessionId });
         router.push("/");
       } else throw new Error("Incomplete");
     } catch (err: any) {
@@ -75,31 +79,31 @@ const form = useForm<z.infer<typeof signUpSchema>>({
         success: resp.success,
         message: resp.message,
       });
-     
-      
-      
+
+
+
     }
   };
 
   if (verifying) {
     return (
-      <Card className="max-w-md mx-auto">
+      <Card className="max-w-md border-primary mx-auto">
         <CardHeader className="text-center">
-          <h1 className="text-2xl font-bold">Verify Email</h1>
-          <p className="text-muted-foreground">Check your inbox for the code</p>
+          <h1 className="text-2xl text-primary font-bold">Verify Email</h1>
+          <p className="text-secondary">Check your inbox for the code</p>
         </CardHeader>
-        <Separator />
+        <div className="border-primary border-b" />
         <CardContent>
           {verificationError && (
-            <div className="p-3 bg-destructive/10 text-destructive rounded flex items-center space-x-2">
+            <div className="p-3 bg-destructive/10 text-destructive mb-4 rounded-2xl font-bold flex items-center space-x-2">
               <AlertCircle className="w-5 h-5" />
               <span>{verificationError}</span>
             </div>
           )}
           <form onSubmit={verify} className="space-y-4">
-            <Label htmlFor="code">Verification Code</Label>
-            <Input id="code" value={code} onChange={e => setCode(e.target.value)} autoFocus />
-            <Button type="submit" className="w-full">{isSubmitting ? "Verifying..." : "Verify"}</Button>
+            <Label htmlFor="code" className="font-bold">Verification Code</Label>
+            <Input className="border-primary text-primary" id="code" value={code} onChange={e => setCode(e.target.value)} autoFocus />
+            <Button type="submit" className="w-full cursor-pointer">{isSubmitting ? "Verifying..." : "Verify"}</Button>
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Didn't get it?{" "}
@@ -109,37 +113,71 @@ const form = useForm<z.infer<typeof signUpSchema>>({
             >
               Resend
             </button>
+          
           </p>
+          <Button
+              className="mt-3  bg-primary rounded-xl w-full cursor-pointer border-secondary text-primary text-sm px-3 py-2"
+              onClick={()=>setVerifying(false)}
+            >
+              Go back
+            </Button>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="max-w-md mx-auto">
+    <Card className="max-w-md border-primary shadow-xl bg-secondary text-white mx-auto">
       <CardHeader className="text-center">
         <h1 className="text-2xl font-bold">Create Your Account</h1>
-        <p className="text-muted-foreground">Secure image management starts here</p>
+        <p className="text-secondary">Secure image management starts here</p>
       </CardHeader>
-      <Separator />
+      <div className="border-primary border-t" />
       <CardContent>
         {authError && (
-          <div className="p-3 bg-destructive/10 text-destructive rounded flex items-center space-x-2">
+          <div className="p-3 bg-destructive/10 rounded-4xl mb-5 flex items-center space-x-2">
             <AlertCircle className="w-5 h-5" />
-            <span>{authError}</span>
+            <span className="text-[var(--error)] font-bold ">{authError}</span>
           </div>
         )}
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div>
+            <Label htmlFor="email">FullName</Label>
+            <Input
+              className="border-primary text-secondary my-3"
+              id="fullName"
+              type="fullName"
+              placeholder="Rahul Kumar"
+              {...form.register("fullName")}
+            />
+            {form.formState.errors.fullName && (
+              <p className="text-sm text-[var(--error)] font-medium tracking-wide">{form.formState.errors.fullName.message}</p>
+            )}
+          </div>
+          <div>
+            <Label htmlFor="email">Username</Label>
+            <Input
+              className="border-primary text-secondary my-3"
+              id="username"
+              type="username"
+              placeholder="rkkk"
+              {...form.register("username")}
+            />
+            {form.formState.errors.username && (
+              <p className="text-sm text-[var(--error)] font-medium tracking-wide">{form.formState.errors.username.message}</p>
+            )}
+          </div>
+          <div>
             <Label htmlFor="email">Email</Label>
             <Input
+              className="border-primary text-secondary my-3"
               id="email"
               type="email"
               placeholder="you@example.com"
               {...form.register("email")}
             />
             {form.formState.errors.email && (
-              <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+              <p className="text-sm text-[var(--error)] font-medium tracking-wide">{form.formState.errors.email.message}</p>
             )}
           </div>
 
@@ -147,6 +185,7 @@ const form = useForm<z.infer<typeof signUpSchema>>({
             <Label htmlFor="password">Password</Label>
             <div className="relative">
               <Input
+                className="border-primary text-secondary my-3"
                 id="password"
                 type={showPwd ? "text" : "password"}
                 placeholder="••••••••"
@@ -161,7 +200,7 @@ const form = useForm<z.infer<typeof signUpSchema>>({
               </button>
             </div>
             {form.formState.errors.password && (
-              <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
+              <p className="text-sm text-[var(--error)] font-medium tracking-wide">{form.formState.errors.password.message}</p>
             )}
           </div>
 
@@ -169,6 +208,7 @@ const form = useForm<z.infer<typeof signUpSchema>>({
             <Label htmlFor="passwordConfirmation">Confirm Password</Label>
             <div className="relative">
               <Input
+                className="border-primary text-secondary my-3"
                 id="passwordConfirmation"
                 type={showConfirmPwd ? "text" : "password"}
                 placeholder="••••••••"
@@ -183,12 +223,15 @@ const form = useForm<z.infer<typeof signUpSchema>>({
               </button>
             </div>
             {form.formState.errors.passwordConfirmation && (
-              <p className="text-sm text-destructive">
+              <p className="text-sm text-[var(--error)] font-medium tracking-wide">
                 {form.formState.errors.passwordConfirmation.message}
               </p>
             )}
           </div>
+            <div>
+            <div id="clerk-captcha" />
 
+            </div>
           <div className="flex items-center space-x-2">
             <CheckCircle className="w-5 h-5 text-brand-accent" />
             <p className="text-sm text-muted-foreground">
@@ -196,12 +239,12 @@ const form = useForm<z.infer<typeof signUpSchema>>({
             </p>
           </div>
 
-          <Button type="submit" className="w-full">{isSubmitting ? "Creating..." : "Create Account"}</Button>
+          <Button type="submit" className="w-full cursor-pointer">{isSubmitting ? "Creating..." : "Create Account"}</Button>
         </form>
       </CardContent>
-      <Separator />
+      <div className="border-primary border-t" />
       <CardFooter className="text-center">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-secondary font-bold">
           Already have an account?{" "}
           <Link href="/sign-in" className="text-brand-accent underline">Sign in</Link>
         </p>

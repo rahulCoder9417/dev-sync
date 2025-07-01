@@ -25,15 +25,6 @@ export const signUpSchema = z
       .string()
       .min(1, { message: "Please confirm your password" }),
 
-    avatar: z
-      .string()
-      .url({ message: "Avatar must be a valid URL" })
-      .optional(),
-
-    githubUrl: z
-      .string()
-      .url({ message: "GitHub URL must be valid" })
-      .optional(),
   })
   .refine((data) => data.password === data.passwordConfirmation, {
     message: "Passwords do not match",

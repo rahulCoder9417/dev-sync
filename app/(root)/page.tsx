@@ -1,5 +1,4 @@
 import MaxWidth from "@/components/main/MaxWidth";
-import { DashboardSidebar } from "@/components/root/DashboardSidebar";
 import HeaderHome from "@/components/root/HeaderHome";
 import { QuickActions } from "@/components/root/QuickActions";
 import { RecentProjects } from "@/components/root/RecentProjects";

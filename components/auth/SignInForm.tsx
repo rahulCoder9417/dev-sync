@@ -69,10 +69,10 @@ export default function SignInForm() {
   };
 
   return (
-    <Card className="w-full max-w-md border shadow-xl bg-muted text-white">
+    <Card className="w-full max-w-md border-primary shadow-xl bg-secondary text-white">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Welcome Back</CardTitle>
-        <CardDescription className="text-muted-foreground">
+        <CardDescription className="text-secondary">
           Sign in to access your secure cloud storage
         </CardDescription>
       </CardHeader>
@@ -89,13 +89,14 @@ export default function SignInForm() {
           <div className="space-y-2">
             <Label htmlFor="identifier">Email</Label>
             <Input
+              className="border-primary text-secondary"
               id="identifier"
               type="email"
               placeholder="your.email@example.com"
               {...register("identifier")}
             />
             {errors.identifier && (
-              <p className="text-sm text-destructive">
+              <p className="text-sm text-[var(--error)] font-medium tracking-wide">
                 {errors.identifier.message}
               </p>
             )}
@@ -105,6 +106,7 @@ export default function SignInForm() {
             <Label htmlFor="password">Password</Label>
             <div className="relative">
               <Input
+              className="border-primary text-secondary"
                 id="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
@@ -119,19 +121,19 @@ export default function SignInForm() {
               </button>
             </div>
             {errors.password && (
-              <p className="text-sm text-destructive">
+              <p className="text-sm text-[var(--error)] font-medium tracking-wide">
                 {errors.password.message}
               </p>
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button type="submit" className="w-full cursor-pointer" disabled={isSubmitting}>
             {isSubmitting ? "Signing in..." : "Sign In"}
           </Button>
         </form>
       </CardContent>
 
-      <CardFooter className="justify-center text-sm">
+      <CardFooter className="justify-center cursor-pointer text-sm">
         <p>
           Don't have an account?{" "}
           <Link href="/sign-up" className="text-brand-accent hover:underline">
