@@ -7,32 +7,32 @@ import Preview from '@/components/project/id/Preview';
 import ChatBot from '@/components/project/id/ChatBot';
 import { ChatMessage, FileNode, Tab, User } from '@/lib/types';
 
- const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Alice Johnson',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=32&h=32&fit=crop&crop=face',
-    status: 'online'
-  },
-  {
-    id: '2',
-    name: 'Bob Smith',
-    avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=32&h=32&fit=crop&crop=face',
-    status: 'online'
-  },
-  {
-    id: '3',
-    name: 'Carol Davis',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face',
-    status: 'away'
-  },
-  {
-    id: '4',
-    name: 'David Wilson',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
-    status: 'offline'
-  }
-];
+//  const mockUsers: User[] = [
+//   {
+//     id: '1',
+//     name: 'Alice Johnson',
+//     avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=32&h=32&fit=crop&crop=face',
+//     status: 'online'
+//   },
+//   {
+//     id: '2',
+//     name: 'Bob Smith',
+//     avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=32&h=32&fit=crop&crop=face',
+//     status: 'online'
+//   },
+//   {
+//     id: '3',
+//     name: 'Carol Davis',
+//     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face',
+//     status: 'away'
+//   },
+//   {
+//     id: '4',
+//     name: 'David Wilson',
+//     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
+//     status: 'offline'
+//   }
+// ];
 
  const mockFileStructure: FileNode[] = [
   {
@@ -145,7 +145,7 @@ import { ChatMessage, FileNode, Tab, User } from '@/lib/types';
   }
 ];
 
-const page = () => {
+const Page = () => {
   const [tabs, setTabs] = useState<Tab[]>(mockTabs);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockChatMessages);
   const [visibleSection, setVisibleSection] = useState({
@@ -336,4 +336,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;
