@@ -7,7 +7,7 @@ import Preview from '@/components/project/id/Preview';
 import ChatBot from '@/components/project/id/ChatBot';
 import { ChatMessage, FileNode, Tab, User } from '@/lib/types';
 
-export const mockUsers: User[] = [
+ const mockUsers: User[] = [
   {
     id: '1',
     name: 'Alice Johnson',
@@ -34,7 +34,7 @@ export const mockUsers: User[] = [
   }
 ];
 
-export const mockFileStructure: FileNode[] = [
+ const mockFileStructure: FileNode[] = [
   {
     id: '1',
     name: 'src',
@@ -93,7 +93,7 @@ export const mockFileStructure: FileNode[] = [
   }
 ];
 
-export const mockTabs: Tab[] = [
+ const mockTabs: Tab[] = [
   {
     id: '3',
     name: 'Header.tsx',
@@ -112,7 +112,7 @@ export const mockTabs: Tab[] = [
   }
 ];
 
-export const mockChatMessages: ChatMessage[] = [
+   const mockChatMessages: ChatMessage[] = [
   {
     id: '1',
     text: 'Hello! How can I help you with your code today?',

@@ -4,7 +4,7 @@ import { ChevronRight, ChevronDown, Folder, File, MoreHorizontal, Plus, Edit3, T
 
 
 import { FileNode } from '@/lib/types';
-import { mockUsers } from '@/app/projects/[id]/page';
+// import { mockUsers } from '@/app/projects/[id]/page';
 
 interface FileExplorerProps {
   files: FileNode[];
@@ -33,10 +33,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileSelect }) => {
   const getCollaboratorAvatars = (collaboratorIds?: string[]) => {
     if (!collaboratorIds || collaboratorIds.length === 0) return null;
     
-    const collaborators = mockUsers.filter(user => collaboratorIds.includes(user.id));
+    // const collaborators = mockUsers.filter(user => collaboratorIds.includes(user.id));
     return (
       <div className="flex -space-x-1 ml-2">
-        {collaborators.slice(0, 3).map((user) => (
+        {/* {collaborators.slice(0, 3).map((user) => (
           <img
             key={user.id}
             src={user.avatar}
@@ -49,7 +49,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileSelect }) => {
           <div className="w-4 h-4 rounded-full bg-brand text-xs flex items-center justify-center text-white border border-bg-primary">
             +{collaborators.length - 3}
           </div>
-        )}
+        )} */}
       </div>
     );
   };
