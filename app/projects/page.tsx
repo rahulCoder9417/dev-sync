@@ -17,9 +17,9 @@ const recentProjects = [
     lastUpdated: "2 days ago",
     isPrivate: false,
     collaborators: [
-      { name: "Alex", avatar: "bg-blue-500" },
-      { name: "Sarah", avatar: "bg-green-500" }, 
-      { name: "Mike", avatar: "bg-purple-500" }
+      { fullName: "Alex", avatar: "bg-blue-500" },
+      { fullName: "Sarah", avatar: "bg-green-500" }, 
+      { fullName: "Mike", avatar: "bg-purple-500" }
     ]
   },
   {
@@ -31,8 +31,8 @@ const recentProjects = [
     lastUpdated: "5 days ago",
     isPrivate: true,
     collaborators: [
-      { name: "Alex", avatar: "bg-blue-500" },
-      { name: "Emma", avatar: "bg-pink-500" }
+      { fullName: "Alex", avatar: "bg-blue-500" },
+      { fullName: "Emma", avatar: "bg-pink-500" }
     ]
   },
   {
@@ -44,8 +44,8 @@ const recentProjects = [
     lastUpdated: "1 week ago",
     isPrivate: false,
     collaborators: [
-      { name: "David", avatar: "bg-orange-500" },
-      { name: "Lisa", avatar: "bg-cyan-500" }
+      { fullName: "David", avatar: "bg-orange-500" },
+      { fullName: "Lisa", avatar: "bg-cyan-500" }
     ]
   },
   {
@@ -57,7 +57,7 @@ const recentProjects = [
     lastUpdated: "3 days ago",
     isPrivate: false,
     collaborators: [
-      { name: "John", avatar: "bg-red-500" }
+      { fullName: "John", avatar: "bg-red-500" }
     ]
   }
 ];
@@ -73,8 +73,8 @@ const allProjects = [
     lastUpdated: "2 weeks ago",
     isPrivate: true,
     collaborators: [
-      { name: "Kate", avatar: "bg-yellow-500" },
-      { name: "Tom", avatar: "bg-indigo-500" }
+      { fullName: "Kate", avatar: "bg-yellow-500" },
+      { fullName: "Tom", avatar: "bg-indigo-500" }
     ]
   },
   {
@@ -86,7 +86,7 @@ const allProjects = [
     lastUpdated: "1 month ago",
     isPrivate: false,
     collaborators: [
-      { name: "Amy", avatar: "bg-pink-500" }
+      { fullName: "Amy", avatar: "bg-pink-500" }
     ]
   }
 ];
@@ -210,7 +210,7 @@ const Index = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
             {displayProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard key={project.id} project={{...project,type:"PUBLIC"}} />
             ))}
           </div>
 
