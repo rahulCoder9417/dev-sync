@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Users, Settings } from 'lucide-react';
 import { mockUsers } from '@/app/projects/[id]/page';
-import LaptopNotify from '@/components/main/LaptopNotify';
+import LaptopNotify from '@/components/main/AvatarNotify';
 
 const Header = () => {
   const [showAllUsers, setShowAllUsers] = useState(false);

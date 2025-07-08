@@ -21,7 +21,6 @@ const recentProjects = [
 export const DashboardSidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const pathname = usePathname();
-  console.log(pathname)
   return (
     <>
       {/* Sticky open button when sidebar is closed */}

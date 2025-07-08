@@ -3,9 +3,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Provider } from "react-redux";
-import { store } from "@/lib/redux/store";
-import { ClientApp } from "./ClientApp"; // ✅ renamed and clean
+import ReduxProvider from "@/components/main/ReduxProvider";
+import { ClientApp } from "./ClientApp";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,9 +27,13 @@ export default function RootLayout({
     <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-up">
       <html lang="en">
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          <Provider store={store}>
-            <ClientApp>{children}</ClientApp>
-          </Provider>
+      
+            <ReduxProvider>
+              <ClientApp>
+              {children}
+              </ClientApp>
+              </ReduxProvider>
+ 
         </body>
       </html>
     </ClerkProvider>

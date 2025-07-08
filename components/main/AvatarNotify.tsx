@@ -4,9 +4,8 @@ import { Button } from "../ui/button";
 import { Bell } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks"; // ✅ typed useSelector
 
-const LaptopNotify = () => {
+const AvatarNotify = () => {
   const fullName = useAppSelector((state) => state.user.fullName);
-
   const getInitials = (name: string) => {
     const parts = name.trim().split(" ");
     if (parts.length === 1) return parts[0][0]?.toUpperCase();
@@ -16,7 +15,7 @@ const LaptopNotify = () => {
   const initials = getInitials(fullName || "User");
 
   return (
-    <div className="bg-inherit flex gap-10 mr-5">
+    <div className="bg-inherit flex  gap-5 md:gap-10 md:mr-5">
       {/* Bell icon */}
       <Button variant="ghost" size="icon" className="relative cursor-pointer mt-2">
         <Bell className="w-5 h-5 md:w-10 md:h-6" />
@@ -34,8 +33,15 @@ const LaptopNotify = () => {
           {initials}
         </div>
       </div>
+      <div className="md:flex hidden items-center space-x-2">
+        <div className=" font-semibold text-2xl text-primary">
+          {fullName}
+        </div>
+      </div>
+      
+
     </div>
   );
 };
 
-export default LaptopNotify;
+export default AvatarNotify;

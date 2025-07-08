@@ -256,7 +256,7 @@ export default function SignUpForm() {
       <CardFooter className="text-center">
         <p className="text-sm text-secondary font-bold">
           Already have an account?{" "}
-          <Link href="/sign-in" className="text-brand-accent underline">Sign in</Link>
+          <Link prefetch={false} href="/sign-in" className="text-brand-accent underline">Sign in</Link>
         </p>
       </CardFooter>
     </Card>

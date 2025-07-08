@@ -7,7 +7,7 @@ import { useSignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import Link from "next/link";
-import { Mail, Lock, AlertCircle, Eye, EyeOff } from "lucide-react";
+import {  AlertCircle, Eye, EyeOff } from "lucide-react";
 import { signInSchema } from "@/schema/signInSchema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -149,7 +149,7 @@ export default function SignInForm() {
       <CardFooter className="justify-center cursor-pointer text-sm">
         <p>
           Don't have an account?{" "}
-          <Link href="/sign-up" className="text-brand-accent hover:underline">
+          <Link prefetch={false} href="/sign-up" className="text-brand-accent hover:underline">
             Sign up
           </Link>
         </p>

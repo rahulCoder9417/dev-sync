@@ -1,6 +1,7 @@
 
-import { Calendar, Users, GitBranch, MoreVertical, Settings, Trash2, UserPlus, Lock, Unlock } from "lucide-react";
+import { Calendar, Users, GitBranch, MoreVertical, Settings, Trash2, UserPlus, Lock, Unlock, FolderArchive, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import  Avatar  from "@/components/main/Avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,22 +9,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
 import CardOptions from "./CardOptions";
 
 interface Collaborator {
-  name: string;
-  avatar: string;
+  fullName: string;
+  avatar?: string |null;
 }
 
-interface Project {
-  id: number;
+export interface Project {
+  id: string;
   title: string;
-  description: string;
-  language: string;
+  description: string |null;
   framework: string;
   lastUpdated: string;
-  isPrivate: boolean;
+  type: "PUBLIC" | "PRIVATE" |"GENRATED";
+  isStared?: boolean;
+  isGitImport?: boolean;
+  isArchieved?: boolean;
   collaborators: Collaborator[];
 }
 
@@ -32,17 +34,30 @@ interface ProjectCardProps {
 }
 
 export const ProjectCard = ({ project }: ProjectCardProps) => {
-  const [isPrivate, setIsPrivate] = useState(project.isPrivate);
  // const { toast } = useToast();
 
+  const getClass = (type:"PUBLIC" | "PRIVATE" |"GENRATED")=>{
+    switch (type) {
+      case "PUBLIC":
+        return "bg-green-500"
+    
+      case "PRIVATE":
+        return "bg-blue-500";
+    
+      case "GENRATED":
+        return "bg-red-400";
+    
+      default:
+        break;
+    }
+  }
 
-
-  const getLanguageColor = (language: string) => {
+  const getFrameworkColor = (language: string) => {
     const colors: Record<string, string> = {
-      TypeScript: 'var(--brand-primary)',
-      JavaScript: '#f7df1e',
-      Python: '#3776ab',
-      PHP: '#777bb4',
+      React: 'var(--brand-primary)',
+      Nextjs: '#f7df1e',
+      Js: '#3776ab',
+      Ts: '#777bb4',
     };
     return colors[language] || 'var(--brand-primary)';
   };
@@ -59,23 +74,18 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
         </h3>
         
         <div className="flex items-center gap-2">
-          {isPrivate && (
-            <span className="text-xs px-2 py-1 rounded flex items-center gap-1" 
-                  style={{ 
-                    background: 'var(--bg-hover)', 
-                    color: 'var(--text-secondary)' 
-                  }}>
-              <Lock className="w-3 h-3" />
-              Private
+        
+            <span className={`text-xs px-2 py-1 rounded-xl border-2 border-slate-900 font-semibold flex items-center gap-1 ${getClass(project.type)} `}
+                  >
+              {project.type}
             </span>
-          )}
+
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
-                variant="ghost" 
                 size="sm" 
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-8 w-8 p-0 cursor-pointer hover:bg-[#2c2040]"
               >
                 <MoreVertical className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
               </Button>
@@ -89,9 +99,9 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
                 color: 'var(--text-primary)'
               }}
             >
-              <CardOptions action="rename" icon={Settings} name="Reaname"  />
-              <CardOptions action="manage-team" icon={UserPlus} name="Manage team"  />
-              <CardOptions action="delete" icon={Trash2} name="Delete Project"  />
+              <CardOptions action="rename" name="Reaname"  />
+              <CardOptions action="manage-team"  name="Manage team"  />
+              <CardOptions action="delete"  name="Delete Project"  />
              
               
               <DropdownMenuSeparator style={{ backgroundColor: 'var(--border-primary)' }} />
@@ -109,12 +119,11 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
         <div className="flex items-center space-x-2">
           <div 
             className="w-3 h-3 rounded-full" 
-            style={{ background: getLanguageColor(project.language) }}
+            style={{ background: getFrameworkColor(project.framework) }}
           ></div>
-          <span style={{ color: 'var(--text-secondary)' }}>{project.language}</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{project.framework}</span>
         </div>
         
-        <span style={{ color: 'var(--text-secondary)' }}>{project.framework}</span>
         
         <div className="flex items-center space-x-1">
           <Calendar className="w-3 h-3" style={{ color: 'var(--text-muted)' }} />
@@ -127,14 +136,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
       <div className="flex items-center justify-between">
         <div className="flex -space-x-2">
           {project.collaborators.map((collaborator, index) => (
-            <div
-              key={index}
-              className={`w-6 h-6 rounded-full border-2 ${collaborator.avatar} flex items-center justify-center text-xs font-medium text-white hover:z-10 transition-all hover:scale-110`}
-              style={{ borderColor: 'var(--bg-card)' }}
-              title={collaborator.name}
-            >
-              {collaborator.name[0]}
-            </div>
+            <Avatar fullName={collaborator.fullName} key={index} avatar={collaborator.avatar} />
           ))}
           {project.collaborators.length > 3 && (
             <div
@@ -146,9 +148,10 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
           )}
         </div>
         
-        <div className="flex items-center space-x-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-          <GitBranch className="w-3 h-3" />
-          <span>main</span>
+        <div className="flex items-center space-x-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+          {project.isGitImport && <GitBranch className="w-6 h-6 text-blue-700" />}
+          {project.isGitImport && <FolderArchive className="w-6 h-6 text-green-700"/>}
+          {project.isGitImport && <Star className="w-6 h-6 text-yellow-700"/>}
         </div>
       </div>
     </div>

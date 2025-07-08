@@ -1,17 +1,15 @@
 'use client'
 
 import { DropdownMenuItem } from '@radix-ui/react-dropdown-menu'
-import { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import React from 'react'
 
 type CardOptionsProps = {
-  icon: LucideIcon
   action: 'rename' | 'delete' | 'manage-team'
   name: string
 }
 
-const CardOptions = ({ icon: Icon, action, name }: CardOptionsProps) => {
+const CardOptions = ({ action, name }: CardOptionsProps) => {
     const handleAction = () => {
         switch (action) {
           case 'rename':
@@ -45,7 +43,7 @@ const CardOptions = ({ icon: Icon, action, name }: CardOptionsProps) => {
 
   return (
     <DropdownMenuItem onClick={handleAction} className="flex items-center gap-2">
-      <Icon className="w-4 h-4" />
+     
       {name}
     </DropdownMenuItem>
   )

@@ -13,13 +13,172 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum TeamType {
+  PUBLIC
+  PRIVATE
+}
+
+enum TeamRole {
+  ADMIN
+  MEMBER
+}
+
+enum ProjectType {
+  PUBLIC
+  PRIVATE
+  GENRATED
+}
+
+enum FileType {
+  FOLDER
+  FILE
+  IMAGE
+  SVG
+}
+
+enum RequestStatus {
+  pending
+  accepted
+  rejected
+}
+
 model User {
-  id          String   @id @default(cuid())
-  fullName    String
-  email       String   @unique
-  username       String   @unique
-  password    String?
-  createdAt   DateTime @default(now())
-  avatar      String?
-  githubUrl   String?
+  id        String   @id @default(cuid())
+  fullName  String
+  email     String   @unique
+  username  String   @unique
+  password  String?
+  createdAt DateTime @default(now())
+  avatar    String?
+  githubUrl String?
+
+  // Relations
+  archieveProjects Project[] @relation("archieveProjects")
+  appsGenerated  Project[] @relation("genratedProjects")
+
+  starredProjects  Project[]     @relation("StarredProjects")
+  projects         Project[]     @relation("OwnedProjects")
+  teams            TeamMember[]
+  teamJoinRequests TeamRequest[]
+  teamBans         TeamBan[]
+
+  // Friendships (Requests and Accepted)
+  friendshipsInitiated Friendship[] @relation("Initiator")
+  friendshipsReceived  Friendship[] @relation("Receiver")
+}
+
+model Friendship {
+  id String @id @default(cuid())
+
+  initiator   User   @relation("Initiator", fields: [initiatorId], references: [id])
+  initiatorId String
+
+  receiver   User   @relation("Receiver", fields: [receiverId], references: [id])
+  receiverId String
+
+  status    FriendshipStatus
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([initiatorId, receiverId]) // Prevents duplicate requests
+}
+
+enum FriendshipStatus {
+  pending
+  accepted
+  blocked
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  type      TeamType // PUBLIC or PRIVATE
+  createdAt DateTime @default(now())
+
+  members         TeamMember[]
+  bannedUsers     TeamBan[]
+  pendingRequests TeamRequest[]
+  projects        Project[]
+}
+
+model TeamMember {
+  id     String @id @default(cuid())
+  team   Team   @relation(fields: [teamId], references: [id])
+  teamId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  role     TeamRole
+  joinedAt DateTime @default(now())
+
+  @@unique([teamId, userId]) // prevents duplicate members
+}
+
+model TeamBan {
+  id     String @id @default(cuid())
+  team   Team   @relation(fields: [teamId], references: [id])
+  teamId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  bannedAt DateTime @default(now())
+  reason   String?
+
+  @@unique([teamId, userId]) // prevent duplicate bans
+}
+
+model TeamRequest {
+  id     String @id @default(cuid())
+  team   Team   @relation(fields: [teamId], references: [id])
+  teamId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  requestedAt DateTime      @default(now())
+  status      RequestStatus
+
+  @@unique([teamId, userId]) // one request per user per team
+}
+
+model Project {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  packages    String
+  type        ProjectType // PUBLIC or PRIVATE or GENRATED
+  isGitImport Boolean     @default(false)
+  gitKey      String?
+  updatedAt DateTime @updatedAt @default(now())
+
+  owner   User   @relation("OwnedProjects", fields: [ownerId], references: [id])
+  ownerId String
+
+  team   Team?   @relation(fields: [teamId], references: [id])
+  teamId String?
+
+  starredBy          User[]     @relation("StarredProjects")
+  archiveprojectBy    User?     @relation("archieveProjects",fields: [archeivedBy], references: [id])
+  genratedProjectsby User?       @relation("genratedProjects", fields: [generatedById], references: [id])
+  generatedById      String?
+  archeivedBy      String?
+  files              FileItem[]
+  createdAt          DateTime   @default(now())
+}
+
+model FileItem {
+  id        String     @id @default(cuid())
+  name      String
+  type      FileType // FOLDER, FILE, IMAGE, SVG
+  project   Project    @relation(fields: [projectId], references: [id])
+  projectId String
+  parent    FileItem?  @relation("ParentChild", fields: [parentId], references: [id]) //can be null if in root
+  parentId  String?
+  children  FileItem[] @relation("ParentChild")
+  createdAt DateTime   @default(now())
+  
+  updatedAt DateTime @updatedAt @default(now())
 }

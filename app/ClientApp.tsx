@@ -1,4 +1,4 @@
-// app/ClientApp.tsx
+
 "use client";
 
 import { ReactNode, useEffect } from "react";
@@ -14,7 +14,8 @@ export function ClientApp({ children }: { children: ReactNode }) {
   useEffect(() => {
     const fetchUserFromDB = async () => {
       if (!user?.primaryEmailAddress?.emailAddress) return;
-
+      
+      console.log("User fetched and set in Redux store:");
       const res = await fetch("/api/user/findUser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

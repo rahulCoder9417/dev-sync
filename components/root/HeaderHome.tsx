@@ -14,6 +14,7 @@ import React from 'react'
 import { Button } from '../ui/button'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import AvatarNotify from '../main/AvatarNotify'
 
 const mobileNavItems = [
   { name: 'Dashboard', icon: Home, href: '#dashboard', key: '' },
@@ -26,15 +27,10 @@ const mobileNavItems = [
 const HeaderHome = () => {
   
 const pathname=usePathname()
-  const fullName = 'Alex Chen'
-  const initials = fullName
-    .split(' ')
-    .map(n => n[0])
-    .join('')
 
   return (
     <header
-      className="h-16 border-b flex items-center justify-between px-4 md:px-6"
+      className="h-16 border-b flex items-center justify-around px-4 md:px-6"
       style={{
         borderColor: 'var(--border-primary)',
         background: 'var(--bg-secondary)',
@@ -87,7 +83,7 @@ const pathname=usePathname()
               <Link
                 key={item.key}
                 href={item.key}
-                className={`flex flex-col items-center justify-center px-3 py-2 rounded-md text-sm transition-all `}
+                className={`flex flex-col items-center justify-center px-5 py-2 rounded-md text-sm transition-all `}
               >
                 <Icon size={24} className={` ${ 
                   isActive
@@ -120,29 +116,11 @@ const pathname=usePathname()
             New Project
           </Button>
         </div>
-  {/* Bell icon */}
-  <Button variant="ghost" size="icon" className="relative cursor-pointer md:left-12 ">
-  <Bell className="w-5 h-5 md:w-10 md:h-6 " />
 
-          <span
-            className={`absolute -top-1 -right-1 w-3 h-3 p-2 rounded-full text-xs flex items-center justify-center text-white`}
-            style={{ background: 'var(--error)' }}
-          >
-            3
-          </span>
-        </Button>
-        {/* User avatar */}
-        <div className="flex items-center md:absolute md:right-3 space-x-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
-            {initials}
-          </div>
-          <span
-            className="font-medium hidden md:inline"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {fullName}
-          </span>
-        </div>
+  {/* Bell icon */}
+  <div className='w-full flex justify-center'>
+    <AvatarNotify/>
+    </div>
       </div>
     </header>
   )

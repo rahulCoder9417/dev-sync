@@ -15,16 +15,6 @@ export default function Home() {
              {/* Main Content */}
              <main className="flex-1 p-6">
           <div className="max-w-7xl mx-auto space-y-8">
-            {/* Welcome Section */}
-            <div>
-              <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                Welcome back, Alex!
-              </h1>
-              <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-                Manage your projects, collaborate with your team, and ship code faster.
-              </p>
-            </div>
-
             {/* Stats Cards */}
             <StatsCards />
 

@@ -1,5 +1,6 @@
 
 import { Plus, GitBranch, Users, Star } from "lucide-react";
+import Link from "next/link";
 
 const actions = [
   {
@@ -33,8 +34,9 @@ export const QuickActions = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {actions.map((action) => (
+          <Link 
+          key={action.title} href={"/projects/create"}>
           <div
-            key={action.title}
             className="p-8 rounded-xl border transition-all hover:shadow-lg hover:scale-105 cursor-pointer card-gradient text-center"
             style={{ borderColor: 'var(--border-primary)' }}
           >
@@ -48,6 +50,7 @@ export const QuickActions = () => {
               {action.title}
             </h3>
           </div>
+          </Link>
         ))}
       </div>
     </div>

@@ -4,12 +4,12 @@ import { Calendar, Users, GitBranch, Plus, Github, FolderPlus } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { FilterDropdown } from "@/components/project/FilterDropdown";
 import { ProjectCard } from "@/components/project/ProjectCard";
-import LaptopNotify from "@/components/main/LaptopNotify";
+import LaptopNotify from "@/components/main/AvatarNotify";
 import Link from "next/link";
 
 const recentProjects = [
   {
-    id: 1,
+    id: '1',
     title: "E-commerce Platform",
     description: "Modern React-based e-commerce solution with real-time inventory",
     language: "TypeScript",
@@ -23,7 +23,7 @@ const recentProjects = [
     ]
   },
   {
-    id: 2,
+    id: '2',
     title: "DevSync Mobile App", 
     description: "Cross-platform mobile app for DevSync collaboration",
     language: "TypeScript",
@@ -36,7 +36,7 @@ const recentProjects = [
     ]
   },
   {
-    id: 3,
+    id: '3',
     title: "AI Assistant Backend",
     description: "Microservices architecture for AI-powered code assistance", 
     language: "Python",
@@ -49,7 +49,7 @@ const recentProjects = [
     ]
   },
   {
-    id: 4,
+    id: '4',
     title: "Portfolio Website",
     description: "Personal portfolio built with Next.js and Tailwind CSS",
     language: "JavaScript",
@@ -65,7 +65,7 @@ const recentProjects = [
 const allProjects = [
   ...recentProjects,
   {
-    id: 5,
+    id: '5',
     title: "Blog CMS",
     description: "Content management system for blogs",
     language: "PHP",
@@ -78,7 +78,7 @@ const allProjects = [
     ]
   },
   {
-    id: 6,
+    id: '6',
     title: "Weather App",
     description: "Real-time weather application",
     language: "JavaScript",
