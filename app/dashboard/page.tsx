@@ -1,10 +1,12 @@
+export const dynamic = 'force-dynamic';
+
 import MaxWidth from "@/components/main/MaxWidth";
 import HeaderHome from "@/components/root/HeaderHome";
 import { QuickActions } from "@/components/root/QuickActions";
 import { RecentProjects } from "@/components/root/RecentProjects";
 import { StatsCards } from "@/components/root/StatsCards";
 
-export default function Home() {
+export default function Dashboard() {
   return (
    <MaxWidth className="bg-[var(--bg-primary)] ">
 

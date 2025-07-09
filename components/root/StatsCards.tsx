@@ -1,5 +1,4 @@
-// components/StatsCards.tsx
-'use server'
+
 
 import { getUserProjectStats } from "@/lib/actions/root/statActions";
 import { FolderOpen, FolderPlus, GitBranch, Star } from "lucide-react";

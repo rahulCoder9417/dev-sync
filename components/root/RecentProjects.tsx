@@ -1,3 +1,4 @@
+
 import { ProjectCard } from "../project/ProjectCard";
 import { getProjects } from '@/lib/actions/projects/getProject';
 
@@ -6,7 +7,6 @@ import { getProjects } from '@/lib/actions/projects/getProject';
 export const RecentProjects = async() => {
 
   const op = await getProjects({limit:3,type:"recent"})
-  console.log(op)
   if(op.length ===0)return
   return (
     <div>

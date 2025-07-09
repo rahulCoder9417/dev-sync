@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
 const sidebarItems = [
-  { icon: Home, label: 'Dashboard',route:'' },
+  { icon: Home, label: 'Dashboard',route:'dashboard' },
   { icon: FolderOpen, label: 'Projects',route:'projects'  },
   { icon: Users, label: 'Team',route:'team'  },
   { icon: Settings, label: 'Settings',route:'settings'  },

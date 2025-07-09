@@ -17,7 +17,7 @@ import { usePathname } from 'next/navigation'
 import AvatarNotify from '../main/AvatarNotify'
 
 const mobileNavItems = [
-  { name: 'Dashboard', icon: Home, href: '#dashboard', key: '' },
+  { name: 'Dashboard', icon: Home, href: '#dashboard', key: 'dashboard' },
   { name: 'Projects', icon: Folder, href: '#projects', key: 'projects' },
   { name: 'Team', icon: Users, href: '#team', key: 'team' },
   { name: 'Settings', icon: Settings, href: '#settings', key: 'settings' },
