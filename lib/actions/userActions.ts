@@ -1,7 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import {prisma} from "@/lib/db/prisma";
+import prisma from "@/lib/db/prisma";
 import { signUpSchema } from "@/schema/signUpSchema";
 
 

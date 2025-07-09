@@ -1,13 +1,13 @@
 'use server'
 
-import {prisma} from "@/lib/db/prisma"
+import db from "@/lib/db/prisma"
 import { currentUser } from "@clerk/nextjs/server"
 
 export async function getUserProjectStats() {
   const user = await currentUser()
   if (!user || !user.emailAddresses?.[0]?.emailAddress) return null
 
-  const dbUser = await prisma.user.findUnique({
+  const dbUser = await db.user.findUnique({
     where: { email: user.emailAddresses[0].emailAddress },
     include: {
       starredProjects: true,
