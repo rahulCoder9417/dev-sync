@@ -1,7 +1,7 @@
 // app/actions/getProjects.ts
 "use server";
 
-import db from "@/lib/db/prisma"
+import {prisma} from "@/lib/db/prisma"
 import { format } from "date-fns";
 import { currentUser } from "@clerk/nextjs/server";
 
@@ -19,7 +19,7 @@ export async function getProjects({
     }
 
     const email = user.emailAddresses[0].emailAddress;
-    const dbUser = await db.user.findUnique({
+    const dbUser = await prisma.user.findUnique({
       where: { email },
     });
 
@@ -46,7 +46,7 @@ export async function getProjects({
       throw new Error("Invalid type");
     }
 
-    const projects = await db.project.findMany({
+    const projects = await prisma.project.findMany({
       where,
       orderBy: type === "recent" ? { updatedAt: "desc" } : undefined,
       take: Number(limit) || 3,
@@ -69,7 +69,7 @@ export async function getProjects({
       },
     });
 
-    const formatted = projects.map((proj) => ({
+    const formatted = projects.map((proj :any) => ({
       id: proj.id,
       title: proj.name,
       type: proj.type,
@@ -79,7 +79,7 @@ export async function getProjects({
       isStarred: proj.starredBy.length === 1,
       isArchived: proj.archeivedBy ? true : false,
       gitImport: proj.isGitImport || false,
-      collaborators: proj.team?.members.map((m) => ({
+      collaborators: proj.team?.members.map((m:any) => ({
         fullName: m.user.fullName,
         avatar: m.user.avatar,
       })) || [],
