@@ -5,6 +5,7 @@ interface UserState {
   email: string;
   username: string;
   id:string;
+  githubUrl:string| null;
   isAuthenticated: boolean;
 }
 
@@ -12,6 +13,7 @@ const initialState: UserState = {
   fullName: "",
   email: "",
   id:"",
+  githubUrl:null,
   username: "",
   isAuthenticated: false,
 };
@@ -24,7 +26,7 @@ const userSlice = createSlice({
       return { ...action.payload, isAuthenticated: true };
     },
     clearUser() {
-      return { fullName: "", email: "", username: "",id:"", isAuthenticated: false };
+      return { fullName: "", email: "", username: "",githubUrl:null,id:"", isAuthenticated: false };
     },
   },
 });

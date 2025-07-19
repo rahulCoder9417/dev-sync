@@ -17,10 +17,10 @@ import { usePathname } from 'next/navigation'
 import AvatarNotify from '../main/AvatarNotify'
 
 const mobileNavItems = [
-  { name: 'Dashboard', icon: Home, href: '#dashboard', key: 'dashboard' },
-  { name: 'Projects', icon: Folder, href: '#projects', key: 'projects' },
-  { name: 'Team', icon: Users, href: '#team', key: 'team' },
-  { name: 'Settings', icon: Settings, href: '#settings', key: 'settings' },
+  { name: 'Dashboard', icon: Home, href: '#dashboard', key: '/dashboard' },
+  { name: 'Projects', icon: Folder, href: '#projects', key: '/projects' },
+  { name: 'Team', icon: Users, href: '#team', key: '/team' },
+  { name: 'Settings', icon: Settings, href: '#settings', key: '/settings' },
 ]
 
 
@@ -100,6 +100,7 @@ const pathname=usePathname()
 
         {/* Desktop-only: Buttons */}
         <div className="hidden md:flex pl-10 items-center space-x-10">
+          <Link href={"/projects/create/git"}>
           <Button
             className="text-white font-medium"
             style={{ background: 'var(--brand-primary)' }}
@@ -107,7 +108,7 @@ const pathname=usePathname()
             <GitBranch className="w-4 h-4 mr-2" />
             Import from Git
           </Button>
-
+          </Link>
           <Button
             className="text-white font-medium"
             style={{ background: 'var(--brand-secondary)' }}

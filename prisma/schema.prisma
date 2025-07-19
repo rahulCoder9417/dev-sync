@@ -152,6 +152,7 @@ model Project {
   type        ProjectType // PUBLIC or PRIVATE or GENRATED
   isGitImport Boolean     @default(false)
   gitKey      String?
+  gitRepo     String?     @default("")
   updatedAt DateTime @updatedAt @default(now())
 
   owner   User   @relation("OwnedProjects", fields: [ownerId], references: [id])

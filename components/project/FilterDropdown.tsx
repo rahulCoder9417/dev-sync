@@ -9,13 +9,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { capitalize } from "@/lib/mainUtils/capitals";
 
 interface FilterDropdownProps {
   onFilterChange: (filter: string) => void;
+  framework:string[];
+  filter?:string | null
 }
 
-export const FilterDropdown = ({ onFilterChange }: FilterDropdownProps) => {
-  const [activeFilter, setActiveFilter] = useState("all");
+export const FilterDropdown = ({ onFilterChange ,framework,filter}: FilterDropdownProps) => {
+  const [activeFilter, setActiveFilter] = useState(filter || "all");
 
   const handleFilterSelect = (filter: string, label: string) => {
     setActiveFilter(label);
@@ -52,11 +55,18 @@ export const FilterDropdown = ({ onFilterChange }: FilterDropdownProps) => {
         <DropdownMenuItem onClick={() => handleFilterSelect("all", "All Projects")}>
           All Projects
         </DropdownMenuItem>
+        <DropdownMenuSeparator style={{ backgroundColor: 'var(--border-primary)' }} />
         
-        <DropdownMenuItem onClick={() => handleFilterSelect("recent", "Recent")}>
-          Recent Projects
+        <DropdownMenuItem onClick={() => handleFilterSelect("archieve", "Archieved")}>
+          Archieved Projects
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleFilterSelect("starred", "Starred")}>
+          Starred Projects
         </DropdownMenuItem>
         
+        <DropdownMenuItem onClick={() => handleFilterSelect("gitImport", "GitImported")}>
+          GitImported Projects
+        </DropdownMenuItem>
         <DropdownMenuSeparator style={{ backgroundColor: 'var(--border-primary)' }} />
         
         <DropdownMenuItem onClick={() => handleFilterSelect("public", "Public")}>
@@ -66,20 +76,20 @@ export const FilterDropdown = ({ onFilterChange }: FilterDropdownProps) => {
         <DropdownMenuItem onClick={() => handleFilterSelect("private", "Private")}>
           Private Projects
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleFilterSelect("genrated", "Generated")}>
+          Generated Projects
+        </DropdownMenuItem>
         
         <DropdownMenuSeparator style={{ backgroundColor: 'var(--border-primary)' }} />
         
-        <DropdownMenuItem onClick={() => handleFilterSelect("typescript", "TypeScript")}>
-          TypeScript
-        </DropdownMenuItem>
-        
-        <DropdownMenuItem onClick={() => handleFilterSelect("javascript", "JavaScript")}>
-          JavaScript
-        </DropdownMenuItem>
-        
-        <DropdownMenuItem onClick={() => handleFilterSelect("python", "Python")}>
-          Python
-        </DropdownMenuItem>
+        {
+          framework.map((i,index)=>(
+            <DropdownMenuItem key={index} onClick={() => handleFilterSelect(i,  capitalize(i))}>
+            {capitalize(i)}
+          </DropdownMenuItem>
+          ))
+        }
+
       </DropdownMenuContent>
     </DropdownMenu>
   );

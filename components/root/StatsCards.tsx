@@ -1,8 +1,9 @@
 
 
 import { getUserProjectStats } from "@/lib/actions/root/statActions";
-import { FolderOpen, FolderPlus, GitBranch, Star } from "lucide-react";
+import { FolderOpen, FolderPlus, GitBranch,  Star } from "lucide-react";
 import Loader from "../main/Loader";
+import Link from "next/link";
 
 export  async function StatsCards() {
   const stats = await getUserProjectStats();
@@ -14,6 +15,7 @@ export  async function StatsCards() {
       title: "Archeive Projects",
       value: stats?.archeive || 0,
       icon: FolderOpen,
+      filter:"/?filter=archieve",
       color: "var(--brand-primary)",
     },
     {
@@ -21,18 +23,21 @@ export  async function StatsCards() {
       value: stats?.owned || 0,
       icon: FolderPlus,
       color: "var(--success)",
+      filter:"/",
     },
     {
       title: "Generated Apps",
       value: stats?.generated || 0,
       icon: GitBranch,
       color: "var(--warning)",
+      filter:"/?filter=genrated",
     },
     {
       title: "Starred Repos",
       value: stats?.starred || 0,
       icon: Star,
       color: "var(--brand-accent)",
+      filter:"/?filter=starred",
     },
   ];
 
@@ -48,8 +53,9 @@ export  async function StatsCards() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
         {stats ?         cards.map((stat) => (
+          <Link   key={stat.title} href={`/projects${stat.filter}`}>
           <div
-            key={stat.title}
+          
             className="p-6 rounded-xl cursor-pointer border transition-all hover:shadow-lg hover:scale-105 card-gradient"
             style={{ borderColor: 'var(--border-primary)' }}
           >
@@ -70,6 +76,7 @@ export  async function StatsCards() {
               </div>
             </div>
           </div>
+          </Link>
         )):
         <Loader className="w-full h-24" />
         }

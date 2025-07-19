@@ -73,6 +73,7 @@ export default function SignUpForm() {
           dispatch(setUser({
             fullName: resp.user.fullName,
             email: resp.user.email,
+            githubUrl:resp.user.githubUrl,
             id:resp.user.id,
             username: resp.user.username,
             isAuthenticated: true,

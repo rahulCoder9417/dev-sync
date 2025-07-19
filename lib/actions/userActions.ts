@@ -54,6 +54,7 @@ export async function getUserByIdentifier(identifier: string) {
       select: {
         id: true,
         fullName: true,
+        githubUrl:true,
         email: true,
         username: true,
       },

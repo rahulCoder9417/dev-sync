@@ -62,6 +62,7 @@ export default function SignInForm() {
           fullName: resp.user.fullName,
           email: resp.user.email,
           id:resp.user.id,
+          githubUrl:resp.user.githubUrl,
           username: resp.user.username,
           isAuthenticated: true,
         }));

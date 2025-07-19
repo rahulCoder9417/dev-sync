@@ -4,13 +4,8 @@
 import { toast } from "sonner";
 import { CheckCircle, XCircle } from "lucide-react";
 
-type ToastInput = {
-  success: boolean;
-  message: string;
-  description?: string;
-};
 
-export function showToast({ success, message, description }: ToastInput) {
+export function showToast(success: boolean, message: string, description?: string) {
   toast.custom((t) => (
     <div
       className={`flex items-start gap-3 p-4 rounded-xl shadow-lg border w-[360px] ${

@@ -1,15 +1,6 @@
 
-import { Calendar, Users, GitBranch, MoreVertical, Settings, Trash2, UserPlus, Lock, Unlock, FolderArchive, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Calendar,  GitBranch,FolderArchive, Star } from "lucide-react";
 import  Avatar  from "@/components/main/Avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import CardOptions from "./CardOptions";
 
 interface Collaborator {
   fullName: string;
@@ -25,7 +16,7 @@ export interface Project {
   type: "PUBLIC" | "PRIVATE" |"GENRATED";
   isStared?: boolean;
   isGitImport?: boolean;
-  isArchieved?: boolean;
+  isArchived?: boolean;
   collaborators: Collaborator[];
 }
 
@@ -80,34 +71,6 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
               {project.type}
             </span>
 
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                size="sm" 
-                className="h-8 w-8 p-0 cursor-pointer hover:bg-[#2c2040]"
-              >
-                <MoreVertical className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              align="end" 
-              className="w-48"
-              style={{ 
-                background: 'var(--bg-card)', 
-                borderColor: 'var(--border-primary)',
-                color: 'var(--text-primary)'
-              }}
-            >
-              <CardOptions action="rename" name="Reaname"  />
-              <CardOptions action="manage-team"  name="Manage team"  />
-              <CardOptions action="delete"  name="Delete Project"  />
-             
-              
-              <DropdownMenuSeparator style={{ backgroundColor: 'var(--border-primary)' }} />
-
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
       

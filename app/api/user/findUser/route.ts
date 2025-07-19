@@ -17,6 +17,7 @@ export async function POST(req: Request) {
         fullName: true,
         email: true,
         username: true,
+        githubUrl:true,
       },
     });
 
