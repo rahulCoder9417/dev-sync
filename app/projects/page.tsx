@@ -42,12 +42,12 @@ const Index = async() => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
-                variant={"secondary"}
-                className="flex items-center gap-2 cursor-pointer px-6 py-3"
+                variant={"default"}
+                className="flex items-center gap-2 border-1 border-primary rounded-lg cursor-pointer px-6 py-3"
               >
                 <FolderPlus className="w-5 h-5" />
                 
-                <Link href={"/import-project"}>
+                <Link href={"/projects/create"}>
                 Create New Project
                 </Link>
               </Button>
@@ -62,7 +62,7 @@ const Index = async() => {
                 }}
               >
                 <Github className="w-5 h-5" />
-                <Link href={"/import-project"}>
+                <Link href={"/projects/create/git"}>
                 Import from Git
                 </Link>
               </Button>

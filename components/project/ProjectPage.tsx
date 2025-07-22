@@ -49,8 +49,7 @@ const [userStatus, setStatus] = useState<"idle" | "pending" |"rejected"| "banned
 
 useEffect(() => {
   
-  console.log(teamData.pendingRequests.filter(i => i.userId === stateUser.id))
-  console.log(teamInfo)
+  
   if (!stateUser?.id) return;
 
   if (teamInfo.bannedUsers.some(b => b.userId === stateUser.id)) {

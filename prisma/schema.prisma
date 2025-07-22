@@ -43,6 +43,13 @@ enum RequestStatus {
   rejected
 }
 
+
+enum FriendshipStatus {
+  pending
+  accepted
+  blocked
+}
+
 model User {
   id        String   @id @default(cuid())
   fullName  String
@@ -84,11 +91,6 @@ model Friendship {
   @@unique([initiatorId, receiverId]) // Prevents duplicate requests
 }
 
-enum FriendshipStatus {
-  pending
-  accepted
-  blocked
-}
 
 model Team {
   id        String   @id @default(cuid())
@@ -152,7 +154,7 @@ model Project {
   type        ProjectType // PUBLIC or PRIVATE or GENRATED
   isGitImport Boolean     @default(false)
   gitKey      String?
-  gitRepo     String?     @default("")
+  gitRepo     String?     
   updatedAt DateTime @updatedAt @default(now())
 
   owner   User   @relation("OwnedProjects", fields: [ownerId], references: [id])

@@ -3,15 +3,13 @@ import { Button } from "@/components/ui/button";
 import { getSingleProject } from "@/lib/actions/projects/getProject";
 import { FetchTeam } from "@/lib/actions/projects/team";
 import Link from "next/link";
-import { ProjectPageType, TeamType } from "@/types";
-import MaxWidth from "@/components/main/MaxWidth";
 interface PageProps {
   params: { id: string };
 }
 
 export default async function ProjectRoute({ params}: PageProps) {
 let projectData ,teamData;
-const id = await params.id;
+const id =  params.id;
   try {
      [projectData, teamData] = await Promise.all([
     getSingleProject(id),

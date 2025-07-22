@@ -22,7 +22,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { setUser } from "@/lib/redux/features/userSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { getUserByIdentifier } from "@/lib/actions/userActions";
+import { getUserByIdentifier } from "@/lib/actions/user/userActions";
 
 export default function SignInForm() {
   const router = useRouter();

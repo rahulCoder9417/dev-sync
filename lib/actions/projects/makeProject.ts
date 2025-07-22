@@ -2,14 +2,16 @@
 
 import db from "@/lib/db/prisma"
 import prisma from '@/lib/db/prisma'
+import { TeamRole } from "@/lib/generated/prisma";
 import { currentUser } from '@clerk/nextjs/server'
 
 
-interface CreateProjectInput {
+export interface CreateProjectInput {
   name: string;
   description?: string;
   type: "PUBLIC" | "PRIVATE" | "GENRATED";
   packages: string;
+  members:Record<"userId",string>[]
 }
 
 export async function createFileItem(data: {
@@ -48,21 +50,22 @@ export async function createProjectWithTeam(input: CreateProjectInput) {
   const dbUser = await db.user.findUnique({
     where: { email },
   });
-
+  const m = Object.keys(input.members).length !==0 ?[...input.members.map((i)=>({userId:i.userId,role:"MEMBER"as TeamRole}))] : []
   if (!dbUser) {
     throw new Error("User not found");
   }
-
   // 1. Create a new team with a generated name (can be renamed later)
   const team = await db.team.create({
     data: {
       name: `${input.name} Team`,
       type: "PRIVATE", // default to PRIVATE
       members: {
-        create: {
+        create: [{
           userId: dbUser.id,
           role: "ADMIN", // Owner becomes ADMIN
         },
+      ...m
+    ],
       },
     },
   });

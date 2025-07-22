@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { saveUserToDB } from "@/lib/actions/userActions";
+import { saveUserToDB } from "@/lib/actions/user/userActions";
 import { showToast } from "../main/Toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setUser } from "@/lib/redux/features/userSlice";
@@ -86,10 +86,10 @@ export default function SignUpForm() {
       setVerificationError(err.errors?.[0]?.message || "Verification failed.");
     } finally {
       setIsSubmitting(false);
-      showToast({
-        success: resp.success,
-        message: resp.message,
-      });
+      showToast(
+        resp.success,
+        resp.message,
+      );
 
 
 

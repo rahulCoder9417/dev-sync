@@ -145,7 +145,8 @@ import { ChatMessage, FileNode, Tab, User } from '@/lib/types';
   }
 ];
 
-const Page = () => {
+const Page = ({params}:{params:{id:string}}) => {
+  
   const [tabs, setTabs] = useState<Tab[]>(mockTabs);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockChatMessages);
   const [visibleSection, setVisibleSection] = useState({
@@ -307,7 +308,7 @@ const Page = () => {
       <div className="fixed bottom-4 right-4 z-50">
         <div className="relative">
           {toggleOpen && (
-            <div className="absolute bottom-14 right-0 flex flex-col items-end gap-2">
+            <div className="absolute cursor-pointer bottom-14 right-0 flex flex-col items-end gap-2">
               {["file", "preview", "ai"].map((section, index) => (
                 <button
                   key={section}
@@ -325,7 +326,7 @@ const Page = () => {
 
           <button
             onClick={() => setToggleOpen(prev => !prev)}
-            className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg"
+            className="w-12 h-12 rounded-full cursor-pointer bg-blue-600 text-white flex items-center justify-center shadow-lg"
           >
             +
           </button>
