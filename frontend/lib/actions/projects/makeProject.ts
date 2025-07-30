@@ -16,15 +16,17 @@ export interface CreateProjectInput {
 
 export async function createFileItem(data: {
   name: string
+  content: string
   type: 'FOLDER' | 'FILE' | 'IMAGE' | 'SVG'
   projectId: string
   parentId?: string | null
 }) {
 
-  const { name, type, projectId, parentId } = data
+  const { name, type, projectId, parentId ,content} = data
 
   const fileItem = await prisma.fileItem.create({
     data: {
+      content,
       name,
       type,
       projectId,
@@ -61,6 +63,7 @@ export async function createProjectWithTeam(input: CreateProjectInput) {
       type: "PRIVATE", // default to PRIVATE
       members: {
         create: [{
+          
           userId: dbUser.id,
           role: "ADMIN", // Owner becomes ADMIN
         },

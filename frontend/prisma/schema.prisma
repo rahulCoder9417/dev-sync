@@ -30,12 +30,7 @@ enum ProjectType {
   GENRATED
 }
 
-enum FileType {
-  FOLDER
-  FILE
-  IMAGE
-  SVG
-}
+
 
 enum RequestStatus {
   pending
@@ -175,7 +170,8 @@ model Project {
 model FileItem {
   id        String     @id @default(cuid())
   name      String
-  type      FileType // FOLDER, FILE, IMAGE, SVG
+  type      String
+  content   String
   project   Project    @relation(fields: [projectId], references: [id])
   projectId String
   parent    FileItem?  @relation("ParentChild", fields: [parentId], references: [id]) //can be null if in root

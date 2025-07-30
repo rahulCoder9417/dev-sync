@@ -17,8 +17,9 @@ export async function getProjects({
     if (!user || !user.emailAddresses?.[0]?.emailAddress) {
       throw new Error("Unauthorized");
     }
-
+    
     const email = user.emailAddresses[0].emailAddress;
+    
     const dbUser = await db.user.findUnique({
       where: { email },
     });

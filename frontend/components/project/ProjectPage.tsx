@@ -308,7 +308,7 @@ useEffect(() => {
                 <p className="text-primary font-medium capitalize">{projectData.type}</p>
               </div>
             </div>
-            {projectData.gitImport && (
+            {projectData.gitRepo && projectData.gitRepo?.length>0 && (
               <div>
                 <label className="text-muted text-xs uppercase tracking-wide">Repository</label>
                 <div className="flex items-center gap-2">
