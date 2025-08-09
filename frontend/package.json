@@ -15,6 +15,7 @@
   "dependencies": {
     "@clerk/nextjs": "^6.23.1",
     "@hookform/resolvers": "^5.1.1",
+    "@monaco-editor/react": "^4.7.0",
     "@octokit/core": "^7.0.3",
     "@prisma/client": "^6.10.1",
     "@prisma/extension-accelerate": "^2.0.1",
@@ -40,6 +41,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.59.0",
+    "react-icons": "^5.5.0",
     "react-redux": "^9.2.0",
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.1",

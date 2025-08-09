@@ -5,14 +5,16 @@ import { z } from 'zod'
 
 const createFileItemSchema = z.object({
   name: z.string().min(1),
-  type: z.enum(['FOLDER', 'FILE', 'IMAGE', 'SVG']),
+  type: z.enum(['folder', 'file']),
+  content: z.string(),
   projectId: z.string().cuid(),
   parentId: z.string().cuid().optional().nullable(), // if root level
 })
 
 export async function createFileItem(data: {
   name: string
-  type: 'FOLDER' | 'FILE' | 'IMAGE' | 'SVG'
+  type: "folder" | "file"
+  content:  string
   projectId: string
   parentId?: string | null
 }) {
@@ -27,6 +29,7 @@ export async function createFileItem(data: {
   const fileItem = await prisma.fileItem.create({
     data: {
       name,
+      content,
       type,
       projectId,
       parentId: parentId ?? null,

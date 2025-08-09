@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         const json = JSON.stringify(obj);
         controller.enqueue(encoder.encode(`data: ${json}\n\n`));
       };
-      let userAuth, ownerName, repoName, projectRes, team, zipUint8Array, project, folder = [], fileContents: { path: string; content: string | null; type: string }[] = [];;
+      let userAuth,isOwner=false, ownerName, repoName, projectRes, team, zipUint8Array, project, folder = [], fileContents: { path: string; content: string | null; type: string }[] = [];;
       // Step 1 operation data incoming check
       try {
 
@@ -53,6 +53,21 @@ export async function POST(req: Request) {
         }
         if (Object.keys(project).length < 4) {
           throw new Error("Missing project details - 400")
+        }
+        if(formData.get("own")==="true"){
+          const octokit = new Octokit({ auth: userAuth });
+
+          const repo = await octokit.request('GET /repos/{owner}/{repo}', {owner: ownerName,repo: repoName });
+          const user = await octokit.request('GET /user');
+          
+          isOwner = repo.data.owner.login === user.data.login;
+          console.log(isOwner)
+          if (!isOwner) {
+            send({ step: 1, status: "error", message: "You are not the owner" });
+            controller.close();
+            return
+          }
+
         }
         send({ step: 1, status: "done", message: "Checked Incoming Data" });
       } catch (err) {
@@ -116,9 +131,7 @@ export async function POST(req: Request) {
           },
         });
 
-
-        //project Making
-        projectRes = await db.project.create({
+        const obj:{ data: any } ={
           data: {
             name: project.name,
             gitRepo: `${ownerName}\\${repoName}`,
@@ -128,7 +141,13 @@ export async function POST(req: Request) {
             ownerId: dbUser.id,
             teamId: teamRes.id,
           },
-        });
+        }
+        if(isOwner){
+          obj.data["isGitImport"]=true
+          obj.data["gitKey"]=userAuth
+        }
+        //project Making
+        projectRes = await db.project.create(obj);
 
         if (!projectRes) {
           team.id && await db.team.deleteMany({ where: { id: team.id } })
@@ -136,7 +155,7 @@ export async function POST(req: Request) {
         }
         send({ step: 3, status: "done", message: "Project made" });
       } catch (err) {
-        send({ step: 3, status: "error", message: `Project Making  error: ${(err as Error).message}` });
+        send({ step: 3, status: "error", message: `Project Making  error: ${(err as Error).message}` }); 
         controller.close();
         return
       }
@@ -150,7 +169,7 @@ export async function POST(req: Request) {
         const extractedFiles = unzipSync(zipUint8Array as Uint8Array<ArrayBuffer>); // key: path, value: Uint8Array
 
         // Define video extensions
-        const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
+        const imageExts = ['png', 'jpg', 'jpeg', 'gif',  'webp'];
         const videoExts = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
         const audioExts = ['mp3', 'wav', 'ogg'];
         const docExts = ['pdf', 'docx', 'pptx', 'xlsx', ];
@@ -210,7 +229,7 @@ const binaryOnlyExts = ['exe', 'dll', 'so', 'bin', 'zip', 'rar', 'tar', '7z'];
                 type: resourceType,
               });
               fileContents.push({
-                path: filename.replace(/\.[^/.]+$/, '') + '.txt',
+                path: filename,
                 type: 'file',
                 content: uploadRes.secure_url,
               });
@@ -234,7 +253,9 @@ const binaryOnlyExts = ['exe', 'dll', 'so', 'bin', 'zip', 'rar', 'tar', '7z'];
         }
         send({ step: 4, status: "done", message: "Repo Procssed Going To mske project" });
       } catch (err) {
-        send({ step: 4, status: "error", message: `Repo PRocessing  error: ${(err as Error).message}` });
+        send({ step: 4, status: "error", message: `Repo PRocessing  error: ${(err as Error).message}` });        // Cleanup
+        await db.team.deleteMany({ where: { id: projectRes.teamId! } });
+        await db.project.delete({ where: { id: projectRes.id } });
         controller.close();
         return
       }

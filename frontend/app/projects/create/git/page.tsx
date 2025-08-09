@@ -21,7 +21,7 @@ const Page = () => {
   })
   const [friends, setFriends] = useState<FriendsGet | []>([])
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [type, setType] = useState("clone")
+  const [ownRepo, setOwnRepo] = useState(false)
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
   const toggleFriendSelection = (id: string) => {
     setSelectedFriends(prev =>
@@ -72,12 +72,12 @@ console.log(error)
     const formDataSub = new FormData();
 
     const members = selectedFriends.map(id => ({ userId: id }));
-   
     formDataSub.append('userAuth', user.githubUrl!);
     formDataSub.append('team', JSON.stringify(members));
     formDataSub.append('project', JSON.stringify(project));
     formDataSub.append('ownerName', formData.ownerName);
     formDataSub.append('repoName', formData.repoName);
+    formDataSub.append('own', String(ownRepo));
     try {
       const res = await fetch('/api/git/clonePublicRepo', {
         method: 'POST',
@@ -154,16 +154,13 @@ setsubmitting(false)
   return (
     <div className='min-h-screen w-full bg-primary flex items-center justify-center'>
       <div className="flex flex-col items-center mt-10">
-        <h2 className="text-2xl text-white mb-4">Choose Action</h2>
+        <h2 className="text-2xl text-white mb-4">CLone Repo</h2>
         <div>
-          <div className='mt-1 flex gap-4 mb-2'>
-
-          <Button className={`${type==="clone" && "bg-accent text-accent-foreground"}  cursor-pointer`} variant={"ghost"} onClick={() => {setType("clone");setDataStat({   status:"",message:"",step:1,project:""})} }>Clone repo</Button>
-          <Button className={`${type==="own" && "bg-accent text-accent-foreground"} cursor-pointer`} variant={"ghost"} onClick={() => {setType("own");setDataStat({   status:"",message:"",step:1,project:""})} }>Use your repo</Button>
+          <div className='mt-1 mb-2'>
+<Button className={`${ownRepo===true && "bg-accent text-accent-foreground"} cursor-pointer`} variant={"ghost"} onClick={() => {setOwnRepo(!ownRepo);setDataStat({   status:"",message:"",step:1,project:""})} }>Use your repo</Button>
         </div>
         </div>
        <StatusBox dataStat={dataStat} />
-        {type === "clone" ?
           <div>
             {/* Form */}
             <Card style={{ background: 'var(--bg-card)', borderColor: 'var(--border-primary)' }}>
@@ -358,11 +355,7 @@ setsubmitting(false)
                 </form>
               </CardContent>
             </Card>
-          </div> :
-          <div >
-            <p>Clone Own Repo</p>
-            {/* <Input/> make input box here which will take a input and add a Button */}
-          </div>}
+          </div> 
       </div>
     </div>
   )
