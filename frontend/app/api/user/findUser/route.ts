@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db/prisma";
 
 export async function POST(req: Request) {
+
   const { identifier } = await req.json();
 
   if (!identifier) return NextResponse.json({ success: false, error: "No identifier provided" });
@@ -18,6 +19,7 @@ export async function POST(req: Request) {
         email: true,
         username: true,
         githubUrl:true,
+        avatar:true,
       },
     });
 

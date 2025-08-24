@@ -20,15 +20,14 @@ export function ClientApp({ children }: { children: ReactNode }) {
       const [res, projects] = await Promise.all([
         fetch("/api/user/findUser", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" ,
+          },
           body: JSON.stringify({ identifier: user.primaryEmailAddress.emailAddress }),
         }),
         getProjects({ limit: 3, type: "recent" }),
       ]);
       
-      
       const data = await res.json();
-
       if (data.success) {
         dispatch(
           setUser({
@@ -42,7 +41,7 @@ export function ClientApp({ children }: { children: ReactNode }) {
       
     if(projects){
       dispatch(
-        setRecent(projects.map(i=>({id:i.id,type:i.type,title:i.title,framework:i.framework,description:i.description}))
+        setRecent(projects.map((i:any)=>({id:i.id,type:i.type,title:i.title,framework:i.framework,description:i.description}))
       ));
     }
     };

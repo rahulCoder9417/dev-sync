@@ -1,44 +1,66 @@
-import express, { Request, Response } from 'express';
-import http from 'http';
-import WebSocket from 'ws';
-import config from './src/config/index.js';
-import router from './src/routes/index.js';
-import WebSocketHandler from './src/websocket/wsHandler.js';
-
+// server.ts
+import express from "express";
+import http from "http";
+import config from "./src/config";
+import router from "./src/routes";
+import cors from "cors";
+import WsHandler from "./src/websocket/wsHandler";
+import { UserMeta } from "./types";
+import { getAuthData } from "./src/auth";
 const app = express();
 const server = http.createServer(app);
-const wsHandler = new WebSocketHandler();
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: config.cors.origin,
+  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+}));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Routes
-app.use('/', router);
-app.get('/rooms', (req: Request, res: Response) => {
-  res.json({
-    rooms: wsHandler.getRoomStats(),
-    timestamp: new Date().toISOString()
-  });
+app.use("/api", router);
+
+const wss = new WsHandler();
+server.on('upgrade',async (request, socket, head) => {
+  const token = request.url?.split("?")[1]!.split("=")[1];
+    if (!token) {
+      socket.destroy();
+      return;
+    }
+
+  try {
+    // Verify token
+    const claims = await getAuthData(token);
+    wss.handleUpdate(request, socket, head,claims as UserMeta);
+  } catch (err) {
+    console.error("Auth error:", err);
+    socket.destroy();
+    return;
+  }
 });
 
-// WebSocket
-const wss = new WebSocket.Server({ server });
-wss.on('connection', (ws: WebSocket) => wsHandler.handleConnection(ws));
 
-// Graceful shutdown
-const shutdown = (): void => {
-  console.log('Shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
-};
-
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
-
-// Start
 server.listen(config.port, () => {
-  console.log(`Server running on port ${config.port}`);
+  console.log(`HTTP server listening on ${config.port}`);
 });
+
+async function shutdown() {
+  console.log("Shutting down gracefully...");
+
+  server.close((err) => {
+    if (err) console.error("Error closing server:", err);
+  });
+
+  try {
+    wss.close();
+    console.log("WebSocket handler closed");
+  } catch (err) {
+    console.error("Error closing WebSocket handler:", err);
+  }
+
+  setTimeout(() => process.exit(0), 2000);
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);

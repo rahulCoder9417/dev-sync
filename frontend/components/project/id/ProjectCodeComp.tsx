@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 import React, { useState } from 'react';
 import Header from '@/components/project/id/Header';
@@ -5,8 +6,12 @@ import FileExplorer, { FileNode } from '@/components/project/id/FileExplorer';
 import CodeEditor from '@/components/project/id/CodeEditor';
 import Preview from '@/components/project/id/Preview';
 import ChatBot from '@/components/project/id/ChatBot';
-import { ChatMessage, ProjectById, Tab, User } from '@/types';
 
+import { ChatMessage, ProjectById, Tab, User } from '@/types';
+import Loader from '@/components/main/Loader';
+import useCollab from '@/customHooks/useCollab';
+import jwt from "jsonwebtoken"
+import { useAppSelector } from '@/lib/redux/hooks';
 export const mockUsers: User[] = [
   {
     id: '1',
@@ -69,6 +74,8 @@ export const mockUsers: User[] = [
 ];
 
 export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
+  const user  = useAppSelector((state)=>state.user)
+
     const [files, setFiles] = useState<FileNode[]>(data?.files!);
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [updatedTabs, setupdatedTabs] = useState<Record<string, string>[]>([])
@@ -81,17 +88,28 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
   });
   const [toggleOpen, setToggleOpen] = useState(false);
 
+  const handleRemote = (msg: any) => {
+    switch (msg.type) {
+      case 'joined': /* set clientId, roomSize */ break;
+      case 'user_joined': /* show presence */ break;
+      case 'cursor': /* render remote cursor */ break;
+      case 'scroll': /* follow or show indicator */ break;
+      case 'edit': /* apply edit ops */ break;
+      case 'user_left': /* hide cursor */ break;
+    }
+  };
+
+ const a = useCollab({wsUrl:process.env.NEXT_PUBLIC_WS_URL!,})
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
   const toggleSection = (key: keyof typeof visibleSection) => {
-    const currentlyVisible = Object.entries(visibleSection).filter(([k, v]) => v);
+    const currentlyVisible = Object.entries(visibleSection).filter(([_, v]) => v);
     const isSelected = visibleSection[key];
 
     // Code editor is always visible
     if (key === 'code') return;
 
     if (isMobile) {
-      const nonCodeVisible = currentlyVisible.filter(([k]) => k !== 'code');
       if (!isSelected && currentlyVisible.length > 1) return;
       if (isSelected && currentlyVisible.length <= 1) return;
     } else {
@@ -102,7 +120,7 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
     setVisibleSection(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleFileSelect = (file: any) => {
+  const handleFileSelect = (file:{content:string} & FileNode) => {
     if (file.type === 'file') {
       const existingTab = tabs.find(tab => tab.id === file.id);
 
@@ -194,15 +212,15 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
       setChatMessages(prev => [...prev, botMessage]);
     }, 1000);
   };
-
+  if(!data)return <Loader/>
   return (
     <div className="h-screen bg-primary text-primary w-full flex flex-col">
-      <Header projectName={data?.name!} mockusers={data?.team.members!}  />
+      <Header projectName={data.name} mockusers={data.team.members}  />
 
       <div className="flex-1 flex overflow-hidden">
         {visibleSection.file && (
           <div className="w-[15%] min-w-[200px] max-md:w-1/2">
-            <FileExplorer files={files} setFiles={setFiles} projectId={data?.id!} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />
+            <FileExplorer files={files} setFiles={setFiles} projectId={data.id} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />
           </div>
         )}
 
@@ -211,7 +229,7 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
             <CodeEditor
             updatedTabs={updatedTabs}
             setupdatedTabs={setupdatedTabs}
-              isTeam={data?.isTeamMember!}
+              isTeam={data.isTeamMember!}
               tabs={tabs}
               setTabs={setTabs}
               onTabClose={handleTabClose}
@@ -239,7 +257,7 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
         <div className="relative">
           {toggleOpen && (
             <div className="absolute cursor-pointer bottom-14 right-0 flex flex-col items-end gap-2">
-              {(data?.isTeamMember ?["file", "preview", "ai"]:["file","preview"]).map((section, index) => (
+              {(data?.isTeamMember ?["file", "preview", "ai"]:["file","preview"]).map((section) => (
                 <button
                   key={section}
                   onClick={() => toggleSection(section as keyof typeof visibleSection)}

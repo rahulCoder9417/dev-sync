@@ -279,6 +279,7 @@ export const getProjectById = async (projectId: string) => {
     const responseData = {
       id:project.id,
       name: project.name,
+      userId:dbUser.id,
       type: project.type,
       isGitImport: project.isGitImport,
       isOwner,
