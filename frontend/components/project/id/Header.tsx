@@ -17,7 +17,7 @@ const Header = ({ projectName ,mockusers}: HeaderProps) => {
  const onlineUsers = mockusers?.slice(0,1);
 
   return (
-    <header className="bg-secondary border-b border-primary h-16 md:flex hidden items-center justify-between px-4">
+    <header className="bg-secondary border-b border-primary h-16 md:flex hidden items-center  justify-between px-4">
       <div className="flex items-center space-x-4">
         <h1 className="text-primary text-lg ml-16 font-semibold">{projectName}</h1>
         <div className="h-6 w-px bg-border-primary"></div>

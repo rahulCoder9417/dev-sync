@@ -1,18 +1,16 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from '@/components/project/id/Header';
-import FileExplorer, { FileNode } from '@/components/project/id/FileExplorer';
+import FileExplorer from '@/components/project/id/fileExplorer/FileExplorer';
 import CodeEditor from '@/components/project/id/CodeEditor';
 import Preview from '@/components/project/id/Preview';
 import ChatBot from '@/components/project/id/ChatBot';
 
-import { ChatMessage, ProjectById, Tab, User } from '@/types';
+import { ChatMessage, FileNode, ProjectById, Tab, User } from '@/types';
 import Loader from '@/components/main/Loader';
 import useCollab from '@/customHooks/useCollab';
-import jwt from "jsonwebtoken"
-import { useAppSelector } from '@/lib/redux/hooks';
-export const mockUsers: User[] = [
+import { DeleteToast } from './fileExplorer/DeleteToast';
+export const mockUsers: any[] = [
   {
     id: '1',
     name: 'Alice Johnson',
@@ -67,20 +65,19 @@ export const mockUsers: User[] = [
   },
   {
     id: '5',
-    text: 'Great question! You can pass props by adding attributes to your JSX elements. For example: <MyComponent name="John" age={25} />',
+    text: 'Great question! You can pass props by adding attributes to your JSX elements. For example: ---',
     sender: 'bot',
     timestamp: "12:05"
   }
 ];
 
 export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
-  const user  = useAppSelector((state)=>state.user)
 
     const [files, setFiles] = useState<FileNode[]>(data?.files!);
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [updatedTabs, setupdatedTabs] = useState<Record<string, string>[]>([])
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockChatMessages);
-  const [visibleSection, setVisibleSection] = useState({
+  const [visibleSection, setVisibleSection] = useState<{file: boolean; code: boolean; ai: boolean; preview: boolean;}>({
     file: true,
     code: true,
     ai: false,
@@ -99,7 +96,7 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
     }
   };
 
- const a = useCollab({wsUrl:process.env.NEXT_PUBLIC_WS_URL!,})
+  const {join,status,sendMessage,participantsRef,deletionMenu,setdeletionMenu} = useCollab({wsUrl:process.env.NEXT_PUBLIC_WS_URL!,})
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
   const toggleSection = (key: keyof typeof visibleSection) => {
@@ -147,8 +144,13 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
           newTab
         ]);
       }
+   join(data?.id!,file.id)
     }
   };
+
+  const handleFileOp = (action:string,name:string) => {
+
+  }
 
   const handleTabClose = (tabId: string) => {
     const newTabs = tabs.filter(tab => tab.id !== tabId);
@@ -160,6 +162,7 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
       if (wasActive) {
         const nextActiveIndex = Math.min(closedTabIndex, newTabs.length - 1);
         newTabs[nextActiveIndex].isActive = true;
+        join(data?.id!,newTabs[nextActiveIndex].id)
       }
     }
 
@@ -173,14 +176,7 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
     })));
   };
 
-  const handleCodeChange = (tabId: string, content: string) => {
-    if(!data?.isTeamMember)return
-    setTabs(tabs.map(tab =>
-      tab.id === tabId
-        ? { ...tab, content, isDirty: content !== tab.content }
-        : tab
-    ));
-  };
+
 
   const handleSendMessage = (message: string) => {
     const userMessage: ChatMessage = {
@@ -212,21 +208,44 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
       setChatMessages(prev => [...prev, botMessage]);
     }, 1000);
   };
+
+  useEffect(()=>{
+    if(status === "connected" && data){
+      join(data.id)
+    }
+  },[status])
   if(!data)return <Loader/>
   return (
-    <div className="h-screen bg-primary text-primary w-full flex flex-col">
+    <div className="h-screen bg-primary text-primary overflow-hidden w-full flex flex-col">
+      {
+        deletionMenu && (
+          <DeleteToast
+          
+          confirm={()=>  sendMessage("vote_delete",data?.id!,deletionMenu.id,{fullName:deletionMenu.votingBy,fileName:deletionMenu.fileName})}
+            fileId={deletionMenu.id}
+            fileName={deletionMenu.fileName}
+            total={deletionMenu.required}
+            done={deletionMenu.done}
+            fullName={deletionMenu.votingBy}
+            setdeletionMenu={setdeletionMenu}
+            projectId={data.id}
+          />
+        )
+      }
       <Header projectName={data.name} mockusers={data.team.members}  />
 
       <div className="flex-1 flex overflow-hidden">
         {visibleSection.file && (
-          <div className="w-[15%] min-w-[200px] max-md:w-1/2">
-            <FileExplorer files={files} setFiles={setFiles} projectId={data.id} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />
+          <div className="w-[15%] min-w-[200px]  max-md:w-1/2">
+            <FileExplorer particapantsRef={participantsRef.current} setdeletionMenu={setdeletionMenu}  sendMessage={sendMessage} files={files} setFiles={setFiles} projectId={data.id} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />
           </div>
         )}
 
         {visibleSection.code && (
           <div className="min-w-[35%] max-md:w-1/2 flex-1">
             <CodeEditor
+            sendMessage={sendMessage}
+            projectId={data.id}
             updatedTabs={updatedTabs}
             setupdatedTabs={setupdatedTabs}
               isTeam={data.isTeamMember!}
@@ -234,7 +253,6 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
               setTabs={setTabs}
               onTabClose={handleTabClose}
               onTabSelect={handleTabSelect}
-              onCodeChange={handleCodeChange}
             />
           </div>
         )}

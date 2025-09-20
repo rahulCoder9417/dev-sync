@@ -1,0 +1,18 @@
+import { db } from "../../db/db";
+
+export async function getUserByEmail(email: string) {
+  try {
+    const user = await db.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        username: true,
+        fullName: true,
+        email: true,
+      },
+    });
+    return user;
+  } catch (error) {
+    return error;
+  }
+}

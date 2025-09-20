@@ -3,9 +3,10 @@
 
 import { toast } from "sonner";
 import { CheckCircle, XCircle } from "lucide-react";
+import { Button } from "../ui/button";
 
 
-export function showToast(success: boolean, message: string, description?: string) {
+export function showToast(success: boolean, message: string, description?: string,confimButton?:boolean,confirmButtonHandler?:() => void,buttonText?:string) {
   toast.custom((t) => (
     <div
       className={`flex items-start gap-3 p-4 rounded-xl shadow-lg border w-[360px] ${
@@ -34,12 +35,13 @@ export function showToast(success: boolean, message: string, description?: strin
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
         )}
       </div>
-
-      <button
-        onClick={() => toast.dismiss(t)}
-        className="text-muted-foreground hover:text-foreground transition text-xl leading-none"
-      >
-        ×
+      {confimButton && (
+        <Button onClick={() => confirmButtonHandler!()}>Confirm {buttonText}</Button>
+      )}<button
+          onClick={() => toast.dismiss(t)}
+          className="text-muted-foreground hover:text-foreground transition text-xl leading-none"
+        >
+          ×
       </button>
     </div>
   ));

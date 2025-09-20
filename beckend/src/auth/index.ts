@@ -1,5 +1,6 @@
 import { verifyToken } from "@clerk/backend";
 import { UserMeta } from "../../types";
+import { getUserByEmail } from "../../lib/action/user/getUser";
 
 export async function getAuthData(token: string):Promise<UserMeta | null> {
   try {
@@ -7,29 +8,23 @@ export async function getAuthData(token: string):Promise<UserMeta | null> {
     const payload = await verifyToken(token, {
         secretKey: process.env.CLERK_SECRET_KEY!,
       });
-      const email = payload.email;
+      
+      const email = payload.email as string;
+
       if(!email){
         throw new Error("User not found  - payload email" );
       }
-      const response = await fetch(`${process.env.FRONTEND_URL}/api/user/findUser`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" ,
-            "x-internal-api-key":process.env.INTERNAL_API_KEY!,
-        },
-        body: JSON.stringify({ identifier:email }),
-      });
-      if(!response.ok){
-        throw new Error("User not found");
-      }
 
-      const data = await response.json();
-      if(!data.success){
-        throw new Error("User not found");
+      const response:any = await getUserByEmail(email)
+
+      if(!response){
+        throw new Error("User not found" + response.error );
       }
       return {
-        userId: data.user.id,
-        username: data.user.username,
-        fullName: data.user.fullName,
+        userId: response.id,
+        username: response.username,
+        avatar:response.avatar,
+        fullName: response.fullName,
       };
   } catch (error) {
     console.log("Error happend finding user",error)

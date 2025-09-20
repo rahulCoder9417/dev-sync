@@ -5,7 +5,7 @@ import { Bell } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks"; // ✅ typed useSelector
 
 const AvatarNotify = () => {
-  const fullName = useAppSelector((state) => state.user.fullName);
+  const { fullName, avatar } = useAppSelector((state) => state.user);
   const getInitials = (name: string) => {
     const parts = name.trim().split(" ");
     if (parts.length === 1) return parts[0][0]?.toUpperCase();
@@ -29,9 +29,17 @@ const AvatarNotify = () => {
 
       {/* User avatar with initials */}
       <div className="flex items-center space-x-2">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
-          {initials}
-        </div>
+        {avatar ? (
+          <img 
+            src={avatar} 
+            alt={fullName || 'User'} 
+            className="w-8 h-8 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+            {initials}
+          </div>
+        )}
       </div>
       <div className="md:flex hidden items-center space-x-2">
         <div className=" font-semibold text-2xl text-primary">

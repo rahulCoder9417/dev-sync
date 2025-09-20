@@ -1,26 +1,67 @@
-import Editor from "@monaco-editor/react";
-import React, { useEffect } from 'react';
+"use client"
+import Editor, { OnMount } from "@monaco-editor/react";
+import * as Y from "yjs";
+import { MonacoBinding } from "y-monaco";
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { X, Circle } from 'lucide-react';
 import { Tab } from '@/types';
 import { showToast } from "@/components/main/Toast";
-
+import Collaborators from "./fileExplorer/Collaborators";
+import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
+import { shallowEqual } from 'react-redux';
+import { consumeUpdate } from "@/lib/redux/features/collabCodeEditorUpdate";
 
 interface CodeEditorProps {
   isTeam: boolean;
   tabs: Tab[];
   updatedTabs: Record<string, string>[];
-  setupdatedTabs: (updatedTabs:any) => void;
+  setupdatedTabs: (updatedTabs: any) => void;
+  sendMessage: (message: string, projectId: string, fileId: string | undefined, data?: any) => boolean;
   setTabs: (tabs: Tab[]) => void;
   onTabClose: (tabId: string) => void;
   onTabSelect: (tabId: string) => void;
-  onCodeChange: (tabId: string, content: string) => void;
+  projectId: string;
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ tabs,setupdatedTabs, updatedTabs, setTabs,onTabClose, onTabSelect, onCodeChange, isTeam }) => {
+const CodeEditor: React.FC<CodeEditorProps> = ({ projectId, tabs, setupdatedTabs, sendMessage, updatedTabs, setTabs, onTabClose, onTabSelect, isTeam }) => {
   const activeTab = tabs.find(tab => tab.isActive);
+  const bindingRef = useRef<MonacoBinding>(null);
+  const [isFirstSync,setIsFirstSync] = useState(false)
+  const handleCodeChange = useCallback((tabId: string, content: string) => {
+    if (!isTeam) return
+    setTabs(tabs.map(tab =>
+      tab.id === tabId
+        ? { ...tab, content, isDirty: content !== tab.content }
+        : tab
+    ));
+  }, [tabs]);
+  const dispatch = useAppDispatch();
+  const docRef = useRef<Y.Doc>(new Y.Doc());
+  const [readOnly, setReadOnly] = useState(false)
+  const collaboratorsMap = useAppSelector(
+    (state) => {
+      if (!activeTab) return [];
+      return state.collabCodeUser.projects?.[projectId]?.[activeTab.id] ?? []
+    },
+    shallowEqual
+  );
+
+  const updatesMap = useAppSelector(
+    (state) => {
+      if (!activeTab) return [];
+      return state.collabCodeEditorUpdate.updates?.[activeTab.id] ?? []
+    },
+    shallowEqual
+  );
+
+  const userId = useAppSelector(
+    state => state.user.id,
+    shallowEqual
+  );
+
+
   const getLanguage = (name: string): string => {
     const ext = name.toLowerCase().split('.').pop() || '';
-
     const map: Record<string, string> = {
       js: 'javascript',
       ts: 'typescript',
@@ -88,59 +129,133 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ tabs,setupdatedTabs, updatedTab
 
     return map[ext] || 'plaintext';
   };
-
-useEffect(() => {
-  const handleKeyDown = async (e: KeyboardEvent) => {
-    const isSaveShortcut = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's';
-
-    if (isSaveShortcut) {
-      e.preventDefault(); // prevent browser save dialog
-
-      if (activeTab?.isDirty) {
-        const response = await fetch(`/api/projects/fileItem/updateContent`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: activeTab.id,
-            content: activeTab.content,
-          }),
-        });
-
-        const data = await response.json();
-      
-        if (data.success) {
-        setTabs(tabs.map(tab =>
-          tab.id === activeTab.id
-            ? { ...tab, isDirty: false,content:activeTab.content }
-            : tab
-        ));
-        const d= updatedTabs.find(tab => tab.id === activeTab.id)
-        if(d){
-          setupdatedTabs((prev:any)=>prev.map((tab:any) =>
-            tab.id === activeTab.id
-              ? {content:activeTab.content }
-              : tab
-          ));
-        }else{
-          setupdatedTabs((prev:any)=>[...prev,{id:activeTab.id,content:activeTab.content}]);
+  useEffect(() => {
+    console.log("i change collaboratorsMap")
+    if (collaboratorsMap && collaboratorsMap.length > 0 && userId) {
+      console.log(collaboratorsMap)
+      if ((collaboratorsMap[0].userId !== userId)) {
+        setReadOnly(true)
+        if(!isFirstSync){
+          sendMessage("sync", projectId, activeTab?.id);console.log("sync")
+          setIsFirstSync(true)
         }
-        }else{
-          showToast(false, "Error updating " + data.error);
-        }
-      } 
+        showToast(false, "You are not the owner of this file");
+      }
+      else {
+        setReadOnly(false)
+      }
     }
+  }, [collaboratorsMap])
+  useEffect(() => {
+    console.log("i change active tab", activeTab)
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      const isSaveShortcut = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's';
+
+      if (isSaveShortcut) {
+        e.preventDefault(); // prevent browser save dialog
+
+        if (activeTab?.isDirty) {
+          const response = await fetch(`/api/projects/fileItem/updateContent`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              id: activeTab.id,
+              content: activeTab.content,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            setTabs(tabs.map(tab =>
+              tab.id === activeTab.id
+                ? { ...tab, isDirty: false, content: activeTab.content }
+                : tab
+            ));
+            const d = updatedTabs.find(tab => tab.id === activeTab.id)
+            if (d) {
+              setupdatedTabs((prev: any) => prev.map((tab: any) =>
+                tab.id === activeTab.id
+                  ? { content: activeTab.content }
+                  : tab
+              ));
+            } else {
+              setupdatedTabs((prev: any) => [...prev, { id: activeTab.id, content: activeTab.content }]);
+            }
+          } else {
+            showToast(false, "Error updating " + data.error);
+          }
+        }
+      }
+    };
+    const updateHandler = (update: Uint8Array) => {
+      if (readOnly) return
+      console.log(readOnly, "update", update)
+      sendMessage("update", projectId, activeTab?.id, { data: Array.from(update), updateType: "text" });
+    };
+    const ytext = docRef.current!.getText("monaco");
+    ytext.delete(0, ytext.length)
+    ytext.insert(0, activeTab?.content || "");
+    console.log(ytext.toString())
+    docRef.current.on("update", updateHandler);
+    // window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      //window.removeEventListener('keydown', handleKeyDown);
+      docRef.current?.off("update", updateHandler);
+    }
+  }, [activeTab?.id, readOnly]);
+
+
+
+  useEffect(() => {
+    console.log("i change updatesMap")
+    if (updatesMap && updatesMap.length > 0) {
+      console.log(updatesMap)
+      updatesMap.forEach((update) => {
+        console.log(update)
+        if (update.type === "sync") {
+          console.log("giving thwe sync")
+          const fullState = Y.encodeStateAsUpdate(docRef.current!);
+          sendMessage("syncedData", projectId, activeTab?.id, { data: Array.from(fullState), updateType: "FirstSync" ,include:update.data});
+          return
+        }
+        const ytext = docRef.current!.getText("monaco");
+        const a = new Uint8Array(update.data);
+        console.log(a)
+        if(update.type==="FirstSync")ytext.delete(0,ytext.length)
+        console.log(ytext.toString())
+        Y.applyUpdate(docRef.current!, a);
+        console.log("H", docRef.current!.getText("monaco").toString())
+        dispatch(consumeUpdate({ fileId: activeTab?.id! }))
+      })
+    }
+
+  }, [updatesMap])
+  const handleEditorMount: OnMount = (editor, monaco) => {
+    if (!activeTab) return;
+    const ydoc = docRef.current!;
+    const ytext = ydoc.getText("monaco");
+
+    if (ytext.length === 0 && activeTab?.content) {
+      ytext.insert(0, activeTab.content);
+    }
+    const model = monaco.editor.createModel(
+      ytext.toString(),
+      getLanguage(activeTab?.name ?? "plaintext")
+    );
+    editor.setModel(model);
+
+    const binding = new MonacoBinding(
+      ytext,
+      model,
+      new Set([editor]),
+      null // awareness (we’ll add later)
+    );
+    bindingRef.current = binding;
   };
-
-  window.addEventListener('keydown', handleKeyDown);
-
-  return () => {
-    window.removeEventListener('keydown', handleKeyDown);
-  };
-}, [activeTab]);
-
-
   return (
     <div className="bg-primary border-r border-primary h-full flex flex-col">
       {/* Tab Header */}
@@ -163,6 +278,9 @@ useEffect(() => {
                 onTabClose(tab.id);
               }}
             >
+              <div className="ml-auto">
+                <Collaborators projectId={projectId} fileId={tab.id} />
+              </div>
               <X className="w-3 h-3" />
             </button>
           </div>
@@ -173,12 +291,13 @@ useEffect(() => {
       <div className="flex-1 overflow-hidden">
         {activeTab ? (
 
+
           <Editor
+            onMount={handleEditorMount}
             height="100%"
             defaultLanguage="plaintext" // or "python", "cpp", etc.
-            language={getLanguage(activeTab.name)} // if you're tracking selected language
-            value={activeTab.content}
-            onChange={(value) => onCodeChange(activeTab.id, value!)}
+            language={getLanguage(activeTab.name)}
+            onChange={(value) => handleCodeChange(activeTab.id, value!)}
             theme="vs-dark"
             options={{
               fontFamily: "'Fira Code', 'Monaco', 'Cascadia Code', monospace",
@@ -187,7 +306,7 @@ useEffect(() => {
               wordWrap: 'on',
               scrollBeyondLastLine: false,
               automaticLayout: true,
-              readOnly: !isTeam, // replace your pointer-events logic
+              readOnly: !isTeam || readOnly, // replace your pointer-events logic
             }}
           />
 
@@ -204,4 +323,4 @@ useEffect(() => {
   );
 };
 
-export default CodeEditor;
+export default memo(CodeEditor);

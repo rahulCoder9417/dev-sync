@@ -1,5 +1,5 @@
 import { Input } from '@/components/ui/input';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { z } from 'zod';
 
 // Your given regex + schema
@@ -27,10 +27,29 @@ const renameSchema = z.object({
     type: z.enum(['file', 'folder']).optional()
 });
 
-export default function InputBox({ id, type, Name="", handleNameConfirm ,projectId=null,setIsFileAction}: any) {
+export default function InputBox({ id, type, Name="", setAction,handleNameConfirm}: any) {
     const [name, setName] = React.useState(Name);
     const [error, setError] = React.useState('');
+    const inputRef = React.useRef<HTMLFormElement | null>(null);
+    
+useEffect(() => {
+    const handleClickOutsideI = (e: MouseEvent) => {
+      if (
+        inputRef.current &&
+        !inputRef.current.contains(e.target as Node)
+      ) {
+        setAction(null);
+      }
+    };
 
+    if (inputRef.current) {
+      window.addEventListener('click', handleClickOutsideI);
+    }
+
+    return () => {
+      window.removeEventListener('click', handleClickOutsideI);
+    };
+  }, []);
     const formSubmit = (e: any) => {
         e.preventDefault();
             // Validate using Zod schema
@@ -62,17 +81,12 @@ export default function InputBox({ id, type, Name="", handleNameConfirm ,project
                
             }
             setError('');
-            if(projectId){
-                handleNameConfirm(type,id,name)
-            }else{
-            handleNameConfirm(id,name); // Run your confirm function
-            }
-setIsFileAction(false);
+                handleNameConfirm(name)
         
     };
 
     return (
-        <form onSubmit={formSubmit}>
+        <form onSubmit={formSubmit} ref={inputRef}>
             <Input
                 type="text"
                 value={type==="folder"?name.slice(0,-1):name}

@@ -24,7 +24,7 @@ export async function createFileItem(data: {
     throw new Error('Invalid input: ' + JSON.stringify(validated.error.format()))
   }
 
-  const { name, type, projectId, parentId } = validated.data
+  const { name, type, projectId,content, parentId } = validated.data
 
   const fileItem = await prisma.fileItem.create({
     data: {

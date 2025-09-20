@@ -2,30 +2,21 @@
 import { showToast } from "@/components/main/Toast";
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { ServerPayload, UserSummary } from "@/types";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { updatePresence } from "@/lib/redux/features/collabCodeUserState";
+import { addFileOp,  } from "@/lib/redux/features/collabCodeFileOp";
+import { updateCode } from "@/lib/redux/features/collabCodeEditorUpdate";
 
 /**
  * Assumptions:
  * - Your app will provide a valid JWT token (string) from e.g. cookies/localStorage or next-auth.
- * - The WS server url is in process.env.NEXT_PUBLIC_WS_URL (e.g. "wss://example.com/ws" or "wss://api.example.com")
+ * - The WS server url is in process.env.NEXT_PUBLIC_WS_URL
  *
  * Usage: const collab = useCollab({ token, onServerEvent });
  */
 
 // --- Types (lightweight, match server messages)
-export type UserSummary = {
-  userId: string;
-  username?: string;
-  fullName?: string;
-};
-
-export type ServerPayload =
-  | { type: "joined"; room: string; you: UserSummary }
-  | { type: "user_joined"; room: string; user: UserSummary }
-  | { type: "user_left"; room: string; user: UserSummary }
-  | { type: "message"; room: string; from: UserSummary; data: any }
-  | { type: "error"; error: string }
-  | { type: string; [k: string]: any }; // fallback
-
 export type ClientMessage =
   | { action: "join"; projectId: string; fileId?: string | null }
   | { action: "leave"; projectId: string; fileId?: string | null }
@@ -44,46 +35,229 @@ export default function useCollab(opts: UseCollabOptions = {}) {
     autoConnect = true,
     wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "",
     onEvent,
-    maxReconnectAttempts = 5,
+    maxReconnectAttempts = 15,
   } = opts;
 
+  const dispatch = useAppDispatch();
   const [status, setStatus] = useState<
     "idle" | "connecting" | "connected" | "closed" | "error" | "reconnecting"
   >("idle");
-
   const [messages, setMessages] = useState<ServerPayload[]>([]);
-  const [participants, setParticipants] = useState<Record<string, UserSummary>>({});
+  const [participants, setParticipants] = useState<Record<string, UserSummary>>(
+    {}
+  );
+  const [deletionMenu, setdeletionMenu] = useState<{id:string,fileId:string,fileName:string,votingBy:string,required:number,done:number} | null>(null);
+  const participantsRef = useRef<number>(0);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectAttempts = useRef(0);
   const manualClose = useRef(false);
-  
+
   const { getToken } = useAuth();
 
-  const buildWsUrl = useCallback(async() => {
-  const token =  getToken({template:"beckend-email-get"});
+  // ---------- utils + setup ----------
+  const buildWsUrl = useCallback(async () => {
+    const token = await getToken({ template: "beckend-email-get" });
     if (!wsUrl) {
-      showToast(false,"WebSocket URL not configured (NEXT_PUBLIC_WS_URL).");return
+      showToast(false, "WebSocket URL not configured (NEXT_PUBLIC_WS_URL).");
+      return;
     }
-    if (!token){
-      showToast(true,"No token provided for WebSocket auth.");
-      return
+
+    if (!token) {
+      showToast(true, "No token provided for WebSocket auth.");
+      return;
     }
     // attach token as query param per server upgrade handler
-    let u = wsUrl + `?token=${await token}`;
+    let u = wsUrl + `?token=${token}`;
     return u;
-  }, [wsUrl]);
+  }, [wsUrl, getToken]);
 
   // push message to local log
   const pushMsg = useCallback((payload: ServerPayload) => {
     setMessages((prev) => {
       const next = [...prev, payload];
-      // cap at 200 messages
-      if (next.length > 200) next.shift();
+      if (next.length > 50) next.shift();
       return next;
     });
   }, []);
+  
+  // ----------------- Incoming payload buffering -----------------
+  // Queue incoming payloads and process them in a macrotask so dispatches occur after render
+  const pendingPayloadsRef = useRef<ServerPayload[]>([]);
+  const payloadFlushScheduledRef = useRef<number | null>(null);
+  const deletionRef = useRef<number>(-1);
+  // Move the switch-case payload processor here (it does the actual state updates)
+  // Replace your current processPayload with this version
+const processPayload = useCallback(
+  (payload: ServerPayload) => {
+    // Small debug log (optional)
+    // console.log("[useCollab] processPayload enqueued", payload.type, performance.now());
 
-  // handle incoming server payload
+    // Define the actual state-updating work in a function we will defer.
+    const performUpdates = () => {
+      try {
+        switch (payload.type) {
+          case "update":
+            console.log(payload)
+            dispatch(updateCode({
+              fileId: payload.fileId,
+              type: payload.updateType,
+              data: payload.data,
+            }))
+            break;
+            case "sync":
+              dispatch(updateCode({
+                fileId: payload.fileId,
+                type: "sync",
+                data: payload.to,
+              }))
+            break;
+          case "file_deleted":
+            showToast(true, "File deleted by" +payload.deletedBy + "on file" + payload.fileName);
+            dispatch(addFileOp({
+              type:"delete",
+              name:payload.fileName,
+              id:payload.fileId,
+              projectId:payload.projectId
+            }))
+            break;
+          case "voting":
+console.log(payload)
+            setdeletionMenu({id:payload.fileId,fileId:payload.fileId,fileName:payload.fileName,votingBy:payload.votingBy,required:payload.required,done:payload.done})
+            break;
+          case "fileOp":
+          showToast(true, "File Operation " + payload.action +" done by" +payload.from.fullName + "on file" + payload.fileName);
+          dispatch(addFileOp({
+            type:payload.action,
+            name:payload.fileName,
+            id:payload.fileId,
+            newNode:payload.newNode,
+            projectId:payload.projectId
+          }))
+            break
+          case "user_joined":
+            setParticipants((prev) => ({
+              ...prev,
+              [payload.user.userId]: payload.user,
+            }));
+            showToast(true, "User Joined", payload.user.fullName + payload.room);
+            dispatch(
+              updatePresence({
+                projectId: payload.user.projectId,
+                fileId: payload.user.fileId || null,
+                userId: payload.user.userId,
+                avatar: payload.user.avatar,
+                fullName: payload.user.fullName,
+                action: "join",
+              })
+            );
+            !payload.room.includes(":")&& participantsRef.current++ 
+            break;
+
+          case "user_left":
+            showToast(true, "User left", payload.user.fullName + payload.room);
+            setParticipants((prev) => {
+              const copy = { ...prev };
+              delete copy[payload.user.userId];
+              return copy;
+            });
+            dispatch(
+              updatePresence({
+                projectId: payload.user.projectId,
+                fileId: payload.user.fileId || null,
+                userId: payload.user.userId,
+                avatar: payload.user.avatar,
+                fullName: payload.user.fullName,
+                action: "leave",
+              })
+            );
+            !payload.room.includes(":")&& participantsRef.current--
+            break;
+
+          case "joined":
+            showToast(true, "you Joined", payload.you.fullName + payload.room);
+            setParticipants((prev) => ({
+              ...prev,
+              [payload.you.userId]: payload.you,
+            }));
+            dispatch(
+              updatePresence({
+                projectId: payload.you.projectId,
+                fileId: payload.you.fileId || null,
+                userId: payload.you.userId,
+                avatar: payload.you.avatar,
+                fullName: payload.you.fullName,
+                action: "join",
+              })
+            );
+            !payload.room.includes(":")&& participantsRef.current++
+            break;
+
+          case "left":
+            showToast(true, "you left", payload.you.fullName + payload.room);
+            setParticipants((prev) => {
+              const copy = { ...prev };
+              delete copy[payload.you.userId];
+              return copy;
+            });
+            dispatch(
+              updatePresence({
+                projectId: payload.you.projectId,
+                fileId: payload.you.fileId || null,
+                userId: payload.you.userId,
+                avatar: payload.you.avatar,
+                fullName: payload.you.fullName,
+                action: "leave",
+              })
+            );
+            !payload.room.includes(":")? participantsRef.current=0: null;
+            break;
+          case "error":
+            showToast(true, "Error", payload.message);
+            break;
+
+          default:
+            // handle other payload types if needed
+            break;
+        }
+
+        // push to local message log and call optional external handler
+        pushMsg(payload);
+        onEvent?.(payload);
+      } catch (err) {
+        console.error("[useCollab] performUpdates error", err);
+      }
+    };
+
+    // DOUBLE-DEFER: first macrotask already enqueues flushPayloads,
+    // now run performUpdates in a fresh macrotask so React has fully finished
+    // any synchronous render/commit work before we mutate state.
+    window.setTimeout(() => {
+      performUpdates();
+    }, 0);
+  },
+  [dispatch, onEvent, pushMsg]
+);
+
+
+  const flushPayloads = useCallback(() => {
+    // clear scheduled marker first
+    if (payloadFlushScheduledRef.current) {
+      clearTimeout(payloadFlushScheduledRef.current);
+      payloadFlushScheduledRef.current = null;
+    }
+
+    // process FIFO
+    while (pendingPayloadsRef.current.length > 0) {
+      const p = pendingPayloadsRef.current.shift()!;
+      try {
+        processPayload(p);
+      } catch (err) {
+        console.error("[collab] processPayload error", err);
+      }
+    }
+  }, [processPayload]);
+
+  // handle incoming server payload (enqueue, schedule flush)
   const handleServer = useCallback(
     (raw: MessageEvent) => {
       let payload: ServerPayload;
@@ -93,32 +267,22 @@ export default function useCollab(opts: UseCollabOptions = {}) {
         return;
       }
 
-      // local handling for presence
-      if (payload.type === "user_joined" && payload.user?.userId) {
-        setParticipants((prev) => ({ ...prev, [payload.user.userId]: payload.user }));
-        showToast(true,"USer Joined",payload.user.fullName)
-      } else if (payload.type === "user_left" && payload.user?.userId) {
-        showToast(true,"USer left",payload.user.fullName)
-        setParticipants((prev) => {
-          const copy = { ...prev };
-          delete copy[payload.user.userId];
-          return copy;
-        });
-      } else if (payload.type === "joined" && payload.you?.userId) {
-        
-        showToast(true,"you Joined",payload.you.fullName)
-        // optionally set yourself in participants
-        setParticipants((prev) => ({ ...prev, [payload.you.userId]: payload.you }));
-      }
+      // Enqueue payload and schedule a macrotask flush
+      pendingPayloadsRef.current.push(payload);
 
-      pushMsg(payload);
-      onEvent?.(payload);
+      if (payloadFlushScheduledRef.current == null) {
+        // schedule as a macrotask so flush happens after current render/commit
+        payloadFlushScheduledRef.current = window.setTimeout(() => {
+          payloadFlushScheduledRef.current = null;
+          flushPayloads();
+        }, 0);
+      }
     },
-    [onEvent, pushMsg]
+    [flushPayloads]
   );
 
-  // open ws
-  const connect = useCallback(async() => {
+  // ----------------- WebSocket lifecycle -----------------
+  const connect = useCallback(async () => {
     try {
       const url = await buildWsUrl();
       manualClose.current = false;
@@ -126,9 +290,8 @@ export default function useCollab(opts: UseCollabOptions = {}) {
 
       const ws = new WebSocket(url!);
       wsRef.current = ws;
-
       ws.onopen = () => {
-        reconnectAttempts.current = 0;
+        console.log("WebSocket connection opened");
         setStatus("connected");
         // optionally you can send an initial ping or subscribe messages
       };
@@ -141,6 +304,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
       };
 
       ws.onclose = (ev) => {
+        console.log("WebSocket connection closed");
         wsRef.current = null;
         if (manualClose.current) {
           setStatus("closed");
@@ -151,13 +315,17 @@ export default function useCollab(opts: UseCollabOptions = {}) {
         reconnectAttempts.current += 1;
         if (reconnectAttempts.current > maxReconnectAttempts) {
           setStatus("closed");
+        showToast(false,"max reconnect attempts reached",ev.reason);
           console.warn("[collab] max reconnect attempts reached");
           return;
         }
 
         setStatus("reconnecting");
         // exponential backoff + jitter
-        const backoff = Math.min(30000, 500 * Math.pow(1.8, reconnectAttempts.current));
+        const backoff = Math.min(
+          30000,
+          500 * Math.pow(1.8, reconnectAttempts.current)
+        );
         const jitter = Math.floor(Math.random() * 300);
         setTimeout(() => {
           if (!manualClose.current) connect();
@@ -198,17 +366,24 @@ export default function useCollab(opts: UseCollabOptions = {}) {
         wsRef.current.close();
         wsRef.current = null;
       }
+      // cleanup pending payloads and flush timers
+      if (payloadFlushScheduledRef.current) {
+        clearTimeout(payloadFlushScheduledRef.current);
+        payloadFlushScheduledRef.current = null;
+      }
+      pendingPayloadsRef.current.length = 0;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoConnect, buildWsUrl]);
+  }, [autoConnect, buildWsUrl, connect]);
 
   // helpers for app-level messages
   const send = useCallback((msg: ClientMessage) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      console.warn("[collab] trying to send but socket not open", msg);
+      console.warn("[collab] trying to send but socket not open");
+      showToast(false,"you are not connected to server");
       return false;
     }
     try {
+
       wsRef.current.send(JSON.stringify(msg));
       return true;
     } catch (err) {
@@ -217,19 +392,101 @@ export default function useCollab(opts: UseCollabOptions = {}) {
     }
   }, []);
 
-  const join = useCallback((projectId: string, fileId?: string | null) => {
-    return send({ action: "join", projectId, fileId });
+  // ----------------- Outgoing join/leave buffering -----------------
+  const pendingJoinsRef = useRef<Set<string>>(new Set());
+  const pendingLeavesRef = useRef<Set<string>>(new Set());
+  const flushScheduledRef = useRef<number | null>(null);
+
+  const makeRoomKey = (projectId: string, fileId?: string | null) =>
+    `${projectId}:${fileId ?? ""}`;
+
+  const parseRoomKey = (key: string) => {
+    const [projectId, fileId] = key.split(":");
+    return { projectId, fileId: fileId === "" ? undefined : fileId };
+  };
+
+  // flush function uses `send`
+  const flushPending = useCallback(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+
+    // process leaves first
+    for (const key of Array.from(pendingLeavesRef.current)) {
+      const { projectId, fileId } = parseRoomKey(key);
+      const ok = send({ action: "leave", projectId, fileId: fileId ?? null });
+      if (ok) pendingLeavesRef.current.delete(key);
+      // if send fails (socket closed) we keep the key to retry later
+    }
+
+    // then joins
+    for (const key of Array.from(pendingJoinsRef.current)) {
+      const { projectId, fileId } = parseRoomKey(key);
+      const ok = send({ action: "join", projectId, fileId: fileId ?? null });
+      if (ok) pendingJoinsRef.current.delete(key);
+    }
   }, [send]);
+
+  const scheduleFlush = () => {
+    if (flushScheduledRef.current != null) return;
+    flushScheduledRef.current = window.setTimeout(() => {
+      if (flushScheduledRef.current) {
+        clearTimeout(flushScheduledRef.current);
+        flushScheduledRef.current = null;
+      }
+      flushPending();
+    }, 0);
+  };
+
+  // flush queued sends when socket becomes connected
+  useEffect(() => {
+    if (status === "connected") {
+      flushPending();
+    }
+  }, [status, flushPending]);
+
+  const join = useCallback((projectId: string, fileId?: string | null) => {
+    const key = makeRoomKey(projectId, fileId);
+    // cancel any pending leave
+    pendingLeavesRef.current.delete(key);
+    pendingJoinsRef.current.add(key);
+    scheduleFlush();
+    return true;
+  }, []);
 
   const leave = useCallback((projectId: string, fileId?: string | null) => {
-    return send({ action: "leave", projectId, fileId });
-  }, [send]);
+    const key = makeRoomKey(projectId, fileId);
+    // cancel any pending join
+    pendingJoinsRef.current.delete(key);
+    pendingLeavesRef.current.add(key);
+    scheduleFlush();
+    return true;
+  }, []);
 
-  const sendMessage = useCallback((projectId: string, fileId: string | undefined, data: any) => {
-    return send({ action: "message", projectId, fileId, data });
-  }, [send]);
+ const sendMessage = useCallback(
+    (message: string,projectId: string, fileId: string | undefined, data?: any) => {
+      return send({ action:message, projectId, fileId,   ...data });
+    },
+    [send]
+  );
 
   const clearMessages = useCallback(() => setMessages([]), []);
+
+  // cleanup of timers/queues on unmount
+  useEffect(() => {
+    return () => {
+      if (flushScheduledRef.current) {
+        clearTimeout(flushScheduledRef.current);
+        flushScheduledRef.current = null;
+      }
+      pendingJoinsRef.current.clear();
+      pendingLeavesRef.current.clear();
+
+      if (payloadFlushScheduledRef.current) {
+        clearTimeout(payloadFlushScheduledRef.current);
+        payloadFlushScheduledRef.current = null;
+      }
+      pendingPayloadsRef.current.length = 0;
+    };
+  }, []);
 
   return {
     // state
@@ -243,7 +500,11 @@ export default function useCollab(opts: UseCollabOptions = {}) {
     join,
     leave,
     sendMessage,
+    setdeletionMenu,
+    deletionMenu,
     clearMessages,
+    deletionRef,
+    participantsRef,
 
     // refs (for advanced use)
     ws: wsRef.current,

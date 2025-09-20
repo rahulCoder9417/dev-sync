@@ -33,7 +33,7 @@ export const DashboardSidebar = () => {
 
       <div
         className={`h-100vh transition-all duration-300 ease-in-out z-40 
-          ${isSidebarOpen ? 'w-72' : 'w-0'} 
+          ${isSidebarOpen ? 'min-w-72' : 'w-0'} 
           overflow-hidden border-r hidden md:flex flex-col bg-[var(--bg-secondary)]`}
         style={{ borderColor: 'var(--border-primary)' }}
       >

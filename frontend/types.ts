@@ -23,6 +23,7 @@ export interface User {
     id: string;
     name: string;
     avatar: string;
+    fullName: string;
     status: 'online' | 'offline' | 'away';
   }
   
@@ -43,3 +44,29 @@ export interface User {
     sender: 'user' | 'bot';
     timestamp: string;
   }
+  
+  export type UserSummary = {
+    userId: string;
+    username?: string;
+    fullName?: string;
+    avatar?: string;
+  };
+  
+  export type ServerPayload =
+    | { type: "update"; room: string; fileId: string; updateType: string; data: any }
+    | { type: "joined"; room: string; you: UserSummary }
+    | { type: "left"; room: string; you: UserSummary }
+    | { type: "user_joined"; room: string; user: UserSummary }
+    | { type: "user_left"; room: string; user: UserSummary }
+    | { type: "message"; room: string; from: UserSummary; data: any }
+    | { type: "error"; message: string }
+    | { type: string; [k: string]: any }; // fallback
+  
+    export type FileNode = {
+      id: string;
+      name: string;
+      type: 'file' | 'folder';
+      parentId: string | null;
+      children?: FileNode[];
+    }
+    

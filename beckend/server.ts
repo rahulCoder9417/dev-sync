@@ -32,6 +32,9 @@ server.on('upgrade',async (request, socket, head) => {
   try {
     // Verify token
     const claims = await getAuthData(token);
+    if(!claims){
+      throw new Error("User not found");
+    }
     wss.handleUpdate(request, socket, head,claims as UserMeta);
   } catch (err) {
     console.error("Auth error:", err);

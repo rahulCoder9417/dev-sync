@@ -4,10 +4,18 @@ import { ClientMessage, extWebSocket, UserMeta } from "../../types";
 import net from "net";
 import RoomManager from "../utils/roomManager";
 import makeRoomId from "../utils/makeRoomId";
+import { json } from "zod";
+import { deleteFileOrFolder } from "../../lib/action/fileitem/deleteFile";
+import * as Y from "yjs";
 
 export default class WsHandler {
   private wss: WebSocketServer;
+  private docs: Map<string, Y.Doc> = new Map();
+
   private room: RoomManager;
+  private fileVotes: Map<string, Set<string>> = new Map();
+  // key = `${projectId}:${fileId}`, value = set of userIds who voted
+
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
     this.room = new RoomManager();
@@ -18,7 +26,7 @@ export default class WsHandler {
         ws.userId = user.userId;
         ws.username = user.username;
         ws.fullName = user.fullName;
-
+        ws.avatar = user.avatar!;
         ws.isAlive = true;
         ws.on("pong", () => {
           ws.isAlive = true;
@@ -58,6 +66,7 @@ export default class WsHandler {
             userId: ws.userId,
             username: ws.username,
             fullName: ws.fullName,
+            avatar: ws.avatar,
           },
         },
         ws
@@ -80,8 +89,7 @@ export default class WsHandler {
     this.wss.close();
   }
 
-  
-  private handleMessage(ws: extWebSocket, data: RawData) {
+  private async handleMessage(ws: extWebSocket, data: RawData) {
     let parsed: ClientMessage;
     try {
       parsed = JSON.parse(data.toString());
@@ -98,69 +106,165 @@ export default class WsHandler {
     switch (parsed.action) {
       case "join": {
         const { projectId, fileId } = parsed;
-        const room = makeRoomId(ws, projectId, fileId);
+        const room = makeRoomId(projectId, fileId);
         this.room.addToRoom(room, ws);
-        this.room.broadcastToRoom(
-          room,
-          {
-            type: "user_joined",
-            room: room.split("-")[0],
-            user: {
-              userId: ws.userId,
-              username: ws.username,
-              fullName: ws.fullName,
-              projectId: ws.projectId,
-              fileId: ws.fileId,
-            },
-          },
-          ws
-        );
 
-        // Acknowledge to joiner
-        ws.send(
-          JSON.stringify({
-            type: "joined",
-            room,
-            you: {
-              userId: ws.userId,
-              username: ws.username,
-              fullName: ws.fullName,
-            },
-          })
-        );
         break;
       }
 
       case "leave": {
         const { projectId, fileId } = parsed;
-        const room = makeRoomId(ws, projectId, fileId);
+        const room = makeRoomId(projectId, fileId);
         if (!room || typeof room !== "string") {
           ws.send(JSON.stringify({ error: "room_required" }));
           return;
         }
         this.room.removeFromRoom(room, ws);
 
+        break;
+      }
+      case "fileOp": {
+        const { projectId, fileId, type, fileName, fullName, avatar } = parsed;
+        const room = projectId;
+        if (!room || typeof room !== "string") {
+          ws.send(JSON.stringify({ error: "room_required" }));
+          return;
+        }
+
+        // Broadcast the message to the room (including sender)
         this.room.broadcastToRoom(
           room,
           {
-            type: "user_left",
-            room: room.split("-")[0],
-            user: {
+            type: "fileOp",
+            room,
+            from: {
               userId: ws.userId,
               username: ws.username,
               fullName: ws.fullName,
             },
+            projectId: projectId,
+            fileId: fileId,
+            action: type,
+            newNode: parsed.newNode,
+            fileName: fileName,
+            fullName,
+            avatar,
           },
           ws
         );
+        break;
+      }
+      case "cancel_voting": {
+        const { projectId, fileId, fullName } = parsed;
+        const key = `${projectId}:${fileId}:${fullName}`;
+        this.fileVotes.delete(key);
+        break;
+      }
+      case "vote_delete": {
+        const { projectId, fileId, fullName, fileName } = parsed;
+        const key = `${projectId}:${fileId}:${fullName}`;
 
-        ws.send(JSON.stringify({ type: "left", room }));
+        if (!this.fileVotes.has(key)) {
+          this.fileVotes.clear();
+          this.fileVotes.set(key, new Set());
+        }
+
+        const votes = this.fileVotes.get(key)!;
+        votes.add(ws.userId!);
+
+        const roomSize = this.room.getRoomSize(projectId);
+        if (votes.size === roomSize) {
+          this.fileVotes.delete(key);
+          const res = await deleteFileOrFolder(fileId, ws.userId!);
+          if (!res.success) {
+            this.room.broadcastToRoom(projectId, {
+              type: "error",
+              projectId,
+              fileId,
+              message: res.message,
+              fileName,
+            });
+            return;
+          }
+          this.room.broadcastToRoom(projectId, {
+            type: "voting",
+            projectId,
+            fileId,
+            votingBy: key.split(":")[2],
+            fileName,
+            required: roomSize,
+            done: votes.size,
+          });
+          this.room.broadcastToRoom(projectId, {
+            type: "file_deleted",
+            projectId,
+            fileId,
+            deletedBy: key.split(":")[2],
+            fileName,
+          });
+        } else {
+          this.room.broadcastToRoom(projectId, {
+            type: "voting",
+            projectId,
+            fileId,
+            votingBy: key.split(":")[2],
+            fileName,
+            required: roomSize,
+            done: votes.size,
+          });
+        }
+
         break;
       }
 
+      case "update" :{
+        const {projectId,fileId,data,updateType} = parsed
+        console.log(updateType)
+        const room = makeRoomId(projectId, fileId);
+        this.room.broadcastToRoom(
+          room,
+          {
+          type:"update",
+          room,
+          fileId,
+           updateType,
+          data,
+        },
+        ws
+      )
+        break;
+      }
+
+      case "sync":{
+        const {projectId,fileId,} = parsed
+        let owner = this.room.getRoomUsers(makeRoomId(projectId, fileId))[0]
+        console.log(owner)
+        if(owner && owner.userId !== ws.userId){
+          owner.send(JSON.stringify({
+            type:"sync",
+            room:makeRoomId(projectId, fileId),
+            fileId,
+            to:ws.userId
+          }))
+        }
+        break
+      }
+       case "syncedData":{
+        const {projectId,fileId,data,updateType,include} = parsed
+        let isIn = this.room.getRoomUsers(makeRoomId(projectId, fileId)).find((user)=>user.userId === include)
+        if(!isIn)break
+        isIn.send(JSON.stringify({
+          type:"update",
+          room:makeRoomId(projectId, fileId),
+          data,
+          fileId,
+          updateType
+        })) 
+        break
+      }
       case "message": {
         const { projectId, fileId, data } = parsed;
-        const room = makeRoomId(ws, projectId, fileId);
+        const room = makeRoomId(projectId, fileId);
         if (!room || typeof room !== "string") {
           ws.send(JSON.stringify({ error: "room_required" }));
           return;
