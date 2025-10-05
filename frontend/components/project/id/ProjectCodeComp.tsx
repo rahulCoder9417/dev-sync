@@ -38,45 +38,11 @@ export const mockUsers: any[] = [
 ];
 
 
-   const mockChatMessages: ChatMessage[] = [
-  {
-    id: '1',
-    text: 'Hello! How can I help you with your code today?',
-    sender: 'bot',
-    timestamp: "12:05"
-  },
-  {
-    id: '2',
-    text: 'I need help with React components',
-    sender: 'user',
-    timestamp: "12:05"
-  },
-  {
-    id: '3',
-    text: 'Id be happy to help! What specifically would you like to know about React components?',
-    sender: 'bot',
-    timestamp: "12:05"
-  },
-  {
-    id: '4',
-    text: 'How do I pass props between components?',
-    sender: 'user',
-    timestamp: "12:05"
-  },
-  {
-    id: '5',
-    text: 'Great question! You can pass props by adding attributes to your JSX elements. For example: ---',
-    sender: 'bot',
-    timestamp: "12:05"
-  }
-];
-
 export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
   const [errorMarkers,setErrorMarkers] = useState<Record<string, boolean> | null>(null)
   const [files, setFiles] = useState<FileNode[]>(data?.files!);
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [updatedTabs, setupdatedTabs] = useState<Record<string, string>[]>([])
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockChatMessages);
   const [visibleSection, setVisibleSection] = useState<{file: boolean; code: boolean; ai: boolean; preview: boolean;}>({
     file: true,
     code: true,
@@ -167,36 +133,6 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
 
 
 
-  const handleSendMessage = (message: string) => {
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      text: message,
-      sender: 'user',
-      timestamp: "12:05"
-    };
-
-    setChatMessages(prev => [...prev, userMessage]);
-
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponses = [
-        "I can help you with that! Let me analyze your code.",
-        "That's a great question! Here's what I think...",
-        "I see you're working on React components. Would you like some suggestions?",
-        "Based on your code, I recommend using TypeScript interfaces for better type safety.",
-        "Let me help you debug that issue. Can you show me the specific error?"
-      ];
-
-      const botMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        text: botResponses[Math.floor(Math.random() * botResponses.length)],
-        sender: 'bot',
-        timestamp: "12:05"
-      };
-
-      setChatMessages(prev => [...prev, botMessage]);
-    }, 1000);
-  };
 
   useEffect(()=>{
     console.log(status)
@@ -259,7 +195,7 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
 
         {(visibleSection.ai && data?.isTeamMember) && (
           <div className="w-[25%] max-md:w-1/2 min-w-[300px]">
-            <ChatBot messages={chatMessages} onSendMessage={handleSendMessage} />
+            <ChatBot />
           </div>
         )}
       </div>
