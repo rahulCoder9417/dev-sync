@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 
 import MaxWidth from "@/components/main/MaxWidth";
 import HeaderHome from "@/components/root/HeaderHome";
