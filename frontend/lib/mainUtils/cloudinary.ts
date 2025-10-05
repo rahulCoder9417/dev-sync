@@ -25,8 +25,8 @@ export async function uploadToCloudinary({
   filename,
   folder = '/',
   type,
-}: UploadOptions): Promise<any> {
-  return new Promise((resolve, reject) => {
+}: UploadOptions): Promise<{ success: boolean; secure_url?: string; public_id?: string; error?: string }> {
+  return new Promise((resolve) => {
     try {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -36,25 +36,22 @@ export async function uploadToCloudinary({
           overwrite: true,
         },
         (err, result) => {
-          if (err || !result) return reject(err || new Error('No result from Cloudinary'));
-          resolve({
-            secure_url: result.secure_url,
-            public_id: result.public_id,
-          });
+          if (err || !result) {
+            return resolve({ success: false, error: err?.message || 'No result from Cloudinary' });
+          }
+          resolve({ success: true, secure_url: result.secure_url, public_id: result.public_id });
         }
       );
-
-      // Catch stream pipe errors
-      uploadStream.on('error', (streamErr) => {
-        reject(new Error(`Stream error: ${streamErr.message}`));
+      uploadStream.on('error', (err) => {
+        resolve({ success: false, error: err.message || 'Cloudinary stream error' });
       });
-
       uploadStream.end(buffer);
-    } catch (error :any) {
-      reject(new Error(`Upload crashed: ${error.message || String(error) }`));
+    } catch (error: any) {
+      resolve({ success: false, error: error.message || String(error) });
     }
   });
 }
+
 
 
 

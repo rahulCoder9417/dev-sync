@@ -10,22 +10,17 @@ export const RecentProjects = async() => {
   const op = await getProjects({limit:3,type:"recent"})
   if(op.length ===0)return
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          Recent Projects
-        </h2>
-      </div>
+    
+      
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* @ts-ignore */}
         {op.map((project,index) => (
           
-          <Link  key={index} href={`/projects/${project.id}`}>
+          <Link  key={index} href={`/projects/${project.id}`} prefetch={true}>
           <ProjectCard project={project} /> 
           </Link>
         ))}
       </div>
-    </div>
   );
 };

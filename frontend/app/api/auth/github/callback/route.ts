@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import  db  from '@/lib/db/prisma' // Your Prisma client
 import {  currentUser } from '@clerk/nextjs/server'
-
+import { encrypt } from '@/lib/mainUtils/crypto'
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const code = searchParams.get('code')
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
 
   const res = await db.user.update({
     where: { email: user.emailAddresses[0].emailAddress  },
-    data: { githubUrl: accessToken },
+    data: { githubUrl: encrypt(accessToken) },
   })
   return NextResponse.redirect(process.env.NEXT_PUBLIC_BASE_URL +'/dashboard') 
 }

@@ -2,6 +2,7 @@
 
 import prisma from '@/lib/db/prisma'
 import { z } from 'zod'
+import { middleWare } from '@/lib/mainUtils/beckendMiddleWare';
 
 const createFileItemSchema = z.object({
   name: z.string().min(1),
@@ -18,6 +19,9 @@ export async function createFileItem(data: {
   projectId: string
   parentId?: string | null
 }) {
+    const dbUser = await middleWare()
+    if(!dbUser) throw new Error("Unauthorized")
+
   const validated = createFileItemSchema.safeParse(data)
 
   if (!validated.success) {

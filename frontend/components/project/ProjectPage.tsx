@@ -40,7 +40,7 @@ interface Props {
   teamInfo: TeamType["team"]
 }
 
-export default function ProjectPage({ project, teamInfo }: Props) {
+export default function  ProjectPage({ project, teamInfo }: Props) {
 
   const stateUser = useAppSelector((s) => s.user);
 
@@ -258,7 +258,7 @@ useEffect(() => {
           {/* Action Buttons */}
           <div className="flex gap-3 mb-6">
             {(projectData.type !== "PRIVATE" || userStatus === "member" || projectData.isOwner) &&
-              <Link href={`/projects/get/${projectData.id}`}>
+              <Link prefetch={true} href={`/projects/get/${projectData.id}`}>
                 <button className="bg-brand text-white px-4 py-2 cursor-pointer rounded-md hover:opacity-90 transition-opacity flex items-center gap-2">
                   <Code className="w-4 h-4" />
                   Show Code Now

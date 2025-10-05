@@ -3,7 +3,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface PresenceState {
     projects: Record<
       string, 
-      { type: string; name?: string; newNode?: FileNode; id: string }[]
+      { type: string; name?: string; newNode?: FileNode; id: string,content?:string }[]
     >;
   }
 
@@ -14,13 +14,14 @@ const initialState: PresenceState = {
 interface UpdateFileOpPayload {
     type:string,name?:string,newNode?:FileNode,id:string
     projectId:string
-}
+    content?:string
+    }
 const fileOpSlice = createSlice({
   name: "fileOp",
   initialState,
   reducers: {
     addFileOp: (state, action: PayloadAction<UpdateFileOpPayload>) => {
-      const { type, name, id, newNode, projectId } = action.payload;
+      const { type, name, id, newNode, projectId,content } = action.payload;
       if (!state.projects[projectId]) state.projects[projectId] = [];
 
       switch (type) {
@@ -29,6 +30,9 @@ const fileOpSlice = createSlice({
           break;
         case "create":
           state.projects[projectId].push({ type, id, newNode });
+          break;
+        case "save":
+          state.projects[projectId].push({ type, id,content });
           break;
         case "delete":
           state.projects[projectId].push({ type, id });

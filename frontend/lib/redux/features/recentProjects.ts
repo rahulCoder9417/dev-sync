@@ -1,11 +1,22 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface Rec  {
-  id: string
-  title: string
-  description: string | null
-  framework: string
-  type: string
+  id: string;
+  title: string;
+  description: string |null;
+  framework: string;
+  lastUpdated: string;
+  type: "PUBLIC" | "PRIVATE" |"GENRATED";
+  isStared?: boolean;
+  isGitImport?: boolean;
+  isArchived?: boolean;
+  collaborators: Collaborator[];
+}
+
+interface Collaborator {
+  id: string;
+  fullName: string;
+  email: string;
 }
 
 const initialState:Rec[] = [{
@@ -13,7 +24,9 @@ const initialState:Rec[] = [{
     title: "",
     description: null ,
     framework: "",
-    type: "",
+    type: "PUBLIC",
+    collaborators: [],
+    lastUpdated: "",
 }];
 
 const recentSlice = createSlice({

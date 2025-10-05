@@ -7,9 +7,6 @@ import Link from "next/link";
 
 export  async function StatsCards() {
   const stats = await getUserProjectStats();
-
-  
-
   const cards = [
     {
       title: "Archeive Projects",
@@ -53,7 +50,7 @@ export  async function StatsCards() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
         {stats ?         cards.map((stat) => (
-          <Link   key={stat.title} href={`/projects${stat.filter}`}>
+          <Link  prefetch={true} key={stat.title} href={`/projects${stat.filter}`}>
           <div
           
             className="p-6 rounded-xl cursor-pointer border transition-all hover:shadow-lg hover:scale-105 card-gradient"

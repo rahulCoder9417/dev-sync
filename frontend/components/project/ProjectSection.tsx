@@ -6,12 +6,16 @@ import { Project, ProjectCard } from "@/components/project/ProjectCard";
 import Link from 'next/link';
 import { getProjects } from '@/lib/actions/projects/getProject';
 import { useSearchParams } from 'next/navigation';
-type Props = {
-  allProjects: Project[];
-};
 
-const ProjectSection = ({ allProjects }: Props) => {
-    
+const ProjectSection = () => {
+    const [allProjects , setAllProject] = useState<Project[] >([])
+    useEffect(() => {
+        const fetchProjects = async () => {
+            const projects = await getProjects({ type: "recent" });
+            setAllProject(projects);
+        };
+        fetchProjects();
+    }, []);
   const searchParams = useSearchParams();
 
   const filterParam = searchParams.get("filter"); 
@@ -25,6 +29,7 @@ const ProjectSection = ({ allProjects }: Props) => {
       };
   }, [filterParam, allProjects]);
     const [starred, setStarred] = useState<Project[] | null>(null)
+    const [message, setMessage] = useState("Getting projects")
     const [showFiltered, setshowFiltered] = useState(false);
     const [filteredProjects, setFilteredProjects] = useState(allProjects);
     const uniqueFrameworks:string[] = [...new Set(allProjects.map(i => i.framework))];
@@ -42,19 +47,22 @@ const ProjectSection = ({ allProjects }: Props) => {
         } else if (filter === "genrated") {
           filtered = allProjects.filter(p => p.type === "GENRATED");
       
-        } else if (filter === "archieve") {
+        }  else if (filter === "none") {
+          filtered = [];
+      
+        }else if (filter === "archieve") {
           filtered = allProjects.filter(p => p.isArchived === true);
       
         } else if (filter === "gitImport") {
           filtered = allProjects.filter(p => p.isGitImport === true);
         } else if (filter === "starred") {
+          setMessage("Getting Starred Projects")
           if (!starred) {
             filtered = await getProjects({ type: "starred" });
             setStarred(filtered);
           } else {
             filtered = starred;
           }
-      
         } else if (uniqueFrameworks.includes(filter)) {
           filtered = allProjects.filter(p => p.framework === filter);
       
@@ -62,12 +70,13 @@ const ProjectSection = ({ allProjects }: Props) => {
           filtered = allProjects;
         }
       
+        filtered.length === 0 && setMessage("No Projects Found") 
         setFilteredProjects(filtered);
       };
       
 
     const displayProjects = showFiltered ? filteredProjects : allProjects;
-
+   
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
@@ -81,7 +90,7 @@ const ProjectSection = ({ allProjects }: Props) => {
                     )}
 
                     <button
-                        onClick={() => setshowFiltered(!showFiltered)}
+                        onClick={() => {setshowFiltered(!showFiltered);!showFiltered && setFilteredProjects(allProjects)}}
                         className="text-sm font-medium hover:underline transition-colors"
                         style={{ color: 'var(--brand-primary)' }}
                     >
@@ -102,7 +111,7 @@ const ProjectSection = ({ allProjects }: Props) => {
             {displayProjects.length === 0 && (
                 <div className="text-center py-12">
                     <p style={{ color: 'var(--text-secondary)' }}>
-                        No projects found matching your filter.
+                        {message}
                     </p>
                 </div>
             )}
@@ -110,4 +119,4 @@ const ProjectSection = ({ allProjects }: Props) => {
     )
 }
 
-export default ProjectSection
+export default React.memo(ProjectSection)

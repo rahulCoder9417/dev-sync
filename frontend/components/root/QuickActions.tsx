@@ -6,21 +6,25 @@ const actions = [
   {
     title: "Create Project",
     icon: Plus,
+    href:"/projects/create",
     color: "var(--brand-primary)"
   },
   {
     title: "Import Repository", 
     icon: GitBranch,
+    href:"/projects/create/git",
     color: "var(--success)"
   },
   {
     title: "Join Team",
     icon: Users,
+    href:"/dashboard",
     color: "var(--warning)"
   },
   {
     title: "Browse Templates",
     icon: Star,
+    href:"/dashboard",
     color: "var(--brand-accent)"
   }
 ];
@@ -35,7 +39,8 @@ export const QuickActions = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {actions.map((action) => (
           <Link 
-          key={action.title} href={"/projects/create"}>
+          prefetch={true}
+          key={action.title} href={action.href}>
           <div
             className="p-8 rounded-xl border transition-all hover:shadow-lg hover:scale-105 cursor-pointer card-gradient text-center"
             style={{ borderColor: 'var(--border-primary)' }}

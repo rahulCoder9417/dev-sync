@@ -4,12 +4,10 @@ import { Button } from "@/components/ui/button";
 import LaptopNotify from "@/components/main/AvatarNotify";
 import Link from "next/link";
 import ProjectSection from "@/components/project/ProjectSection";
-import { getProjects } from "@/lib/actions/projects/getProject";
-import { Project } from "@/components/project/ProjectCard";
+import { Suspense } from "react";
 
 
 const Index = async() => {
-  let allProject :Project[] = await getProjects({type:"recent"})
   return (
     <div className="min-h-screen w-full" style={{ background: 'var(--bg-primary)' }}>
       
@@ -24,7 +22,9 @@ const Index = async() => {
             Manage and organize your development projects
           </p>
           </span>
+          <Suspense fallback={<div>Loading...</div>}>
           <LaptopNotify/>
+          </Suspense>
         </div>
 
         {/* Create Project Section */}
@@ -47,7 +47,7 @@ const Index = async() => {
               >
                 <FolderPlus className="w-5 h-5" />
                 
-                <Link href={"/projects/create"}>
+                <Link href={"/projects/create"} prefetch={true}>
                 Create New Project
                 </Link>
               </Button>
@@ -62,7 +62,7 @@ const Index = async() => {
                 }}
               >
                 <Github className="w-5 h-5" />
-                <Link href={"/projects/create/git"}>
+                <Link href={"/projects/create/git"} prefetch={true}>
                 Import from Git
                 </Link>
               </Button>
@@ -71,7 +71,7 @@ const Index = async() => {
         </div>
 
         {/* Projects Section */}
-        <ProjectSection allProjects={[...allProject]} />
+        <ProjectSection  />
 
       </div>
     </div>

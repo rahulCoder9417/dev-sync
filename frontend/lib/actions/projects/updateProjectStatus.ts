@@ -1,7 +1,7 @@
 "use server";
 
 import db from "@/lib/db/prisma";
-import { currentUser } from "@clerk/nextjs/server";
+import { middleWare } from "@/lib/mainUtils/beckendMiddleWare";
 
 type UpdateAction = "star" | "archive" | "toggleType" | "name";
 
@@ -17,20 +17,8 @@ export const updateProjectStatus = async ({
   description?:string | null;
 }) => {
   try {
-    const user = await currentUser();
-    if (!user || !user.emailAddresses?.[0]?.emailAddress) {
-      throw new Error("Unauthorized");
-    }
-
-    const email = user.emailAddresses[0].emailAddress;
-
-    const dbUser = await db.user.findUnique({
-      where: { email },
-    });
-
-    if (!dbUser) {
-      throw new Error("User not found");
-    }
+   const dbUser = await middleWare()
+   if(!dbUser) throw new Error("Unauthorized")
 
     const project = await db.project.findUnique({
       where: { id: projectId },

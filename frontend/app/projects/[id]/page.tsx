@@ -9,7 +9,7 @@ interface PageProps {
 
 export default async function ProjectRoute({ params}: PageProps) {
 let projectData ,teamData;
-const id =  params.id;
+const id = await  params.id;
   try {
      [projectData, teamData] = await Promise.all([
     getSingleProject(id),

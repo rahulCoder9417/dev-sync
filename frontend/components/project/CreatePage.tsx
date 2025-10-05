@@ -12,14 +12,16 @@ import { showToast } from "@/components/main/Toast";
 import Avatar from "@/components/main/Avatar";
 import { FriendsGet } from "@/types";
 import { CreateProjectInput } from "@/lib/actions/projects/makeProject";
+
 interface props{
-  friends : FriendsGet | []
   action:(data: CreateProjectInput) => Promise<any>
 }
-const CreateProject = ({friends,action}:props) => {
+
+const CreateProject = ({ action }: props) => {
   const navigate = useRouter();
+  const [friends, setFriends] = useState<FriendsGet | [] | null>(null);
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -28,44 +30,58 @@ const CreateProject = ({friends,action}:props) => {
     members: [{}]
   });
 
-  
+  // Fetch friends on mount
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        const res = await fetch("/api/user/findFriend"); // your API route
+        if (!res.ok) throw new Error("Failed to fetch friends");
+        const data: FriendsGet = await res.json();
+        setFriends(data);
+      } catch (err) {
+        console.error(err);
+        showToast(false, "Error", "Could not load friends");
+      }
+    };
+
+    fetchFriends();
+  }, []);
+
   const toggleFriendSelection = (id: string) => {
     setSelectedFriends(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
 
-
-  const handleSubmit = async(e: React.FormEvent) => {
-
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    setIsSubmitting(true)
-    if (formData.name.length===0 || formData.packages.length===0) {
-      showToast(false,"Missing Info","Give more Details,mention name and language",);
-      setIsSubmitting(false)
+    setIsSubmitting(true);
+    if (formData.name.length === 0 || formData.packages.length === 0) {
+      showToast(false,"Missing Info","Give more Details,mention name and language");
+      setIsSubmitting(false);
       return;
     }
     
-const members = selectedFriends.map(id => ({ userId: id }));
-const finalData = {
-  ...formData,
-  members,
-};
+    const members = selectedFriends.map(id => ({ userId: id }));
+    const finalData = {
+      ...formData,
+      members,
+    };
+
     try {
       const res = await action(finalData as CreateProjectInput);
       showToast(true, "Project Created!", `${formData.name} created successfully.`);
       navigate.push(`/projects/${res.projectId}`);
     } catch (err) {
       showToast(false, "Error", "Failed to create project."+ String(err));
-      console.log(err)
+      console.log(err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleInputChange = (field: string, value: string) => {
-
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -75,9 +91,9 @@ const finalData = {
         {/* Header */}
         <div className="mb-8">
           <Button
-            variant="ghost"
+            variant="default"
             onClick={() => navigate.push("/projects")}
-            className="mb-4 p-0 h-auto font-normal"
+            className="mb-4 p-3 cursor-pointer h-auto font-normal"
             style={{ color: 'var(--text-secondary)' }}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -113,10 +129,7 @@ const finalData = {
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   placeholder="Enter project name"
                   className="bg-transparent border-gray-600"
-                  style={{ 
-                    borderColor: 'var(--border-primary)',
-                    color: 'var(--text-primary)'
-                  }}
+                  style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                 />
               </div>
 
@@ -131,10 +144,7 @@ const finalData = {
                   onChange={(e) => handleInputChange("description", e.target.value)}
                   placeholder="Describe your project"
                   className="bg-transparent border-gray-600 resize-none"
-                  style={{ 
-                    borderColor: 'var(--border-primary)',
-                    color: 'var(--text-primary)'
-                  }}
+                  style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                   rows={3}
                 />
               </div>
@@ -145,18 +155,10 @@ const finalData = {
                   Main Language *
                 </Label>
                 <Select onValueChange={(value) => handleInputChange("packages", value)}>
-                  <SelectTrigger 
-                    className="bg-transparent cursor-pointer"
-                    style={{ 
-                      borderColor: 'var(--border-primary)',
-                      color: 'var(--text-primary)'
-                    }}
-                  >
+                  <SelectTrigger className="bg-transparent cursor-pointer" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}>
                     <SelectValue placeholder="Select main language" />
                   </SelectTrigger>
-                  <SelectContent className=" bg-secondary text-primary cursor-pointer border-primary" 
-                  
-                  >
+                  <SelectContent className=" bg-secondary text-primary cursor-pointer border-primary">
                     <SelectItem value="Ts">TypeScript</SelectItem>
                     <SelectItem value="Js">JavaScript</SelectItem>
                     <SelectItem value="Python">Python</SelectItem>
@@ -165,7 +167,6 @@ const finalData = {
                     <SelectItem value="PHP">PHP</SelectItem>
                     <SelectItem value="Go">Go</SelectItem>
                     <SelectItem value="Rust">Rust</SelectItem>
-                    
                     <SelectItem value="React">React</SelectItem>
                     <SelectItem value="Vue">Vue.js</SelectItem>
                     <SelectItem value="Angular">Angular</SelectItem>
@@ -179,7 +180,6 @@ const finalData = {
                 </Select>
               </div>
 
-
               {/* Visibility */}
               <div className="space-y-2">
                 <Label style={{ color: 'var(--text-primary)' }}>
@@ -187,9 +187,7 @@ const finalData = {
                 </Label>
                 <div className="space-y-3">
                   <div 
-                    className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${
-                      formData.type === "PUBLIC" ? "border-blue-500 bg-[var(--bg-hover)] " : "bg-transparent border-[var(--border-primary)]"
-                    }`}
+                    className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${formData.type === "PUBLIC" ? "border-blue-500 bg-[var(--bg-hover)] " : "bg-transparent border-[var(--border-primary)]"}`}
                     onClick={() => handleInputChange("type", "PUBLIC")}
                   >
                     <Globe className="w-5 h-5 mt-0.5" style={{ color: 'var(--brand-primary)' }} />
@@ -204,9 +202,7 @@ const finalData = {
                   </div>
                   
                   <div 
-                    className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${
-                      formData.type === "PRIVATE" ? "border-blue-500 bg-[var(--bg-hover)] " : "bg-transparent border-[var(--border-primary)]"
-                    }`}
+                    className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${formData.type === "PRIVATE" ? "border-blue-500 bg-[var(--bg-hover)] " : "bg-transparent border-[var(--border-primary)]"}`}
                     onClick={() => handleInputChange("type", "PRIVATE")}
                   >
                     <Lock className="w-5 h-5 mt-0.5" style={{ color: 'var(--warning)' }} />
@@ -222,23 +218,23 @@ const finalData = {
                 </div>
               </div>
 
+              {/* Team Members */}
               <div className="space-y-2">
-                  <Label className="text-primary">Select Team Members</Label>
-                  <div className="flex flex-wrap gap-4 pt-2  text-secondary">
-                    {friends?.length !==0 ?friends.map(friend => (
-                      <button
-                      
-                        type="button"
-                        key={friend.id}
-                        onClick={() => toggleFriendSelection(friend.id)}
-                        className={`rounded-full cursor-pointer size-10 flex items-center justify-center transition ${selectedFriends.includes(friend.id) ? 'ring-2 ring-blue-500' : ''}`}
-                      >
-                        <Avatar className="!w-10 !text-lg h-10" fullName={friend.fullName} avatar={friend.avatar} />
-                      </button>
-                    )):"You got no friends to add nigga"}
-                  </div>
+                <Label className="text-primary">Select Team Members</Label>
+                <div className="flex flex-wrap gap-4 pt-2 text-secondary">
+
+                  {friends?.length !== 0 ? friends?.map(friend => (
+                    <button
+                      type="button"
+                      key={friend.id}
+                      onClick={() => toggleFriendSelection(friend.id)}
+                      className={`rounded-full cursor-pointer size-10 flex items-center justify-center transition ${selectedFriends.includes(friend.id) ? 'ring-2 ring-blue-500' : ''}`}
+                    >
+                      <Avatar className="!w-10 !text-lg h-10" fullName={friend.fullName} avatar={friend.avatar} />
+                    </button>
+                  )) :friends===null ? "Fetching friends..." : "You have no friends to add"}
                 </div>
-              
+              </div>
 
               {/* Submit Button */}
               <div className="flex justify-end space-x-4 pt-4">

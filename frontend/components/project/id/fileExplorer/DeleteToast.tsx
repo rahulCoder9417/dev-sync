@@ -1,14 +1,14 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { useAppDispatch } from "@/lib/redux/hooks"
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 
 interface DeleteToastProps {
   fileName: string
   fileId:string
   confirm?: () => void
-  done:number
+  done:string[]
   total: number
   fullName:string
   setdeletionMenu: (menu: any) => void
@@ -25,16 +25,17 @@ export function DeleteToast({
   fullName,
   projectId,
 }: DeleteToastProps) {
-  const progress = Math.min((done  / total) * 100, 100)
-
+  const progress = Math.min((done.length  / total) * 100, 100)
+let userId = useAppSelector((state) => state.user.id)
+const [click, setclick] = useState(false)
   // Auto-dismiss when done
   useEffect(() => {
-    if (done >= total) {
-      const timer = setTimeout(() => {
-        setdeletionMenu(null)
-      }, 2000)
-      return () => clearTimeout(timer)
+    console.log(done)
+    if(done && Array.isArray(done) && done.includes(userId)){
+      setclick(true)
     }
+   
+    
   }, [done, total])
 if(!done)return null
   return (
@@ -46,7 +47,7 @@ if(!done)return null
           </p>
           <button
             onClick={()=>setdeletionMenu(null)}
-            className="text-gray-400 hover:text-white text-xs"
+            className="text-gray-400 hover:text-white text-xs cursor-pointer" 
           >
             ✕
           </button>
@@ -59,18 +60,18 @@ if(!done)return null
         <div className="mt-3">
           <div className="flex justify-between text-xs mb-1 text-gray-400">
             <span>
-              {done}/{total} confirmed
-            </span>
+              {done.length}/{total} confirmed
+            </span> 
           </div>
           <div className="h-2 bg-[#2d3348] rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
-              transition={{ ease: "easeOut", duration: 0.5 }}
+              transition={{ ease: "easeOut", duration: 0.5 }} 
               className="h-2 bg-red-500"
             />
           </div>
-          {confirm && <button onClick={confirm} className="text-xs text-gray-400 mt-1">Confirm</button>}
+          {( !click)&& <button onClick={()=>{confirm!();done.push(userId);setclick(true)}} className="text-xs text-gray-400 cursor-pointer mt-1">Confirm</button>}
         </div>
       </div>
     </div>

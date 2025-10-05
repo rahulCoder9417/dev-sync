@@ -1,31 +1,23 @@
-// hooks/useCollab.ts
+"use client"
 import { showToast } from "@/components/main/Toast";
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { ServerPayload, UserSummary } from "@/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { updatePresence } from "@/lib/redux/features/collabCodeUserState";
-import { addFileOp,  } from "@/lib/redux/features/collabCodeFileOp";
+import { changeAdmin, updatePresence } from "@/lib/redux/features/collabCodeUserState";
+import { addFileOp } from "@/lib/redux/features/collabCodeFileOp";
 import { updateCode } from "@/lib/redux/features/collabCodeEditorUpdate";
+import { parseRoomKey ,makeRoomKey} from "@/lib/mainUtils/roomParser";
 
-/**
- * Assumptions:
- * - Your app will provide a valid JWT token (string) from e.g. cookies/localStorage or next-auth.
- * - The WS server url is in process.env.NEXT_PUBLIC_WS_URL
- *
- * Usage: const collab = useCollab({ token, onServerEvent });
- */
-
-// --- Types (lightweight, match server messages)
 export type ClientMessage =
   | { action: "join"; projectId: string; fileId?: string | null }
   | { action: "leave"; projectId: string; fileId?: string | null }
   | { action: "message"; projectId: string; fileId?: string | null; data: any }
-  | { action: string; [k: string]: any }; // fallback
+  | { action: string; [k: string]: any };
 
 type UseCollabOptions = {
-  autoConnect?: boolean; // default true
-  wsUrl?: string; // override e.g. process.env.NEXT_PUBLIC_WS_URL
+  autoConnect?: boolean;
+  wsUrl?: string;
   onEvent?: (payload: ServerPayload) => void;
   maxReconnectAttempts?: number;
 };
@@ -43,20 +35,28 @@ export default function useCollab(opts: UseCollabOptions = {}) {
     "idle" | "connecting" | "connected" | "closed" | "error" | "reconnecting"
   >("idle");
   const [messages, setMessages] = useState<ServerPayload[]>([]);
+  const [readyState, setReadyState] = useState<boolean>(false);
   const [participants, setParticipants] = useState<Record<string, UserSummary>>(
     {}
   );
-  const [deletionMenu, setdeletionMenu] = useState<{id:string,fileId:string,fileName:string,votingBy:string,required:number,done:number} | null>(null);
+  const [deletionMenu, setdeletionMenu] = useState<{
+    id: string;
+    fileId: string;
+    fileName: string;
+    votingBy: string;
+    required: number;
+    done: string[];
+  } | null>(null);
   const participantsRef = useRef<number>(0);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectAttempts = useRef(0);
   const manualClose = useRef(false);
 
-  const { getToken } = useAuth();
+  const { getToken } = useAuth(); //clerk setup
 
   // ---------- utils + setup ----------
   const buildWsUrl = useCallback(async () => {
-    const token = await getToken({ template: "beckend-email-get" });
+    const token = await getToken({ template: "beckend-email-get" }); //check env sample for more details
     if (!wsUrl) {
       showToast(false, "WebSocket URL not configured (NEXT_PUBLIC_WS_URL).");
       return;
@@ -79,165 +79,202 @@ export default function useCollab(opts: UseCollabOptions = {}) {
       return next;
     });
   }, []);
-  
+
   // ----------------- Incoming payload buffering -----------------
   // Queue incoming payloads and process them in a macrotask so dispatches occur after render
   const pendingPayloadsRef = useRef<ServerPayload[]>([]);
   const payloadFlushScheduledRef = useRef<number | null>(null);
   const deletionRef = useRef<number>(-1);
   // Move the switch-case payload processor here (it does the actual state updates)
-  // Replace your current processPayload with this version
-const processPayload = useCallback(
-  (payload: ServerPayload) => {
-    // Small debug log (optional)
-    // console.log("[useCollab] processPayload enqueued", payload.type, performance.now());
-
-    // Define the actual state-updating work in a function we will defer.
-    const performUpdates = () => {
-      try {
-        switch (payload.type) {
-          case "update":
-            console.log(payload)
-            dispatch(updateCode({
-              fileId: payload.fileId,
-              type: payload.updateType,
-              data: payload.data,
-            }))
-            break;
+  const processPayload = useCallback(
+    (payload: ServerPayload) => {
+      const performUpdates = () => {
+        try {
+          switch (payload.type) {
+            case "update":
+              dispatch(
+                updateCode({
+                  fileId: payload.fileId,
+                  type: payload.updateType,
+                  data: payload.data,
+                })
+              );
+              break;
             case "sync":
-              dispatch(updateCode({
+              dispatch(
+                updateCode({
+                  fileId: payload.fileId,
+                  type: "sync",
+                  data: payload.to,
+                })
+              );
+              break;
+            case "file_deleted":
+              setTimeout(() => {
+                setdeletionMenu(null)
+              }, 500)
+              showToast(
+                true,
+                "File deleted by" +
+                  payload.deletedBy +
+                  "on file" +
+                  payload.fileName
+              );
+              dispatch(
+                addFileOp({
+                  type: "delete",
+                  name: payload.fileName,
+                  id: payload.fileId,
+                  projectId: payload.projectId,
+                })
+              );
+              break;
+            case "voting":
+              setdeletionMenu({
+                id: payload.fileId,
                 fileId: payload.fileId,
-                type: "sync",
-                data: payload.to,
-              }))
-            break;
-          case "file_deleted":
-            showToast(true, "File deleted by" +payload.deletedBy + "on file" + payload.fileName);
-            dispatch(addFileOp({
-              type:"delete",
-              name:payload.fileName,
-              id:payload.fileId,
-              projectId:payload.projectId
-            }))
-            break;
-          case "voting":
-console.log(payload)
-            setdeletionMenu({id:payload.fileId,fileId:payload.fileId,fileName:payload.fileName,votingBy:payload.votingBy,required:payload.required,done:payload.done})
-            break;
-          case "fileOp":
-          showToast(true, "File Operation " + payload.action +" done by" +payload.from.fullName + "on file" + payload.fileName);
-          dispatch(addFileOp({
-            type:payload.action,
-            name:payload.fileName,
-            id:payload.fileId,
-            newNode:payload.newNode,
-            projectId:payload.projectId
-          }))
-            break
-          case "user_joined":
-            setParticipants((prev) => ({
-              ...prev,
-              [payload.user.userId]: payload.user,
-            }));
-            showToast(true, "User Joined", payload.user.fullName + payload.room);
-            dispatch(
-              updatePresence({
-                projectId: payload.user.projectId,
-                fileId: payload.user.fileId || null,
-                userId: payload.user.userId,
-                avatar: payload.user.avatar,
-                fullName: payload.user.fullName,
-                action: "join",
-              })
-            );
-            !payload.room.includes(":")&& participantsRef.current++ 
-            break;
+                fileName: payload.fileName,
+                votingBy: payload.votingBy,
+                required: payload.required,
+                done: payload.done,
+              });
+              break;
+            case "fileOp":
+              showToast(
+                true,
+                "File Operation " +
+                  payload.action +
+                  " done by" +
+                  payload.from.fullName +
+                  "on file" +
+                  payload.fileName
+              );
+              dispatch(
+                addFileOp({
+                  type: payload.action,
+                  content:payload.content,
+                  name: payload.fileName,
+                  id: payload.fileId,
+                  newNode: payload.newNode,
+                  projectId: payload.projectId,
+                })
+              );
+              break;
+            case "user_joined":
+              // showToast(true,"User joined " + payload.user.fullName)
+              // setParticipants((prev) => ({
+              //   ...prev,
+              //   [payload.user.userId]: payload.user,
 
-          case "user_left":
-            showToast(true, "User left", payload.user.fullName + payload.room);
-            setParticipants((prev) => {
-              const copy = { ...prev };
-              delete copy[payload.user.userId];
-              return copy;
-            });
-            dispatch(
-              updatePresence({
-                projectId: payload.user.projectId,
-                fileId: payload.user.fileId || null,
-                userId: payload.user.userId,
-                avatar: payload.user.avatar,
-                fullName: payload.user.fullName,
-                action: "leave",
-              })
-            );
-            !payload.room.includes(":")&& participantsRef.current--
-            break;
+              // }));
+              dispatch(
+                updatePresence({
+                  projectId: payload.user.projectId,
+                  fileId: payload.user.fileId || null,
+                  userId: payload.user.userId,
+                  avatar: payload.user.avatar,
+                  fullName: payload.user.fullName,
+                  action: "join",
+                })
+              );
+              !payload.room.includes(":") && participantsRef.current++;
+              break;
 
-          case "joined":
-            showToast(true, "you Joined", payload.you.fullName + payload.room);
-            setParticipants((prev) => ({
-              ...prev,
-              [payload.you.userId]: payload.you,
-            }));
-            dispatch(
-              updatePresence({
-                projectId: payload.you.projectId,
-                fileId: payload.you.fileId || null,
-                userId: payload.you.userId,
-                avatar: payload.you.avatar,
-                fullName: payload.you.fullName,
-                action: "join",
-              })
-            );
-            !payload.room.includes(":")&& participantsRef.current++
-            break;
+            case "user_left":
+         //     showToast(true,"User left " + payload.user.fullName)
+              // setParticipants((prev) => {
+              //   const copy = { ...prev };
+              //   delete copy[payload.user.userId];
+              //   return copy;
+              // });
+              dispatch(
+                updatePresence({
+                  projectId: payload.user.projectId,
+                  fileId: payload.user.fileId || null,
+                  userId: payload.user.userId,
+                  avatar: payload.user.avatar,
+                  fullName: payload.user.fullName,
+                  action: "leave",
+                })
+              );
+              !payload.room.includes(":") && participantsRef.current--;
+              break;
 
-          case "left":
-            showToast(true, "you left", payload.you.fullName + payload.room);
-            setParticipants((prev) => {
-              const copy = { ...prev };
-              delete copy[payload.you.userId];
-              return copy;
-            });
-            dispatch(
-              updatePresence({
-                projectId: payload.you.projectId,
-                fileId: payload.you.fileId || null,
-                userId: payload.you.userId,
-                avatar: payload.you.avatar,
-                fullName: payload.you.fullName,
-                action: "leave",
-              })
-            );
-            !payload.room.includes(":")? participantsRef.current=0: null;
-            break;
-          case "error":
-            showToast(true, "Error", payload.message);
-            break;
+            case "joined":
+              // showToast(true,"You joined " + payload.you.fullName)
+              // setParticipants((prev) => ({
+              //   ...prev,
+              //   [payload.you.userId]: payload.you,
+              // }));
+              dispatch(
+                updatePresence({
+                  projectId: payload.you.projectId,
+                  fileId: payload.you.fileId || null,
+                  userId: payload.you.userId,
+                  avatar: payload.you.avatar,
+                  fullName: payload.you.fullName,
+                  action: "join",
+                })
+              );
+              !payload.room.includes(":") && participantsRef.current++;
+              break;
 
-          default:
-            // handle other payload types if needed
-            break;
+            case "left":
+              // showToast(true,"You left " + payload.you.fullName)
+              // setParticipants((prev) => {
+              //   const copy = { ...prev };
+              //   delete copy[payload.you.userId];
+              //   return copy;
+              // });
+              dispatch(
+                updatePresence({
+                  projectId: payload.you.projectId,
+                  fileId: payload.you.fileId || null,
+                  userId: payload.you.userId,
+                  avatar: payload.you.avatar,
+                  fullName: payload.you.fullName,
+                  action: "leave",
+                })
+              );
+              !payload.room.includes(":")
+                ? (participantsRef.current = 0)
+                : null;
+              break;
+            case "changeAdmin":
+              dispatch(
+                changeAdmin({
+                  projectId: payload.projectId,
+                  fileId: payload.fileId,
+                  userId: payload.userId,
+                })
+              );
+              break;
+            case "error":
+              showToast(true, "Error", payload.message);
+              break;
+
+            default:
+              // handle other payload types if needed
+              break;
+          }
+
+          // push to local message log and call optional external handler
+      //    pushMsg(payload);
+          onEvent?.(payload);
+        } catch (err) {
+          console.error("[useCollab] performUpdates error", err);
         }
+      };
 
-        // push to local message log and call optional external handler
-        pushMsg(payload);
-        onEvent?.(payload);
-      } catch (err) {
-        console.error("[useCollab] performUpdates error", err);
-      }
-    };
-
-    // DOUBLE-DEFER: first macrotask already enqueues flushPayloads,
-    // now run performUpdates in a fresh macrotask so React has fully finished
-    // any synchronous render/commit work before we mutate state.
-    window.setTimeout(() => {
-      performUpdates();
-    }, 0);
-  },
-  [dispatch, onEvent, pushMsg]
-);
-
+      // DOUBLE-DEFER: first macrotask already enqueues flushPayloads,
+      // now run performUpdates in a fresh macrotask so React has fully finished
+      // any synchronous render/commit work before we mutate state.
+      window.setTimeout(() => {
+        performUpdates();
+      }, 0);
+    },
+    [dispatch, onEvent, pushMsg]
+  );
 
   const flushPayloads = useCallback(() => {
     // clear scheduled marker first
@@ -286,12 +323,11 @@ console.log(payload)
     try {
       const url = await buildWsUrl();
       manualClose.current = false;
-      setStatus((s) => (s === "connected" ? s : "connecting"));
-
       const ws = new WebSocket(url!);
       wsRef.current = ws;
       ws.onopen = () => {
         console.log("WebSocket connection opened");
+        setReadyState(true)
         setStatus("connected");
         // optionally you can send an initial ping or subscribe messages
       };
@@ -300,12 +336,14 @@ console.log(payload)
 
       ws.onerror = (ev) => {
         console.error("[collab] ws error", ev);
+        setReadyState(false)
         setStatus("error");
       };
 
       ws.onclose = (ev) => {
         console.log("WebSocket connection closed");
         wsRef.current = null;
+        setReadyState(false)
         if (manualClose.current) {
           setStatus("closed");
           return;
@@ -314,8 +352,9 @@ console.log(payload)
         // attempt reconnect
         reconnectAttempts.current += 1;
         if (reconnectAttempts.current > maxReconnectAttempts) {
+          setReadyState(false)
           setStatus("closed");
-        showToast(false,"max reconnect attempts reached",ev.reason);
+          showToast(false, "max reconnect attempts reached", ev.reason);
           console.warn("[collab] max reconnect attempts reached");
           return;
         }
@@ -334,6 +373,7 @@ console.log(payload)
     } catch (err) {
       console.error("[collab] connect failed", err);
       setStatus("error");
+      setReadyState(false)
     }
   }, [buildWsUrl, handleServer, maxReconnectAttempts]);
 
@@ -349,6 +389,7 @@ console.log(payload)
       wsRef.current = null;
     }
     setStatus("closed");
+    setReadyState(false)
   }, []);
 
   useEffect(() => {
@@ -379,11 +420,13 @@ console.log(payload)
   const send = useCallback((msg: ClientMessage) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       console.warn("[collab] trying to send but socket not open");
-      showToast(false,"you are not connected to server");
+      setTimeout(() => {
+        send(msg);
+      }, 0);
       return false;
     }
-    try {
 
+    try {
       wsRef.current.send(JSON.stringify(msg));
       return true;
     } catch (err) {
@@ -397,28 +440,25 @@ console.log(payload)
   const pendingLeavesRef = useRef<Set<string>>(new Set());
   const flushScheduledRef = useRef<number | null>(null);
 
-  const makeRoomKey = (projectId: string, fileId?: string | null) =>
-    `${projectId}:${fileId ?? ""}`;
-
-  const parseRoomKey = (key: string) => {
-    const [projectId, fileId] = key.split(":");
-    return { projectId, fileId: fileId === "" ? undefined : fileId };
-  };
-
   // flush function uses `send`
   const flushPending = useCallback(() => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    if (!wsRef.current || (wsRef.current.readyState !== WebSocket.OPEN && !readyState)) {
+      setTimeout(() => {
+        flushPending();
+      }, 0);
+      return} ;
 
     // process leaves first
     for (const key of Array.from(pendingLeavesRef.current)) {
+      console.log("leave")
       const { projectId, fileId } = parseRoomKey(key);
       const ok = send({ action: "leave", projectId, fileId: fileId ?? null });
       if (ok) pendingLeavesRef.current.delete(key);
       // if send fails (socket closed) we keep the key to retry later
     }
-
     // then joins
     for (const key of Array.from(pendingJoinsRef.current)) {
+      console.log("join")
       const { projectId, fileId } = parseRoomKey(key);
       const ok = send({ action: "join", projectId, fileId: fileId ?? null });
       if (ok) pendingJoinsRef.current.delete(key);
@@ -438,10 +478,11 @@ console.log(payload)
 
   // flush queued sends when socket becomes connected
   useEffect(() => {
-    if (status === "connected") {
-      flushPending();
+    if (status === "connected" ) {
+      let a = flushPending();
+     
     }
-  }, [status, flushPending]);
+  }, [status, flushPending,readyState]);
 
   const join = useCallback((projectId: string, fileId?: string | null) => {
     const key = makeRoomKey(projectId, fileId);
@@ -461,9 +502,14 @@ console.log(payload)
     return true;
   }, []);
 
- const sendMessage = useCallback(
-    (message: string,projectId: string, fileId: string | undefined, data?: any) => {
-      return send({ action:message, projectId, fileId,   ...data });
+  const sendMessage = useCallback(
+    (
+      message: string,
+      projectId: string,
+      fileId?: string ,
+      data?: any
+    ) => {
+      return send({ action: message, projectId, fileId, ...data });
     },
     [send]
   );

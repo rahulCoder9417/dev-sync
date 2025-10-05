@@ -14,6 +14,7 @@ const FILE_NAME_PATTERNS = {
 }
 
 const createSchema = z.object({
+  id: z.string().cuid().optional(),
   name: z.string()
     .min(1, 'Name cannot be empty')
     .max(255, 'Name too long (max 255 characters)')
@@ -29,7 +30,7 @@ const createSchema = z.object({
     required_error: 'Type must be either "file" or "folder"'
   }),
   projectId: z.string().cuid('Invalid project ID'),
-  parentId: z.string().cuid('Invalid parent ID').optional(),
+  parentId: z.string().cuid('Invalid parent ID').optional().nullable(),
 })
 
 export async function POST(request: NextRequest) {
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, type, projectId, parentId } = validation.data
+    const {id,name, type, projectId, parentId } = validation.data
     
     // Additional validation for file types
     if (type === 'file' && !FILE_NAME_PATTERNS.validExtensions.test(name)) {
@@ -161,6 +162,7 @@ export async function POST(request: NextRequest) {
     // Create the file item
     const newFileItem = await prisma.fileItem.create({
       data: {
+        id:id || undefined,
         name,
         type,
         content: "",

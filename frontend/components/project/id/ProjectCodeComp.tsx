@@ -53,7 +53,7 @@ export const mockUsers: any[] = [
   },
   {
     id: '3',
-    text: 'I\'d be happy to help! What specifically would you like to know about React components?',
+    text: 'Id be happy to help! What specifically would you like to know about React components?',
     sender: 'bot',
     timestamp: "12:05"
   },
@@ -72,8 +72,8 @@ export const mockUsers: any[] = [
 ];
 
 export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
-
-    const [files, setFiles] = useState<FileNode[]>(data?.files!);
+  const [errorMarkers,setErrorMarkers] = useState<Record<string, boolean> | null>(null)
+  const [files, setFiles] = useState<FileNode[]>(data?.files!);
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [updatedTabs, setupdatedTabs] = useState<Record<string, string>[]>([])
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockChatMessages);
@@ -85,18 +85,7 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
   });
   const [toggleOpen, setToggleOpen] = useState(false);
 
-  const handleRemote = (msg: any) => {
-    switch (msg.type) {
-      case 'joined': /* set clientId, roomSize */ break;
-      case 'user_joined': /* show presence */ break;
-      case 'cursor': /* render remote cursor */ break;
-      case 'scroll': /* follow or show indicator */ break;
-      case 'edit': /* apply edit ops */ break;
-      case 'user_left': /* hide cursor */ break;
-    }
-  };
-
-  const {join,status,sendMessage,participantsRef,deletionMenu,setdeletionMenu} = useCollab({wsUrl:process.env.NEXT_PUBLIC_WS_URL!,})
+  const {join,status,sendMessage,participantsRef,deletionMenu,setdeletionMenu,leave} = useCollab({wsUrl:process.env.NEXT_PUBLIC_WS_URL!,})
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
   const toggleSection = (key: keyof typeof visibleSection) => {
@@ -148,11 +137,9 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
     }
   };
 
-  const handleFileOp = (action:string,name:string) => {
-
-  }
 
   const handleTabClose = (tabId: string) => {
+    
     const newTabs = tabs.filter(tab => tab.id !== tabId);
 
     if (newTabs.length > 0) {
@@ -164,6 +151,8 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
         newTabs[nextActiveIndex].isActive = true;
         join(data?.id!,newTabs[nextActiveIndex].id)
       }
+    }else{
+      leave(data?.id!,tabId)
     }
 
     setTabs(newTabs);
@@ -210,8 +199,10 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
   };
 
   useEffect(()=>{
+    console.log(status)
     if(status === "connected" && data){
       join(data.id)
+      
     }
   },[status])
   if(!data)return <Loader/>
@@ -237,14 +228,17 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
       <div className="flex-1 flex overflow-hidden">
         {visibleSection.file && (
           <div className="w-[15%] min-w-[200px]  max-md:w-1/2">
-            <FileExplorer particapantsRef={participantsRef.current} setdeletionMenu={setdeletionMenu}  sendMessage={sendMessage} files={files} setFiles={setFiles} projectId={data.id} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />
+            <FileExplorer onTabClose={handleTabClose} errorMarkers={errorMarkers} particapantsRef={participantsRef.current} setdeletionMenu={setdeletionMenu}  sendMessage={sendMessage} files={files} setFiles={setFiles} projectId={data.id} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />
           </div>
         )}
 
         {visibleSection.code && (
           <div className="min-w-[35%] max-md:w-1/2 flex-1">
             <CodeEditor
+            setFiles={setFiles}
+            errorMarkers={errorMarkers}
             sendMessage={sendMessage}
+            setErrorMarkers={setErrorMarkers}
             projectId={data.id}
             updatedTabs={updatedTabs}
             setupdatedTabs={setupdatedTabs}

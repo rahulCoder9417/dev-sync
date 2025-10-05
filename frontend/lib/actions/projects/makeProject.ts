@@ -3,6 +3,7 @@
 import db from "@/lib/db/prisma"
 import prisma from '@/lib/db/prisma'
 import { TeamRole } from "@/lib/generated/prisma";
+import { middleWare } from "@/lib/mainUtils/beckendMiddleWare";
 import { currentUser } from '@clerk/nextjs/server'
 
 
@@ -41,21 +42,11 @@ export async function createFileItem(data: {
 
 
 export async function createProjectWithTeam(input: CreateProjectInput) {
-  const user = await currentUser();
-
-  if (!user?.emailAddresses?.[0]?.emailAddress) {
-    throw new Error("Unauthorized");
-  }
-
-  const email = user.emailAddresses[0].emailAddress;
-
-  const dbUser = await db.user.findUnique({
-    where: { email },
-  });
+     const dbUser = await middleWare()
+     if(!dbUser) throw new Error("Unauthorized")
+ 
   const m = Object.keys(input.members).length !==0 ?[...input.members.map((i)=>({userId:i.userId,role:"MEMBER"as TeamRole}))] : []
-  if (!dbUser) {
-    throw new Error("User not found");
-  }
+  
   // 1. Create a new team with a generated name (can be renamed later)
   const team = await db.team.create({
     data: {

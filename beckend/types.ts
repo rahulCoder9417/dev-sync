@@ -21,13 +21,15 @@ export type UserMeta = {
     avatar?: string | null;
   };
 
-export type ClientMessage =
+export type   ClientMessage =
+  | { action: 'changeAdmin'; projectId: string; fileId: string;userId:string }
+  | { action: 'syncUserPresence'; projectId: string; }
   | { action: 'join'; projectId?: string; fileId?: string; }
   | { action: 'update'; projectId: string; fileId: string;updateType :"awareness" | "text";data:any }
   | { action: 'sync'; projectId: string; fileId: string;data:any }
   | { action: 'syncedData'; projectId: string; fileId: string;data:any ,updateType :"awareness" | "text",include:string}
   | { action: 'leave'; projectId?: string; fileId?: string; }
-  | { action: 'fileOp'; projectId?: string; fileId?: string; type?: string; fileName: string; newNode?: any;fullName?:string;avatar?:string }
+  | { action: 'fileOp'; projectId?: string; fileId?: string; content?: string; type?: string; fileName: string; newNode?: any;fullName?:string;avatar?:string }
   | { action: 'message'; projectId?: string; fileId?: string; data?: any }
   | { action: 'vote_delete'; projectId: string; fileId: string;fullName:string,fileName:string; }
   | { action: 'cancel_voting'; projectId: string; fileId: string;fullName:string,fileName:string; };

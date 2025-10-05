@@ -2,9 +2,14 @@
 "use server";
 
 import db from "@/lib/db/prisma"
-import { format } from "date-fns";
-import { currentUser } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { middleWare } from "@/lib/mainUtils/beckendMiddleWare";
+function formatDate(date: Date) {
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, "0") // Months are 0-indexed
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
 
 export async function getProjects({
   limit ,
@@ -14,20 +19,8 @@ export async function getProjects({
   type?: 'recent' | 'public' | 'private' | 'genrated' | 'starred' | 'archived' | 'git import';
 }) {
   try {
-    const user = await currentUser();
-    if (!user || !user.emailAddresses?.[0]?.emailAddress) {
-      throw new Error("Unauthorized");
-    }
-    
-    const email = user.emailAddresses[0].emailAddress;
-    
-    const dbUser = await db.user.findUnique({
-      where: { email },
-    });
-
-    if (!dbUser) {
-      throw new Error("User not found");
-    }
+    const dbUser = await middleWare()
+    if(!dbUser) throw new Error("Unauthorized")
 
     const where: any = {};
     if (type === "recent" ) {
@@ -77,7 +70,7 @@ export async function getProjects({
       type: proj.type,
       description: proj.description,
       framework: proj.packages,
-      lastUpdated: format(proj.updatedAt, "yyyy-MM-dd"),
+      lastUpdated: formatDate(proj.updatedAt),
       isStarred: proj.starredBy.some(u => u.id === dbUser.id),
       isArchived: proj.archeivedBy ? true : false,
       gitImport: proj.isGitImport || false,
@@ -97,20 +90,8 @@ export async function getProjects({
 
 export const getSingleProject = async (id: string) => {
   try {
-    const user = await currentUser();
-    if (!user || !user.emailAddresses?.[0]?.emailAddress) {
-      throw new Error("Unauthorized");
-    }
-
-    const email = user.emailAddresses[0].emailAddress;
-
-    const dbUser = await db.user.findUnique({
-      where: { email },
-    });
-
-    if (!dbUser) {
-      throw new Error("User not found");
-    }
+    const dbUser = await middleWare()
+    if(!dbUser) throw new Error("Unauthorized")
 
     const project = await db.project.findUnique({
       where: { id },
@@ -147,11 +128,11 @@ export const getSingleProject = async (id: string) => {
       description: project.description,
       framework: project.packages,
       type: project.type,
-      createdAt:format(project.createdAt, "yyyy-MM-dd"),
+      createdAt:formatDate(project.createdAt),
       gitRepo:project.gitRepo,
       ownerId:project.ownerId,
       gitImport: project.isGitImport,
-      updatedAt: format(project.updatedAt, "yyyy-MM-dd"),
+      updatedAt: formatDate(project.updatedAt),
       isStarred,
       stars:project.starredBy.length,
       isOwner,
@@ -172,22 +153,8 @@ export const getSingleProject = async (id: string) => {
 
 export const getProjectById = async (projectId: string) => {
   try {
-    const user = await currentUser();
-
-    if (!user?.emailAddresses?.[0]?.emailAddress) {
-      return { error: "Unauthrized You dont exist" ,  status: 401 };
-    }
-
-    const email = user.emailAddresses[0].emailAddress;
-
-    const dbUser = await db.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
-
-    if (!dbUser) {
-      return { error: "Unauthrized You dont exist" ,  status: 401 };
-    }
+    const dbUser = await middleWare()
+    if(!dbUser) throw new Error("Unauthorized")
 
 
     if (!projectId || typeof projectId !== "string") {

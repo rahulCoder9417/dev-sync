@@ -12,7 +12,7 @@ const FILE_NAME_PATTERNS = {
 };
 
 const renameSchema = z.object({
-    id: z.string().cuid('Invalid file item ID'),
+    id: z.string().cuid('Invalid file item ID').optional(),
     name: z.string()
         .min(1, 'Name cannot be empty')
         .max(255, 'Name too long (max 255 characters)')
@@ -43,17 +43,21 @@ useEffect(() => {
     };
 
     if (inputRef.current) {
-      window.addEventListener('click', handleClickOutsideI);
+      window.addEventListener('mousedown', handleClickOutsideI);
     }
 
     return () => {
-      window.removeEventListener('click', handleClickOutsideI);
+      window.removeEventListener('mousedown', handleClickOutsideI);
     };
   }, []);
     const formSubmit = (e: any) => {
         e.preventDefault();
             // Validate using Zod schema
-            const validation = renameSchema.safeParse({ id, name, type });
+            let obj : any = {name:name,type:type}
+            if(id){
+                obj["id"] = id
+            }
+            const validation = renameSchema.safeParse(obj);
             if (!validation.success) {
                 setError(validation.error.errors[0].message);
                 return;
@@ -81,13 +85,14 @@ useEffect(() => {
                
             }
             setError('');
-                handleNameConfirm(name)
+            handleNameConfirm(name)
         
     };
 
     return (
         <form onSubmit={formSubmit} ref={inputRef}>
             <Input
+            className='h-8 my-1 rounded-sm border-secondary'
                 type="text"
                 value={type==="folder"?name.slice(0,-1):name}
                 onChange={(e) => {
@@ -96,7 +101,7 @@ useEffect(() => {
                 
                 autoFocus
             />
-            {error && <div style={{ color: 'red', fontSize: '0.8em' }}>{error}</div>}
+            {error && <div className='text-red-500 text-sm text-center mt-1'>{error}</div>}
         </form>
     );
 }

@@ -27,7 +27,7 @@ import { getUserByIdentifier } from "@/lib/actions/user/userActions";
 export default function SignInForm() {
   const router = useRouter();
   const { signIn, isLoaded, setActive } = useSignIn();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState("idle");
   const [authError, setAuthError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useAppDispatch()
@@ -46,7 +46,7 @@ export default function SignInForm() {
   const onSubmit = async (data: z.infer<typeof signInSchema>) => {
     if (!isLoaded) return;
 
-    setIsSubmitting(true);
+    setIsSubmitting("connecting");
     setAuthError(null);
 
     try {
@@ -63,10 +63,11 @@ export default function SignInForm() {
           email: resp.user.email,
           id:resp.user.id,
           githubUrl:resp.user.githubUrl,
+          avatar:resp.user.avatar ?? "",
           username: resp.user.username,
           isAuthenticated: true,
         }));
-        
+        setIsSubmitting("connected");
         await setActive({ session: result.createdSessionId });
         router.push("/");
       } else {
@@ -77,8 +78,6 @@ export default function SignInForm() {
         error.errors?.[0]?.message ||
           "An error occurred during sign-in. Please try again."
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -141,8 +140,8 @@ export default function SignInForm() {
             )}
           </div>
 
-          <Button type="submit" className="w-full cursor-pointer" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in..." : "Sign In"}
+          <Button type="submit" className="w-full cursor-pointer" disabled={isSubmitting === "connecting"}>
+            {isSubmitting === "connecting" ? "Signing in..." : isSubmitting === "connected" ? "Redirecting..." : "Sign In"}
           </Button>
         </form>
       </CardContent>

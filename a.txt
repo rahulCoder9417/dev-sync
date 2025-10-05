@@ -1,17 +1,2 @@
-create a smiddleware that will run auth check in beckend
-remove user access token of git as it can be hacked
 the unhandeld rejecttion in cloning public gitRepo of uploading to cloudinary
-make express and shift gitclone repo
-renaming problem asit wont do this perfectly -> .img to .jpg as nothing is saved like this everything is txt
-if started renaming or createing create a cancel butotn
-let Add file or Folder in root Folder
-if image or video is opened it will show
-make tabs in code editor like have error than show and a option while closing if you dont want to save it
-make error show in file explorer
-make user get to know abiut the user who joined before them
-refine deletion node,and add canceltaion 
-the ws connection become two for one user if signed from mulitple device
-in file crud make sure the tabs get too
-the code editor re render when code change
-make admin change cancel too like context menu and make changing admin secure
 fix saving and deletion and live

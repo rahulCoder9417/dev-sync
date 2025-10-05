@@ -1,7 +1,7 @@
-
+"use client"
 import React, { useState } from 'react';
 import { Send, Bot, User } from 'lucide-react';
-import { ChatMessage } from '@/lib/types';
+import { ChatMessage } from '@/types';
 
 interface ChatBotProps {
   messages: ChatMessage[];
@@ -17,14 +17,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ messages, onSendMessage }) => {
       onSendMessage(inputValue.trim());
       setInputValue('');
     }
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    });
   };
 
   return (

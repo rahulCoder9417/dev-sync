@@ -6,6 +6,9 @@ import Collaborators from './Collaborators';
 import { FileNode, Tab } from '@/types';
 import InputBox from './InputBox';
 import ChnageAdmin from './ChnageAdmin';
+import { showToast } from '@/components/main/Toast';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { shallowEqual } from 'react-redux';
 
 // Minimal props — primitives to make shallow compare meaningful
 type Props = {
@@ -14,36 +17,49 @@ type Props = {
   expandedFolders: Set<string>;
   adminMenu:any;
   setAdminMenu:any;
+  sendMessage:any;
   onToggle: (id: string) => void;
-  actionHandler: (action:string,nodeId?:string,name?:string) => void;
+  actionHandler: (action:string,nodeId?:string,name?:string,oldName?:string) => void;
   onSelect: (node: FileNode) => void;
+  errorMarkers: Record<string, boolean> | null;
   setIsFileAction: (action: { id: string, type: string } | null) => void;
   isFileAction: { id: string, type: string } | null;
-  onContextMenu: (e: React.MouseEvent, nodeType: string, parentNodeId: string | null, nodeId: string, nodeName: string) => void;
+  onContextMenu: (e: React.MouseEvent, nodeType: string, parentNodeId: string | null, nodeId: string, nodeName: string,isUserAdmin:boolean) => void;
   projectId: string;
 };
 
-const TreeNodeInner: React.FC<Props> = ({ node, depth, expandedFolders, adminMenu,setAdminMenu,onToggle,actionHandler, onSelect, setIsFileAction, isFileAction, onContextMenu, projectId }) => {
-  
+const TreeNodeInner: React.FC<Props> = ({ node,errorMarkers,  sendMessage, depth, expandedFolders, adminMenu,setAdminMenu,onToggle,actionHandler, onSelect, setIsFileAction, isFileAction, onContextMenu, projectId }) => {
   const [action, setAction] = useState<null | string>(null)
+  const [isUserAdmin, setIsUserAdmin] = useState<boolean>(false)
   const paddingLeft = depth * 16 + 8;
   const left = depth * 16 + 12;
   const isExpanded = expandedFolders.has(node.id);
   const [bg, setbg] = useState<boolean>(false)
+  const user = useAppSelector((state)=>state.user.id,shallowEqual)
+  const collaboratorsMap = useAppSelector(
+    state => state.collabCodeUser.projects?.[projectId]?.[node.id] ?? [],
+    shallowEqual
+  );
+  useEffect(() => {
+    if(!collaboratorsMap || collaboratorsMap.length===0) return
+    setIsUserAdmin(collaboratorsMap[0].userId===user && collaboratorsMap.length>1)
+  }, [collaboratorsMap])
   const handleClick = useCallback(() => {
+    console.log("click",action)
     if (action) return
     if (node.type === 'folder') onToggle(node.id);
 
     else onSelect(node);
-  }, [node, onSelect, onToggle]);
+  }, [node, onSelect, onToggle,action]);
 
   const handleContext = useCallback((e: React.MouseEvent) => {
+    
     if (action) return
-    onContextMenu(e, node.type, node.parentId ?? null, node.id, node.name);
-  }, [onContextMenu, node]);
+    onContextMenu(e, node.type, node.parentId ?? null, node.id, node.name,isUserAdmin);
+  }, [onContextMenu,isUserAdmin, node]);
 
   const handactions = async (name:string) => {
-    await actionHandler(action!,node.id,name) 
+    await actionHandler(action!,node.id,name,node.name) 
    // action==="rename" && (node.name=name)
    setIsFileAction(null)
     setAction(null)
@@ -54,14 +70,10 @@ const TreeNodeInner: React.FC<Props> = ({ node, depth, expandedFolders, adminMen
     if (!isFileAction || isFileAction.id !== node.id) return
     setAction(isFileAction.type)
 }, [isFileAction])
-
-
-
-  
   return (
     <div key={node.id} id={node.id}>
       <div
-        className={`flex items-center justify-between px-2 py-1 hover:bg-primary cursor-pointer text-sm group ${bg ? 'bg-[#151728]' : ''}`}
+        className={`flex items-center justify-between px-2 py-1 hover:bg-primary cursor-pointer text-sm group ${bg ? errorMarkers?.[node.id] ? 'bg-[#ff2929ca]' : 'bg-[#151728]' : ''}`}
         style={{ paddingLeft }}
         onClick={handleClick}
         onContextMenu={handleContext}
@@ -85,12 +97,11 @@ const TreeNodeInner: React.FC<Props> = ({ node, depth, expandedFolders, adminMen
                   </>
                 )}
 
-                <span className="text-primary truncate">{node.type === 'folder' ? node.name.slice(0, -1) : node.name}</span>
+                <span className="text-primary truncate max-w-[120px]">{node.type === 'folder' ? node.name.slice(0, -1) : node.name}</span>
 
-                {/* Collaborators uses useSelector internally — isolates re-renders */}
                 {(adminMenu && adminMenu === node.id)?
                 <div className="ml-auto">
-                  <ChnageAdmin projectId={projectId} fileId={node.id} setAdminMenu={setAdminMenu} />
+                  <ChnageAdmin projectId={projectId} fileId={node.id} setAction={setAction} sendMessage={sendMessage} setAdminMenu={setAdminMenu} />
                 </div>
                 :
                 <div className="ml-auto">
@@ -99,7 +110,7 @@ const TreeNodeInner: React.FC<Props> = ({ node, depth, expandedFolders, adminMen
               </div>
                 
               <button
-                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-hover rounded transition-opacity"
+                className="opacity-0 group-hover:opacity-100 p-1 cursor-pointer hover:bg-hover rounded transition-opacity"
                 onClick={(e) => { e.stopPropagation(); handleContext(e as any); }}
               >
                 <MoreHorizontal className="w-3 h-3 text-secondary" />
@@ -119,7 +130,9 @@ const TreeNodeInner: React.FC<Props> = ({ node, depth, expandedFolders, adminMen
           {node.children.map(child => (
             <TreeNodeMemo
               key={child.id+child.name}
+              sendMessage={sendMessage}
               node={child}
+              errorMarkers={errorMarkers}
               adminMenu={adminMenu}
               setAdminMenu={setAdminMenu}
               expandedFolders={expandedFolders}
@@ -143,7 +156,8 @@ const TreeNodeInner: React.FC<Props> = ({ node, depth, expandedFolders, adminMen
 const propsAreEqual = (prev: Props, next: Props) => {
   return prev.node.id === next.node.id
     && prev.node.name === next.node.name
-    && prev.expandedFolders === next.expandedFolders
+    && prev.expandedFolders.has(prev.node.id) === next.expandedFolders.has(next.node.id)
+    && prev.errorMarkers?.[prev.node.id] == next.errorMarkers?.[next.node.id]
     && prev.depth === next.depth
     && prev.adminMenu === next.adminMenu
     && prev.node?.children === next.node?.children

@@ -9,21 +9,26 @@ export async function getUserProjectStats() {
 
   const dbUser = await db.user.findUnique({
     where: { email: user.emailAddresses[0].emailAddress },
-    include: {
-      starredProjects: true,
-      archieveProjects: true,
-      appsGenerated: true,
-      projects: true,
-    },
+    select: {
+      fullName: true,
+      _count: {
+        select: {
+          starredProjects: true,
+          archieveProjects: true,
+          appsGenerated: true,
+          projects: true,
+        }
+      }
+    }
   })
 
   if (!dbUser) return null
 
   return {
     fullName: dbUser.fullName,
-    starred: dbUser.starredProjects.length,
-    archeive: dbUser.archieveProjects.length,
-    generated: dbUser.appsGenerated.length,
-    owned: dbUser.projects.length,
+    starred: dbUser._count.starredProjects,
+    archeive: dbUser._count.archieveProjects,
+    generated: dbUser._count.appsGenerated,
+    owned: dbUser._count.projects,
   }
 }

@@ -17,7 +17,7 @@ const page = async({params}:{params:{id:string}}) => {
       </Link>
       </div>
     </div>
-  }else if(data.responseData &&(data.responseData.isGitImport || data.responseData.type !=="PUBLIC")&& !(data.responseData.isOwner || data.responseData.isTeamMember)){
+  }else if(data.responseData &&( data.responseData.type !=="PUBLIC")&& !(data.responseData.isOwner || data.responseData.isTeamMember)){
     return <div className="min-h-screen w-full bg-primary flex items-center justify-center">
       <div className="flex flex-col items-center justify-center gap-4">
         <p className="text-3xl text-primary font-bold">You are not the owner of this project</p>

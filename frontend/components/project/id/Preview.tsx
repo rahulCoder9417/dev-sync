@@ -1,8 +1,10 @@
 import React from 'react'
 
-function Preview() {
+const Preview = () => {
   return (
-    <div>Preview</div>
+    <div>
+      
+    </div>
   )
 }
 

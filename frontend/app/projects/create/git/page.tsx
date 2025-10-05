@@ -14,6 +14,7 @@ import { FriendsGet } from '@/types'
 import { Globe, Lock } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import StatusBox, { DataStat } from '@/components/project/StatusBox'
+import { decrypt } from '@/lib/mainUtils/crypto'
 const Page = () => {
   const [submitting, setsubmitting] = useState(false)
   const [dataStat, setDataStat] = useState<DataStat>({
@@ -49,6 +50,7 @@ console.log(error)
       }
     }
     if ((!user.githubUrl || user.githubUrl.length === 0) && user.isAuthenticated) {
+      
       console.log("No GitHub connected, calling connect handler")
       showToast(true, "You are redirected to dashboard", "This happened because you were not authenticated via git ,if this is persisting try later")
 
@@ -109,6 +111,10 @@ console.log(error)
       }
     } catch (err: any) {
       const message = err?.response?.data?.error || 'Unknown error';
+      if(message==="Invalid token"){
+        showToast(false,"Invalid token")
+        handleConnect()
+      }
       setDataStat({status:"error" ,message:message,step:6,project:""})
     }
     clearInterval(timer);

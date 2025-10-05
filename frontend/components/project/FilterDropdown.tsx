@@ -51,7 +51,7 @@ export const FilterDropdown = ({ onFilterChange ,framework,filter}: FilterDropdo
           borderColor: 'var(--border-primary)',
           color: 'var(--text-primary)'
         }}
-      >
+      > 
         <DropdownMenuItem onClick={() => handleFilterSelect("all", "All Projects")}>
           All Projects
         </DropdownMenuItem>
