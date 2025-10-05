@@ -3,11 +3,8 @@ import { Button } from "@/components/ui/button";
 import { getSingleProject } from "@/lib/actions/projects/getProject";
 import { FetchTeam } from "@/lib/actions/projects/team";
 import Link from "next/link";
-interface PageProps {
-  params: { id: string };
-}
 
-export default async function ProjectRoute({ params}: PageProps) {
+export default async function ProjectRoute({ params}: any) {
 let projectData ,teamData;
 const id = await  params.id;
   try {
