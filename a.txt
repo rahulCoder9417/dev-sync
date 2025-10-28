@@ -1,2 +1,1 @@
 the unhandeld rejecttion in cloning public gitRepo of uploading to cloudinary
-fix saving and deletion and live

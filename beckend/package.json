@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "Backend WebSocket server for coding collaboration",
   "type": "module",
-  "main": "dist/server.js",
+  "main": "dist/server.ts",
   "scripts": {
     "postinstall": "prisma generate",
     "build": "tsc",
     "dev": "tsx watch server.ts",
-    "start": "node dist/server.js",
+    "start": "node dist/server.ts",
     "dev:ts": "nodemon --exec tsx server.ts"
   },
   "keywords": [

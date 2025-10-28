@@ -245,17 +245,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   // stable select handler
   const handleSelect = useCallback(
     (node: FileNode) => {
-      setTabs(
-        tabs.map(tab =>
-          tab.id === node.id
-            ? { ...tab, isActive: true }
-            : { ...tab, isActive: false } as Tab
-        )
-      );
       onFileSelect(node);
 
     },
-    [onFileSelect, setTabs, tabs]
+    [onFileSelect]
   );
 
   const handleContextMenu = useCallback(

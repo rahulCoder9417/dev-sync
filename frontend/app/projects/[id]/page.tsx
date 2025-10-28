@@ -6,7 +6,8 @@ import Link from "next/link";
 
 export default async function ProjectRoute({ params}: any) {
 let projectData ,teamData;
-const id = await  params.id;
+const p = await  params;
+const id = p.id;
   try {
      [projectData, teamData] = await Promise.all([
     getSingleProject(id),

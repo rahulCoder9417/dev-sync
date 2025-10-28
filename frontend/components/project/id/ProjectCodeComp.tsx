@@ -42,7 +42,6 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
   const [errorMarkers,setErrorMarkers] = useState<Record<string, boolean> | null>(null)
   const [files, setFiles] = useState<FileNode[]>(data?.files!);
   const [tabs, setTabs] = useState<Tab[]>([]);
-  const [updatedTabs, setupdatedTabs] = useState<Record<string, string>[]>([])
   const [visibleSection, setVisibleSection] = useState<{file: boolean; code: boolean; ai: boolean; preview: boolean;}>({
     file: true,
     code: true,
@@ -72,7 +71,7 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
     setVisibleSection(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleFileSelect = (file:{content:string} & FileNode) => {
+  const handleFileSelect = (file:{content:string} & Tab) => {
     if (file.type === 'file') {
       const existingTab = tabs.find(tab => tab.id === file.id);
 
@@ -84,12 +83,11 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
         })));
       } else {
         // Create new tab
-        const d= updatedTabs.find(tab => tab.id === file.id)?.content 
         const newTab: Tab = {
           id: file.id,
           name: file.name,
           type: 'file',
-          content: d ||file.content || '',
+          content: file.content || '',
           isActive: true,
           isDirty: false
         };
@@ -124,11 +122,12 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
     setTabs(newTabs);
   };
 
-  const handleTabSelect = (tabId: string) => {
-    setTabs(tabs.map(tab => ({
-      ...tab,
-      isActive: tab.id === tabId
-    })));
+  const handleTabSelect = (t: Tab) => {
+    if(tabs.find(tab=>(tab.id === t.id && tab.isActive))){
+      return
+    }
+  
+handleFileSelect(t)
   };
 
 
@@ -171,13 +170,10 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
         {visibleSection.code && (
           <div className="min-w-[35%] max-md:w-1/2 flex-1">
             <CodeEditor
-            setFiles={setFiles}
             errorMarkers={errorMarkers}
             sendMessage={sendMessage}
             setErrorMarkers={setErrorMarkers}
             projectId={data.id}
-            updatedTabs={updatedTabs}
-            setupdatedTabs={setupdatedTabs}
               isTeam={data.isTeamMember!}
               tabs={tabs}
               setTabs={setTabs}

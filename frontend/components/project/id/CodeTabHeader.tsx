@@ -10,7 +10,7 @@ const CodeTabHeader = ({tabs,errorMarkers,onTabSelect,onTabClose,setTabToClose,p
         key={tab.id}
         className={`flex items-center space-x-2 px-3 py-2 border-r border-primary  cursor-pointer min-w-0 ${tab.isActive ? 'bg-primary text-primary' : 'bg-secondary text-secondary hover:bg-hover'
           } ${ errorMarkers?.[tab.id] ? '!bg-[#ff2929ca]' : ''}`}
-        onClick={() => onTabSelect(tab.id)}
+        onClick={() => onTabSelect(tab)}
       >
         <span className="text-sm truncate">{tab.name}</span>
         {tab.isDirty && (

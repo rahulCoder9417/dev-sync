@@ -134,12 +134,10 @@ export async function joinTeam(projectId: string) {
     if (!res) {
       throw new Error(`[joinTeam] Failed to remove member`);
     }
-    await db.teamRequest.delete({
+    await db.teamRequest.deleteMany({
       where: {
-        teamId_userId: {
-          teamId: team.id,
-          userId: dbUser.id,
-        }
+        teamId: team.id,
+        userId: dbUser.id,
       }
     });
 

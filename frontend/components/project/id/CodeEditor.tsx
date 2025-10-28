@@ -2,7 +2,7 @@
 import Editor, { OnMount } from "@monaco-editor/react";
 import * as Y from "yjs";
 import { MonacoBinding } from "y-monaco";
-import React, { memo, useCallback, useEffect, useRef } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { XCircle, Save } from 'lucide-react';
 import { Tab } from '@/types';
 import { showToast } from "@/components/main/Toast";
@@ -11,41 +11,32 @@ import { shallowEqual } from 'react-redux';
 import { consumeUpdate } from "@/lib/redux/features/collabCodeEditorUpdate";
 import PreviewCloud from "./PreviewCloud";
 import CodeTabHeader from "./CodeTabHeader";
-import { saveNode } from "@/lib/mainUtils/fileOp";
 
 interface CodeEditorProps {
   isTeam: boolean;
   tabs: Tab[];
   setErrorMarkers: (errorMarkers: any) => void;
   errorMarkers: Record<string, boolean> | null;
-  updatedTabs: Record<string, string>[];
-  setupdatedTabs: (updatedTabs: any) => void;
   sendMessage: (message: string, projectId: string, fileId: string | undefined, data?: any) => boolean;
   setTabs: (tabs: Tab[]) => void;
   onTabClose: (tabId: string) => void;
-  onTabSelect: (tabId: string) => void;
-  setFiles: any;
+  onTabSelect: (tab: Tab) => void;
   projectId: string;
 }
 
 const CodeEditor: React.FC<CodeEditorProps> = ({
-  projectId, tabs, setupdatedTabs, errorMarkers, setErrorMarkers,
-  sendMessage, updatedTabs, setTabs, onTabClose, onTabSelect, isTeam, setFiles
+  projectId, tabs, errorMarkers, setErrorMarkers,
+  sendMessage, setTabs, onTabClose, onTabSelect, isTeam
 }) => {
-  const savingMessages = useRef<Map<string, string>>(new Map());
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [tabToClose, setTabToClose] = React.useState<string | null>(null);
-  const [readOnly, setReadOnly] = React.useState(false);
+  const [tabToClose, setTabToClose] = useState<string | null>(null);
+  const [readOnly, setReadOnly] = useState(false);
+  const [isFirstSync, setIsFirstSync] = useState<string | null>(null);
 
   const activeTab = tabs.find(tab => tab.isActive);
   const dispatch = useAppDispatch();
-  
-  const editorRef = useRef<any>(null);
-  const monacoRef = useRef<any>(null);
-  const ydocRef = useRef<Y.Doc | null>(null);
-  const bindingRef = useRef<MonacoBinding | null>(null);
-  const currentTabRef = useRef<string | null>(null);
+  const docRef = useRef<Y.Doc>(new Y.Doc());
+  const bindingRef = useRef<MonacoBinding>(null);
 
   const collaboratorsMap = useAppSelector(
     (state) => activeTab ? (state.collabCodeUser.projects?.[projectId]?.[activeTab.id] ?? []) : [],
@@ -59,253 +50,170 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
   const userId = useAppSelector((state) => state.user.id, shallowEqual);
 
-  // Initialize Yjs doc when tab changes
+
+  const handleCodeChange = useCallback((tabId: string, content: string) => {
+    if (!isTeam) return;
+    setTabs(tabs.map(tab =>
+      tab.id === tabId ? { ...tab, content, isDirty: content !== tab.content } : tab
+    ));
+  }, [tabs]);
+
+  const activeTabRef = useRef<Tab | null>(activeTab);
+
+  /** 🧠 Active tab changes */
   useEffect(() => {
-    if (!activeTab?.id || !isTeam) return;
+    if (!activeTab?.id) return;
+    activeTabRef.current = activeTab;
+    const ytext = docRef.current.getText("monaco");
 
-    // Tab changed - clean up old binding and create new doc
-    if (currentTabRef.current !== activeTab.id) {
-      // Destroy old binding
-      if (bindingRef.current) {
-        bindingRef.current.destroy();
-        bindingRef.current = null;
-      }
+    ytext.delete(0, ytext.length);
+    ytext.insert(0, activeTab?.content || "");
+  }, [activeTab?.id]);
 
-      // Destroy old doc (this removes all listeners automatically)
-      if (ydocRef.current) {
-        ydocRef.current.destroy();
-      }
+  /** 🧩 Yjs doc initialization and outgoing updates */
+  useEffect(() => {
+    const ydoc = docRef.current;
 
-      // Create fresh doc for this tab
-      const newDoc = new Y.Doc();
-      const ytext = newDoc.getText("monaco");
-      
-      // Initialize with current content
-      if (activeTab.content) {
-        ytext.insert(0, activeTab.content);
-      }
 
-      ydocRef.current = newDoc;
-      currentTabRef.current = activeTab.id;
-
-      // Setup update listener
-      const updateHandler = (update: Uint8Array, origin: any) => {
-        if (origin === 'remote' || readOnly) return;
-        
-        sendMessage("update", projectId, activeTab.id, {
-          data: Array.from(update),
-          updateType: "text"
-        });
-      };
-
-      newDoc.on("update", updateHandler);
-
-      // Recreate binding if editor already mounted
-      if (editorRef.current && monacoRef.current) {
-        const model = editorRef.current.getModel();
-        if (model) {
-          bindingRef.current = new MonacoBinding(
-            ytext,
-            model,
-            new Set([editorRef.current]),
-            null
-          );
-        }
-      }
-    }
-
-    // Cleanup: save any pending changes when tab switches
-    return () => {
-      if (currentTabRef.current && savingMessages.current.size > 0) {
-        savingMessages.current.forEach(async (content, fileId) => {
-          await updateContent(fileId, content);
-        });
-        savingMessages.current.clear();
-      }
+    const updateHandler = (update: Uint8Array) => {
+      const tab = activeTabRef.current;
+      if (!tab || readOnly) return;
+      sendMessage("update", projectId, tab.id, { data: Array.from(update), updateType: "text" });
     };
-  }, [activeTab?.id, activeTab?.content, isTeam, projectId, sendMessage, readOnly]);
 
-  // Handle collaborators and sync
+    ydoc.on("update", updateHandler);
+    return () => {
+      ydoc.off("update", updateHandler);
+    };
+  }, [readOnly]); 
+
+
+  /** 📦 Collaborators / readOnly logic */
   useEffect(() => {
-    if (!activeTab?.id || !isTeam || !userId || collaboratorsMap.length === 0) return;
+    if (!activeTab?.id) return;
 
-    const isOwner = collaboratorsMap[0].userId === userId;
+    if (collaboratorsMap.length > 0 && userId) {
+      const isOwner = collaboratorsMap[0].userId === userId;
 
-    if (!isOwner) {
-      setReadOnly(true);
-      sendMessage("sync", projectId, activeTab.id);
-      showToast(false, "You are not the owner of this file");
-    } else {
-      setReadOnly(false);
+      if (!isOwner) {
+        if (!readOnly) setReadOnly(true);
+        if (isFirstSync !== activeTab.id) {
+          sendMessage("sync", projectId, activeTab.id);
+          setIsFirstSync(activeTab.id);
+        }
+        showToast(false, "You are not the owner of this file");
+      } else {
+        setReadOnly(false);
+        setIsFirstSync(activeTab.id);
+      }
     }
-  }, [collaboratorsMap, activeTab?.id, userId, isTeam, sendMessage, projectId]);
+  }, [collaboratorsMap, activeTab?.id]);
 
-  // Handle incoming updates
+  /** 🔁 Incoming updates from Yjs / Redux */
   useEffect(() => {
-    if (!updatesMap || updatesMap.length === 0 || !ydocRef.current) return;
+        if (!updatesMap || updatesMap.length === 0) return;
 
     updatesMap.forEach((update) => {
+      const tab = activeTabRef.current;
+      if (!tab) return;
+
+
       if (update.type === "sync") {
-        // Send full state
-        const fullState = Y.encodeStateAsUpdate(ydocRef.current!);
-        sendMessage("syncedData", projectId, activeTab!.id, {
+        const fullState = Y.encodeStateAsUpdate(docRef.current);
+        sendMessage("syncedData", projectId, tab.id, {
           data: Array.from(fullState),
           updateType: "FirstSync",
           include: update.data
         });
-      } else {
-        // Apply update
-        const updateArray = new Uint8Array(update.data);
-        
-        if (update.type === "FirstSync") {
-          // Full sync - clear and apply
-          const ytext = ydocRef.current!.getText("monaco");
-          ytext.delete(0, ytext.length);
-        }
-        
-        Y.applyUpdate(ydocRef.current!, updateArray, 'remote');
+        return;
       }
 
-      dispatch(consumeUpdate({ fileId: activeTab!.id }));
+      const ytext = docRef.current.getText("monaco");
+      const updateArray = new Uint8Array(update.data);
+      if (update.type === "FirstSync") ytext.delete(0, ytext.length);
+      Y.applyUpdate(docRef.current, updateArray);
+
+      dispatch(consumeUpdate({ fileId: tab.id }));
     });
-  }, [updatesMap, dispatch, sendMessage, projectId, activeTab]);
+  }, [updatesMap]);
 
-  // Editor mount
-  const handleEditorMount: OnMount = useCallback((editor, monaco) => {
-    if (!activeTab || !ydocRef.current) return;
 
-    editorRef.current = editor;
-    monacoRef.current = monaco;
+  /** 🧩 Editor mount handler */
+  const handleEditorMount: OnMount = (editor, monaco) => {
+    if (!activeTab || typeof window === "undefined") return;
 
-    const ytext = ydocRef.current.getText("monaco");
+    const ydoc = docRef.current;
+    const ytext = ydoc.getText("monaco");
+
+    if (ytext.length === 0 && activeTab.content) {
+      ytext.insert(0, activeTab.content);
+    }
+
     const model = monaco.editor.createModel(
       ytext.toString(),
       getLanguage(activeTab.name ?? "plaintext")
     );
-    
     editor.setModel(model);
 
-    // Destroy old binding if exists
-    if (bindingRef.current) {
-      bindingRef.current.destroy();
-    }
+    const binding = new MonacoBinding(ytext, model, new Set([editor]), null);
+      bindingRef.current = binding;
 
-    // Create new binding
-    bindingRef.current = new MonacoBinding(
-      ytext,
-      model,
-      new Set([editor]),
-      null
-    );
-
-    // Error markers
     monaco.editor.onDidChangeMarkers(() => {
       const markers = monaco.editor.getModelMarkers({ resource: model.uri });
       const errors = markers.filter(m => m.severity === monaco.MarkerSeverity.Error);
-      setErrorMarkers({ [activeTab.id]: errors.length > 0 });
+      const hasErrors = errors.length > 0;
+      setErrorMarkers({ [activeTab.id]: hasErrors });
     });
-  }, [activeTab, setErrorMarkers]);
-
-  
-
-  const updateContent = async (id: string, content: string) => {
-    const res: any = await fetch(`/api/projects/fileItem/updateContent`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ id, content }),
-    }).then(res => res.json());
-    
-    if (res.status === 200) {
-      sendMessage("fileOp", projectId, activeTab?.id, { type: "save", content });
-      showToast(true, "File saved successfully");
-    } else {
-      showToast(false, "Failed to save file");
-    }
   };
-
-  // Handle save with Ctrl+S
-  useEffect(() => {
-    const handleKeyDown = async (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        if (!activeTab) return;
-
-        // Get current content from Yjs
-        if (ydocRef.current) {
-          const ytext = ydocRef.current.getText('monaco');
-          const content = ytext.toString();
-
-          // Update tab content and mark as not dirty
-          setTabs(tabs.map(tab =>
-            tab.id === activeTab.id
-              ? { ...tab, content, isDirty: false }
-              : tab
-          ));
-
-          setFiles((p: any) => saveNode(p, activeTab.id, content));
-          
-          // Store in map and debounce save
-          savingMessages.current.set(activeTab.id, content);
-          
-          // Clear existing timeout
-          if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-          }
-          
-          // Debounce save by 500ms
-          saveTimeoutRef.current = setTimeout(async () => {
-            if (savingMessages.current.has(activeTab.id)) {
-              const contentToSave = savingMessages.current.get(activeTab.id)!;
-              await updateContent(activeTab.id, contentToSave);
-              savingMessages.current.delete(activeTab.id);
-            }
-          }, 500);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [activeTab, projectId, sendMessage, tabs, setTabs, setFiles]);
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (bindingRef.current) bindingRef.current.destroy();
-      if (ydocRef.current) ydocRef.current.destroy();
-    };
-  }, []);
-
-  const handleCodeChange = useCallback((tabId: string, content: string) => {
-    if (!isTeam) return;
-    
-    const updatedTab = tabs.find(tab => tab.id === tabId);
-    if (updatedTab) {
-      setupdatedTabs([...updatedTabs, { [tabId]: content }]);
-    }
-    
-    setTabs(tabs.map(tab =>
-      tab.id === tabId ? { ...tab, content, isDirty: true } : tab
-    ));
-  }, [tabs, isTeam, setTabs, setupdatedTabs, updatedTabs]);
 
   const getLanguage = (name: string): string => {
     const ext = name.toLowerCase().split('.').pop() || '';
+
     const map: Record<string, string> = {
       js: 'javascript', jsx: 'javascript',
       ts: 'typescript', tsx: 'typescript',
-      py: 'python', java: 'java',
+      py: 'python',
+      java: 'java',
       cpp: 'cpp', c: 'cpp', h: 'cpp', hpp: 'cpp',
-      rb: 'ruby', go: 'go', rs: 'rust',
-      html: 'html', css: 'css', json: 'json',
-      md: 'markdown', txt: 'plaintext',
+      rb: 'ruby',
+      go: 'go',
+      rs: 'rust', rust: 'rust',
+      swift: 'swift',
+      kt: 'kotlin',
+      dart: 'dart',
+      html: 'html',
+      css: 'css', scss: 'scss', sass: 'scss', less: 'less',
+      json: 'json',
+      md: 'markdown',
+      txt: 'plaintext',
+      xml: 'xml',
+      yml: 'yaml', yaml: 'yaml',
+      toml: 'toml',
+      ini: 'ini', cfg: 'ini', conf: 'ini',
+      sql: 'sql',
+      sh: 'shell', bash: 'shell', zsh: 'shell',
+      bat: 'bat',
+      ps1: 'powershell',
+      dockerfile: 'dockerfile',
+      gitignore: 'gitignore',
+      env: 'dotenv', sample: 'dotenv', example: 'dotenv', template: 'dotenv',
+      lock: 'plaintext', min: 'plaintext', map: 'plaintext',
+      vue: 'vue',
+      svelte: 'svelte',
     };
+
+    // Treat known binary/media files as plain text
+    const binaryExtensions = new Set([
+      'woff', 'woff2', 'ttf', 'otf', 'eot',
+      'svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico',
+      'pdf', 'zip', 'tar', 'gz', 'rar', '7z',
+      'bak', 'tmp', 'cache', 'dist', 'build'
+    ]);
+    if (binaryExtensions.has(ext)) return 'plaintext';
+
     return map[ext] || 'plaintext';
   };
+
 
   const SUPPORTED_EXTS = {
     images: ["png", "jpg", "jpeg", "gif", "webp"],
@@ -340,9 +248,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             <PreviewCloud url={activeTab.content!} type={checkNotEditor() as any} />
           ) : (
             <Editor
-              key={activeTab.id}
               onMount={handleEditorMount}
               height="100%"
+              defaultLanguage="plaintext"
               language={getLanguage(activeTab.name)}
               onChange={(value) => handleCodeChange(activeTab.id, value!)}
               theme="vs-dark"
@@ -368,21 +276,37 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       </div>
 
       {tabToClose && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+        <div className="fixed inset-0 flex items-center justify-center z-50">
           <div className="bg-secondary p-6 rounded-lg shadow-xl w-96">
             <h3 className="text-lg font-medium mb-4">Save Changes</h3>
             <p className="mb-6">You have unsaved changes. Save before closing?</p>
             <div className="flex justify-end space-x-3">
-              <button onClick={() => { onTabClose(tabToClose); setTabToClose(null); }}
-                className="px-4 py-2 bg-brand text-white rounded hover:bg-brand/90 flex items-center space-x-2">
-                <Save className="w-4 h-4" /><span>Save</span>
+              <button
+                onClick={() => {
+                  onTabClose(tabToClose);
+                  setTabToClose(null);
+                }}
+                className="px-4 py-2 bg-brand text-white rounded hover:bg-brand/90 cursor-pointer flex items-center space-x-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save</span>
               </button>
-              <button onClick={() => { onTabClose(tabToClose); setTabToClose(null); }}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center space-x-2">
-                <XCircle className="w-4 h-4" /><span>Don't Save</span>
+              <button
+                onClick={() => {
+                  onTabClose(tabToClose);
+                  setTabToClose(null);
+                }}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer flex items-center space-x-2"
+              >
+                <XCircle className="w-4 h-4" />
+                <span>Don't Save</span>
               </button>
-              <button onClick={() => setTabToClose(null)}
-                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+              <button
+                onClick={() => {
+                  setTabToClose(null);
+                }}
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
+              >
                 Cancel
               </button>
             </div>

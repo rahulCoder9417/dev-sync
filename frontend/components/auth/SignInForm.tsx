@@ -78,6 +78,7 @@ export default function SignInForm() {
         error.errors?.[0]?.message ||
           "An error occurred during sign-in. Please try again."
       );
+      setIsSubmitting("idle");
     }
   };
 
