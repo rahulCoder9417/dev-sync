@@ -67,7 +67,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
       return;
     }
     // attach token as query param per server upgrade handler
-    let u = wsUrl + `?token=${token}`;
+    let u = wsUrl+"/ws/file" + `?token=${token}`;
     return u;
   }, [wsUrl, getToken]);
 
@@ -338,6 +338,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
         console.error("[collab] ws error", ev);
         setReadyState(false)
         setStatus("error");
+        reconnectAttempts.current += 1;
       };
 
       ws.onclose = (ev) => {
@@ -350,7 +351,6 @@ export default function useCollab(opts: UseCollabOptions = {}) {
         }
 
         // attempt reconnect
-        reconnectAttempts.current += 1;
         if (reconnectAttempts.current > maxReconnectAttempts) {
           setReadyState(false)
           setStatus("closed");

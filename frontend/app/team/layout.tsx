@@ -4,7 +4,7 @@ import React from "react"
 
 const layout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="flex min-h-full min-w-full">
+    <div className="flex min-h-full h-auto min-w-full">
         <div className="hidden max-md:block"> <HeaderHome /></div>
           {/* sidebar/ */}
     <DashboardSidebar/>

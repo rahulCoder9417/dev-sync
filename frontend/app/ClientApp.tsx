@@ -8,6 +8,7 @@ import { clearUser, setUser } from "@/lib/redux/features/userSlice";
 import { Toaster } from "@/components/ui/sonner";
 import { getProjects } from "@/lib/actions/projects/getProject";
 import { clearRecent, setRecent } from "@/lib/redux/features/recentProjects";
+import { ChatPopup } from "@/components/main/ChatPopUp";
 
 export function ClientApp({ children }: { children: ReactNode }) {
   const { user, isLoaded } = useUser();
@@ -41,7 +42,7 @@ export function ClientApp({ children }: { children: ReactNode }) {
       
     if(projects){
       dispatch(
-        setRecent(projects.map((i:any)=>({id:i.id,type:i.type,title:i.title,framework:i.framework,description:i.description}))
+        setRecent(projects.map((i:any)=>({id:i.id,type:i.type,title:i.title,framework:i.framework,description:i.description,lastUpdated:i.lastUpdated,collaborators:i.collaborators}))
       ));
     }
     };
@@ -58,6 +59,7 @@ export function ClientApp({ children }: { children: ReactNode }) {
   return (
     <>
       {children}
+      <ChatPopup />
       <Toaster
         richColors
         closeButton

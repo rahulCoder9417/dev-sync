@@ -1,16 +1,12 @@
 import { RawData, WebSocketServer } from "ws";
 import { IncomingMessage } from "http";
 import { ClientMessage, extWebSocket, UserMeta } from "../../types";
-import net from "net";
 import RoomManager from "../utils/roomManager";
 import makeRoomId from "../utils/makeRoomId";
-import { json } from "zod";
 import { deleteFileOrFolder } from "../../lib/action/fileitem/deleteFile";
-import * as Y from "yjs";
 
 export default class WsHandler {
   private wss: WebSocketServer;
-  private docs: Map<string, Y.Doc> = new Map();
 
   private room: RoomManager;
   private fileVotes: Map<string, Set<string>> = new Map();
@@ -102,8 +98,11 @@ export default class WsHandler {
       ws.send(JSON.stringify({ error: "invalid_message" }));
       return;
     }
-
     switch (parsed.action) {
+      case "chat" :{
+        this.handleChat(ws,parsed)
+        break
+      }
       case "join": {
         const { projectId, fileId } = parsed;
         const room = makeRoomId(projectId, fileId);
@@ -331,5 +330,48 @@ export default class WsHandler {
       default:
         ws.send(JSON.stringify({ error: "unknown_action" }));
     }
+  }
+
+  private async handleChat(ws: extWebSocket, parsed: ClientMessage) {
+    if(parsed.action !== "chat")return
+    const { chatType, message,id,type,messageId } = parsed;
+   switch(type){
+    case "join":{
+      this.room.addToRoom(id, ws);
+      break;
+    }
+    case "leave":{
+      this.room.removeFromRoom(id, ws);
+      break;
+    }
+    case "message":{
+      this.room.broadcastToRoom(id, {
+        type: "chatMessage",
+        room: id,
+        from: {
+          userId: ws.userId,
+          username: ws.username,
+          avatar: ws.avatar,
+          chatType:chatType,
+          fullName: ws.fullName,
+        },
+        data: {message,messageId} ,
+      });
+      break
+    }
+    case "deleteMessage":{
+      this.room.broadcastToRoom(id, {
+        type: "deleteMessage",
+        room: id,
+        from: {
+          userId: ws.userId,
+          username: ws.username,
+          fullName: ws.fullName,
+        },
+        data: {message,messageId} ,
+      });
+      break
+    }
+   }
   }
 }
