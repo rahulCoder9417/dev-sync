@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "../ui/button";
 import ChatComponent from "../team/chatComponent";
@@ -7,12 +7,37 @@ import { X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { updateChatPopUp } from "@/lib/redux/features/chatPopUpSlice";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import getDMAndTeam from "@/lib/actions/chat/dmAndTeam";
+import { dmAndTeam } from "@/app/team/page";
 
-import { users, teams, currentUser, User } from '../../app/team/page'
 export function ChatPopup() {
+    
     const [position, setPosition] = useState({ x: 100, y: 100 });
-    const chat = useAppSelector((state) => state.chat);
+    const chat = useAppSelector((state) => state.chatPopUp);
     const dispatch = useAppDispatch();
+    const [messageData, setMessageData] = useState<dmAndTeam >({teams:[],friends:[]})
+    useEffect(() => {
+      async function  getData(){
+        try {
+           let  data = await getDMAndTeam()
+            data?.teams.sort((a, b) => {
+              const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+              const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+              return bTime - aTime; // most recent first
+            });
+            data?.friends.sort((a, b) => {
+              const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+              const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+              return bTime - aTime; // most recent first
+            });
+            setMessageData(data)
+
+        } catch (error) {
+          console.log(error)
+        }
+      }
+      getData()
+    }, []);
     if (!chat.isOpen) return null;
 
     return createPortal(
@@ -61,24 +86,20 @@ export function ChatPopup() {
             
                     value={
                         chat.selectedChat
-                            ? chat.selectedChat.type === "global"
-                                ? "global"
-                                : chat.selectedChat.type === "team"
-                                    ? `team-${chat.selectedChat.id}`
-                                    : chat.selectedChat.type === "direct"
-                                        ? `direct-${chat.selectedChat.id}`
+                            ? chat.selectedChat.type === "team"
+                                ? "team"
+                                : chat.selectedChat.type === "direct"
+                                    ? `direct-${chat.selectedChat.id}`
                                         : undefined
                             : undefined
                     }
                     onValueChange={(value) => {
-                        let selectedChat: { type: 'global' | 'team' | 'direct'; id?: string; name: string } | null = null;
-                        if (value === "global") {
-                            selectedChat = { type: "global", name: "Global Chat" };
-                        } else if (value.startsWith("team-")) {
-                            const team = teams.find((t) => t.id === value.split("-")[1]);
+                        let selectedChat: { type: 'team' | 'direct'; id: string; name: string } | null = null;
+                        if (value.startsWith("team-")) {
+                            const team = messageData?.teams.find((t) => t.id === value.split("-")[1]);
                             if (team) selectedChat = { type: "team", id: team.id, name: team.name };
                         } else if (value.startsWith("direct-")) {
-                            const user = users.find((u) => u.id === value.split("-")[1]);
+                            const user = messageData?.friends.find((u) => u.id === value.split("-")[1]);
                             if (user) selectedChat = { type: "direct", id: user.id, name: user.fullName };
                         }
 
@@ -92,12 +113,12 @@ export function ChatPopup() {
                     </SelectTrigger>
                     <SelectContent className="z-[10000] bg-secondary text-primary truncate">
                         <SelectItem value="global">Global Chat</SelectItem>
-                        {teams.map((t) => (
+                        {   messageData?.teams.map((t) => (
                             <SelectItem key={t.id} value={`team-${t.id}`}>
                                 {t.name} (Team)
                             </SelectItem>
                         ))}
-                        {users.map((u) => (
+                        {messageData?.friends.map((u) => (
                             <SelectItem key={u.id} value={`direct-${u.id}`}>
                                 {u.fullName} (Direct)
                             </SelectItem>
@@ -110,7 +131,8 @@ export function ChatPopup() {
 
             {/* Chat area */}
             <div className="h-[calc(100%-40px)]">
-      {chat.selectedChat && <ChatComponent selectedChat={chat.selectedChat} />}
+      {chat.selectedChat && <ChatComponent dmAndTeam={messageData
+      } selectedChat={chat.selectedChat} />}
             </div>
         </div>,
         document.body

@@ -1,1 +1,3 @@
 the unhandeld rejecttion in cloning public gitRepo of uploading to cloudinary
+when one force render the return function wont work(if some one force render it will not leave but join twice )use widow before unload
+dont map with set user map with id and ws

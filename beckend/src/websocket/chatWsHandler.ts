@@ -1,13 +1,55 @@
 import { RawData } from "ws";
 import { ExtWebSocket, BaseWsHandler } from "./baseWsHandler";
 import { ClientMessage } from "../../types";
+import RoomManager from "../utils/roomManagerChat";
+import getFriends from "../../lib/action/user/getFriends";
+import { createMessage } from "../../lib/action/chat/message";
+import { createNotification } from "../../lib/action/chat/notification";
 
 export class ChatWsHandler extends BaseWsHandler {
   private messageHistory: Map<string, any[]> = new Map();
-  // key = roomId, value = array of messages
+  private room: RoomManager;
 
+  // key = roomId, value = array of messages
+  // the global have all online people ,onload of website the user would make room on client side with his friends and that data would be sent to other friends to let them know their friend is online which is stored in the state(rtk store)
+  // for team there are two things
+  // 1. team in team section would make a room of those and send status update
+  // 2, the project team already have participents 
   constructor() {
     super('/ws/chat');
+    this.room = new RoomManager();
+  }
+
+  protected async handleDisconnect(ws: ExtWebSocket) {
+    const roomsToRemove = Array.from(ws.rooms ?? []);
+    for (const room of roomsToRemove) {
+      this.room.removeFromRoom(room, ws);
+    }
+    this.room.removeFromGlobalUserList(ws);
+    const friends = await getFriends(ws.userId)
+    friends.forEach((friend)=>{
+      this.room.users.get(friend)?.send(JSON.stringify({
+        type:"user_offline",
+        userId:ws.userId
+      }))
+    })
+  }
+
+  protected  async GlobalUserList(ws: ExtWebSocket){
+    this.room.addToGlobalUserList(ws);
+    const friends = await getFriends(ws.userId)
+    friends.forEach((friend)=>{
+      let friendWs = this.room.users.get(friend)
+      if(!friendWs || friendWs.readyState !== WebSocket.OPEN) return
+      friendWs.send(JSON.stringify({
+        type:"user_online",
+        userId:ws.userId
+      }))
+      ws.send(JSON.stringify({
+        type:"user_online",
+        userId:friend
+      }))
+    })
   }
 
   protected async handleMessage(ws: ExtWebSocket, data: RawData) {
@@ -27,20 +69,27 @@ export class ChatWsHandler extends BaseWsHandler {
 
     try {
       switch (parsed.action) {
-        case 'join_room':
-          await this.handleJoinRoom(ws, parsed as any);
-          break;
-        case 'leave_room':
-          this.handleLeaveRoom(ws, parsed as any);
-          break;
+      
         case 'send_message':
-          await this.handleSendMessage(ws, parsed as any);
+          await this.handleSendMessage(ws, parsed );
           break;
-        case 'typing_status':
-          await this.handleTypingStatus(ws, parsed as any);
+        case "deleteMessage":
+          await this.handleDeleteMessage(ws, parsed );
           break;
-        case 'message_read':
-          await this.handleMessageRead(ws, parsed as any);
+        case 'join':
+          await this.handleJoinRoom(ws, parsed );
+          break;
+        case 'leave':
+          await this.handleLeaveRoom(ws, parsed );
+          break;
+        case 'read':
+          await this.handleReadMessage(ws, parsed );
+          break;
+        case 'typingStart':
+          await this.handleTypingStart(ws, parsed );
+          break;
+        case 'typingEnd':
+          await this.handleTypingEnd(ws, parsed );
           break;
         default:
           ws.send(JSON.stringify({ error: "unknown_action" }));
@@ -56,121 +105,149 @@ export class ChatWsHandler extends BaseWsHandler {
   }
 
   private async handleJoinRoom(ws: ExtWebSocket, message: any) {
-    const { roomId } = message;
-    if (!roomId) {
-      ws.send(JSON.stringify({ error: "room_id_required" }));
-      return;
+    if(message.action !== "join") return
+    const { chatId,chatType } = message;
+    this.room.addToRoom(chatId, ws,true);
+    if(chatType === "team"){
+      this.room.getRoomUsers(chatId).forEach((user)=>{
+        user.send(JSON.stringify({
+          type:"userOnlineTeam",
+          userId:user.userId
+        }))
+      })
     }
+    
+  }
 
-    // Remove from previous rooms
-    const previousRooms = Array.from(ws.rooms);
-    for (const room of previousRooms) {
-      this.room.removeFromRoom(room, ws);
-    }
+  private async handleTypingStart(ws: ExtWebSocket, message: any) {
+    if(message.action !== "typingStart") return
+    const { chatId, } = message;
+    console.log(chatId)
+    this.room.addToTypingStatus(chatId, ws);
+  }
 
-    // Join new room
-    this.room.addToRoom(roomId, ws);
-    ws.rooms.add(roomId);
+  private async handleTypingEnd(ws: ExtWebSocket, message: any) {
+    if(message.action !== "typingEnd") return
+    const { chatId } = message;
+    this.room.removeFromTypingStatus(chatId, ws);
+  }
 
-    // Initialize message history for the room if it doesn't exist
-    if (!this.messageHistory.has(roomId)) {
-      this.messageHistory.set(roomId, []);
-    }
-
-    // Send message history to the joining user
-    ws.send(JSON.stringify({
-      type: "message_history",
-      messages: this.messageHistory.get(roomId) || []
-    }));
-
-    // Notify others in the room
-    this.room.broadcastToRoom(
-      roomId,
-      {
-        type: "user_joined",
-        room: roomId,
-        user: {
-          userId: ws.userId,
-          username: ws.username,
-          fullName: ws.fullName,
-          avatar: ws.avatar,
-        },
-        timestamp: new Date().toISOString(),
-      },
-      ws
-    );
+  private async handleDeleteMessage(ws: ExtWebSocket, message: any) {
+    if(message.action !== "deleteMessage") return
+    const { chatId,messageId,chatType } = message;
+    this.room.broadcastToRoom(chatId,{
+      type:"deleteMessage",
+      chatId,
+      messageId,
+      chatType
+    },ws)
   }
 
   private handleLeaveRoom(ws: ExtWebSocket, message: any) {
-    const { roomId } = message;
-    if (!roomId) {
-      ws.send(JSON.stringify({ error: "room_id_required" }));
-      return;
-    }
-
-    this.room.removeFromRoom(roomId, ws);
-    ws.rooms.delete(roomId);
-
-    // Notify others in the room
-    this.room.broadcastToRoom(
-      roomId,
-      {
-        type: "user_left",
-        room: roomId,
-        user: {
-          userId: ws.userId,
-          username: ws.username,
-          fullName: ws.fullName,
-          avatar: ws.avatar,
-        },
-        timestamp: new Date().toISOString(),
-      },
-      ws
-    );
+    const { chatId,chatType } = message;
+    this.room.removeFromRoom(chatId, ws,true);
   }
 
-  private async handleSendMessage(ws: ExtWebSocket, message: any) {
-    const { roomId, content, type = 'text' } = message;
-    if (!roomId || !content) {
+  private async handleReadMessage(ws: ExtWebSocket, message: ClientMessage) {
+    if(message.action !== "read") return
+    const { chatId, reciverId } = message;
+    if (!chatId || !reciverId) {
       ws.send(JSON.stringify({ error: "missing_parameters" }));
       return;
     }
-
-    const messageData = {
-      id: Date.now().toString(),
-      type,
-      content,
-      sender: {
-        userId: ws.userId,
-        username: ws.username,
-        fullName: ws.fullName,
-        avatar: ws.avatar,
-      },
-      timestamp: new Date().toISOString(),
-      readBy: [ws.userId],
-    };
-
-    // Add to message history
-    if (!this.messageHistory.has(roomId)) {
-      this.messageHistory.set(roomId, []);
+    if(this.room.users.has(reciverId)){
+      this.room.users.get(reciverId)?.send(JSON.stringify({
+        type:"chatRead",
+        chatId,
+        userId:reciverId
+      }))
     }
-    this.messageHistory.get(roomId)?.push(messageData);
+  }
+  private async handleSendMessage(ws: ExtWebSocket, message: ClientMessage) {
+    if(message.action !== "send_message") return
+    const { chatType, chatId, id, content, createdAt, updatedAt,reciverId } = message;
+    if (!chatId || !content || !id || !chatType) {
+      ws.send(JSON.stringify({ error: "missing_parameters" }));
+      return;
+    }
+    let isRead = false
 
-    // Broadcast to all in the room except sender
-    this.room.broadcastToRoom(
-      roomId,
-      {
-        type: "new_message",
-        message: messageData,
-      },
-      ws
-    );
+    if(chatType === "direct"){
+      if(this.room.chatRooms.get(chatId)?.size ===2){
+        isRead = true
+        ws.send(JSON.stringify({
+          type:"chatRead",
+          chatId,
+          userId:ws.userId
+        }))
+        this.room.broadcastToRoom(chatId,{
+          type:"chatMessage",
+          id,
+          content,
+          createdAt,
+          chatType,
+          isRead:true,
+          chatId,
+          updatedAt,
+          user:{
+            userId:ws.userId,
+            username:ws.username,
+            fullName:ws.fullName,
+            avatar:ws.avatar,
+          }
+        },ws)
+      }else if(this.room.users.has(reciverId)){
+        this.room.users.get(reciverId)?.send(JSON.stringify({
+          type:"chatToast",
+          content,
+          createdAt,
+          updatedAt,
+          chatId,
+          id,
+          chatType,
+          isRead:false,
+          user:{
+            userId:ws.userId,
+            username:ws.username,
+            fullName:ws.fullName,
+            avatar:ws.avatar,
+          }
+        }))
+      }else{
+       await createNotification(ws.userId,reciverId,content)
+      }
+    }else{
 
-    // Send confirmation to sender
-    ws.send(JSON.stringify({
-      type: "message_sent",
-      message: messageData,
-    }));
+      this.room.broadcastToRoom(chatId,{
+        type:"chatMessage",
+        id,
+        content,
+        createdAt,
+        chatType,
+        chatId,
+        updatedAt,
+        user:{
+          userId:ws.userId,
+          username:ws.username,
+          fullName:ws.fullName,
+          avatar:ws.avatar,
+        }
+      },ws)
+    }
+    let res =await createMessage({
+      chatType,
+      chatId,
+      id,
+      content,
+      senderId:ws.userId,
+      createdAt:new Date(createdAt),
+      updatedAt:new Date(updatedAt),
+      isRead: isRead,
+    })  
+    if(!res){
+      ws.send(JSON.stringify({ error: "failedToCreateMessaage" }));
+      return;
+    }
   }
 
   private async handleTypingStatus(ws: ExtWebSocket, message: any) {
@@ -222,4 +299,34 @@ export class ChatWsHandler extends BaseWsHandler {
       });
     }
   }
+
+  private async handleMessageDelete(ws: ExtWebSocket, message: any) {
+    const { roomId, messageId } = message;
+    if (!roomId || !messageId) {
+      ws.send(JSON.stringify({ error: "missing_parameters" }));
+      return;
+    }
+
+    const roomMessages = this.messageHistory.get(roomId);
+    if (!roomMessages) return;
+
+    const messageToUpdate = roomMessages.find(msg => msg.id === messageId);
+    if (messageToUpdate) {
+      messageToUpdate.deleted = true;
+      
+      // Broadcast delete receipt to all in the room
+      this.room.broadcastToRoom(roomId, {
+        type: "message_deleted",
+        messageId,
+        deletedBy: {
+          userId: ws.userId,
+          username: ws.username,
+          fullName: ws.fullName,
+          avatar: ws.avatar,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
 }
+

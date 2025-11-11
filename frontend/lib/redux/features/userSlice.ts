@@ -1,5 +1,16 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+export interface Notification{
+  id:string;
+  createdAt:string;
+  content:string;
+  sender:{
+    id:string;
+    fullName:string;
+    avatar:string;
+    username:string;
+  }
+}
 interface UserState {
   fullName: string;
   email: string;
@@ -8,6 +19,7 @@ interface UserState {
   githubUrl:string| null;
   avatar:string;
   isAuthenticated: boolean;
+  notifications:Notification[];
 }
 
 const initialState: UserState = {
@@ -18,6 +30,7 @@ const initialState: UserState = {
   username: "",
   avatar:"",
   isAuthenticated: false,
+  notifications:[]
 };
 
 const userSlice = createSlice({
@@ -28,10 +41,13 @@ const userSlice = createSlice({
       return { ...action.payload, isAuthenticated: true };
     },
     clearUser() {
-      return { fullName: "",avatar:"", email: "", username: "",githubUrl:null,id:"", isAuthenticated: false };
+      return { fullName: "",avatar:"", email: "", username: "",githubUrl:null,id:"", isAuthenticated: false,notifications:[] };
+    },
+    removeNotification(state, action: PayloadAction<string>) {
+      state.notifications = state.notifications.filter((notification) => notification.id !== action.payload);
     },
   },
 });
 
-export const { setUser, clearUser } = userSlice.actions;
+export const { setUser, clearUser,removeNotification } = userSlice.actions;
 export default userSlice.reducer;

@@ -9,16 +9,18 @@ import { Toaster } from "@/components/ui/sonner";
 import { getProjects } from "@/lib/actions/projects/getProject";
 import { clearRecent, setRecent } from "@/lib/redux/features/recentProjects";
 import { ChatPopup } from "@/components/main/ChatPopUp";
+import { useChatInitializer } from "@/lib/redux/chatInitializer";
+
 
 export function ClientApp({ children }: { children: ReactNode }) {
   const { user, isLoaded } = useUser();
   const dispatch = useAppDispatch();
+useChatInitializer(isLoaded)
 
   useEffect(() => {
     const fetchUserFromDB = async () => {
       if (!user?.primaryEmailAddress?.emailAddress) return;
-      
-      const [res, projects] = await Promise.all([
+      const [res, projects,notifications] = await Promise.all([
         fetch("/api/user/findUser", {
           method: "POST",
           headers: { "Content-Type": "application/json" ,
@@ -26,14 +28,20 @@ export function ClientApp({ children }: { children: ReactNode }) {
           body: JSON.stringify({ identifier: user.primaryEmailAddress.emailAddress }),
         }),
         getProjects({ limit: 3, type: "recent" }),
+        fetch("/api/notification", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }),
       ]);
       
       const data = await res.json();
+      const notificationData = await notifications.json();
       if (data.success) {
         dispatch(
           setUser({
             ...data.user,
             isAuthenticated: true,
+            notifications:notificationData.notifications
           })
         );
       } else {
@@ -54,7 +62,7 @@ export function ClientApp({ children }: { children: ReactNode }) {
       dispatch(clearUser());
       dispatch(clearRecent());
     };
-  }, [isLoaded, user, dispatch]);
+  }, [isLoaded, user]);
 
   return (
     <>

@@ -2,8 +2,8 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface PresenceState {
     isOpen:boolean
     selectedChat:{
-        type: 'global' | 'team' | 'direct';
-        id?: string;
+        type: 'team' | 'direct';
+        id: string;
         name: string    
     } |  null
   }
@@ -16,8 +16,8 @@ const initialState: PresenceState = {
 interface UpdateChatPopUpPayload {
     isOpen:boolean,
     selectedChat:{
-        type: 'global' | 'team' | 'direct';
-        id?: string;
+        type: 'team' | 'direct';
+        id: string;
         name: string    
     } |  null
     }

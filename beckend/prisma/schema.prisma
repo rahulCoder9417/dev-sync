@@ -65,6 +65,12 @@ model User {
   teamJoinRequests TeamRequest[]
   teamBans         TeamBan[]
 
+    // Relations for chat
+  sentMessages      Message[]        @relation("MessageSender")
+  sentNotifications  Notification[]  @relation("NotificationSender")
+  receivedNotifications Notification[] @relation("NotificationReceiver")
+  deletedMessages Message[] @relation("MessageDeleted")
+
   // Friendships (Requests and Accepted)
   friendshipsInitiated Friendship[] @relation("Initiator")
   friendshipsReceived  Friendship[] @relation("Receiver")
@@ -83,6 +89,8 @@ model Friendship {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
+  messages Message[] @relation("DmMessages")
+
   @@unique([initiatorId, receiverId]) // Prevents duplicate requests
 }
 
@@ -92,11 +100,16 @@ model Team {
   name      String
   type      TeamType // PUBLIC or PRIVATE
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   members         TeamMember[]
   bannedUsers     TeamBan[]
   pendingRequests TeamRequest[]
   projects        Project[]
+
+    // Relations for chat
+  messages        Message[]       @relation("TeamMessages")
+  notifications   Notification[]  // optional but good for new team message notifications
 }
 
 model TeamMember {
@@ -180,4 +193,53 @@ model FileItem {
   createdAt DateTime   @default(now())
   
   updatedAt DateTime @updatedAt @default(now())
+}
+model Message {
+  id          String     @id @default(cuid())
+  content     String
+  senderId    String
+  sender      User       @relation("MessageSender", fields: [senderId], references: [id])
+
+  // Message can belong to either a DM or a Team chat
+  dmChatRoomId String?  
+  dmChatRoom   Friendship?  @relation("DmMessages", fields: [dmChatRoomId], references: [id])
+
+  teamId       String?
+  team         Team?        @relation("TeamMessages", fields: [teamId], references: [id])
+
+  notifications Notification[]  // back relation for messages linked to notifications
+
+  isDeletedBy    User[]  @relation("MessageDeleted")
+  isRead     Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+
+model Notification {
+  id          String     @id @default(cuid())
+  senderId    String
+  receiverId  String
+  sender      User       @relation("NotificationSender", fields: [senderId], references: [id])
+  receiver    User       @relation("NotificationReceiver", fields: [receiverId], references: [id])
+
+  type        NotificationType @default(MESSAGE)
+  content     String?
+
+  messageId   String?
+  message     Message?    @relation(fields: [messageId], references: [id])
+
+  teamId      String?
+  team        Team?       @relation(fields: [teamId], references: [id])
+
+  isRead      Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum NotificationType {
+  MESSAGE       // when someone sends a new message
+  MENTION       // when you are mentioned in chat
+  TEAM_INVITE   // when invited to join a team
+  SYSTEM        // general system notifications
 }

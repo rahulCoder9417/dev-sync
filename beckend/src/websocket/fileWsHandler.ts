@@ -2,7 +2,7 @@ import { RawData } from "ws";
 import { ExtWebSocket, BaseWsHandler } from "./baseWsHandler";
 import { ClientMessage } from "../../types";
 import { deleteFileOrFolder } from "../../lib/action/fileitem/deleteFile";
-import RoomManager from "../utils/roomManager";
+import RoomManager from "../utils/roomManagerFile";
 import makeRoomId from "../utils/makeRoomId";
 
 export class FileWsHandler extends BaseWsHandler {
@@ -376,4 +376,6 @@ export class FileWsHandler extends BaseWsHandler {
       data: data ?? null,
     });
   }
+//ignore
+  protected GlobalUserList(ws: ExtWebSocket){}
 }

@@ -67,9 +67,9 @@ model User {
 
     // Relations for chat
   sentMessages      Message[]        @relation("MessageSender")
-  dmChatRooms       DmChatRoom[]     @relation("DmParticipants")
   sentNotifications  Notification[]  @relation("NotificationSender")
   receivedNotifications Notification[] @relation("NotificationReceiver")
+  deletedMessages Message[] @relation("MessageDeleted")
 
   // Friendships (Requests and Accepted)
   friendshipsInitiated Friendship[] @relation("Initiator")
@@ -89,6 +89,8 @@ model Friendship {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
+  messages Message[] @relation("DmMessages")
+
   @@unique([initiatorId, receiverId]) // Prevents duplicate requests
 }
 
@@ -98,6 +100,7 @@ model Team {
   name      String
   type      TeamType // PUBLIC or PRIVATE
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   members         TeamMember[]
   bannedUsers     TeamBan[]
@@ -199,26 +202,19 @@ model Message {
 
   // Message can belong to either a DM or a Team chat
   dmChatRoomId String?  
-  dmChatRoom   DmChatRoom?  @relation("DmMessages", fields: [dmChatRoomId], references: [id])
+  dmChatRoom   Friendship?  @relation("DmMessages", fields: [dmChatRoomId], references: [id])
 
   teamId       String?
   team         Team?        @relation("TeamMessages", fields: [teamId], references: [id])
 
   notifications Notification[]  // back relation for messages linked to notifications
 
-  isDeleted    Boolean    @default(false)
-  isEdited     Boolean    @default(false)
+  isDeletedBy    User[]  @relation("MessageDeleted")
+  isRead     Boolean    @default(false)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
 
-model DmChatRoom {
-  id          String     @id @default(cuid())
-  users       User[]     @relation("DmParticipants")
-  messages    Message[]  @relation("DmMessages")
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-}
 
 model Notification {
   id          String     @id @default(cuid())

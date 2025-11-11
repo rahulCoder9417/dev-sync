@@ -9,6 +9,7 @@ export interface ExtWebSocket extends WS {
   fullName: string;
   avatar: string;
   rooms: Set<string>;
+  chatRooms: Set<string>;
 }
 
 export abstract class BaseWsHandler {
@@ -24,6 +25,7 @@ export abstract class BaseWsHandler {
   protected setupEventHandlers() {
     this.wss.on("connection", (ws: ExtWebSocket, req: IncomingMessage, user: UserMeta) => {
       this.initializeConnection(ws, user);
+      this.GlobalUserList(ws);
       ws.on("message", (data: RawData) => this.handleMessage(ws, data));
       ws.on("close", () => this.handleDisconnect(ws));
     });
@@ -44,6 +46,7 @@ export abstract class BaseWsHandler {
 
   protected initializeConnection(ws: ExtWebSocket, user: UserMeta) {
     ws.rooms = new Set();
+    ws.chatRooms = new Set();
     ws.userId = user.userId;
     ws.username = user.username;
     ws.fullName = user.fullName;
@@ -56,7 +59,6 @@ export abstract class BaseWsHandler {
   }
 
   protected abstract handleDisconnect(ws: ExtWebSocket): void;
-
   public handleUpgrade(
     request: IncomingMessage,
     socket: any,
@@ -73,4 +75,6 @@ export abstract class BaseWsHandler {
   }
 
   protected abstract handleMessage(ws: ExtWebSocket, data: RawData): Promise<void>;
-}
+
+
+protected abstract GlobalUserList(ws: ExtWebSocket): void;}

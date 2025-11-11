@@ -105,45 +105,4 @@ export default class RoomManager {
       }
     }
   }
-
-  /**
-   * Broadcasts a message to all connected clients in all rooms
-   * @param payload The message payload to broadcast
-   * @param except Optional client to exclude from the broadcast
-   */
-  public broadcastToAllRooms(payload: any, except?: extWebSocket | null) {
-    const sentToRooms = new Set<string>();
-    
-    // Get all unique rooms
-    for (const [room, clients] of this.roomsCode.entries()) {
-      if (sentToRooms.has(room)) continue;
-      sentToRooms.add(room);
-      
-      // Broadcast to all clients in the room
-      for (const client of clients) {
-        if (client !== except && client.readyState === 1) {
-          client.send(JSON.stringify(payload));
-        }
-      }
-    }
-  }
-
-
-  // Chat rooms
-  public addToChatRoom(room: string, ws: extWebSocket) {
-    let set = this.roomsCode.get(room);
-    if (!set) {
-      set = new Set();
-      this.roomsCode.set(room, set);
-    }
-    set.add(ws);
-    this.broadcastToRoom(room,{type:"user_joined",room,user:{userId:ws.userId,avatar:ws.avatar,username:ws.username,fullName:ws.fullName,projectId:ws.projectId,fileId:ws.fileId}})
-  }
-  public removeFromChatRoom(room: string, ws: extWebSocket) {
-    let set = this.roomsCode.get(room);
-    if (!set) return;
-    set.delete(ws);
-    this.broadcastToRoom(room,{type:"user_left",room,user:{userId:ws.userId,avatar:ws.avatar,username:ws.username,fullName:ws.fullName,projectId:ws.projectId,fileId:ws.fileId}})
-    if (set.size === 0) this.roomsCode.delete(room)
-  }
 }
