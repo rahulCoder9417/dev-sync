@@ -17,6 +17,7 @@ export async function POST(req: Request) {
         id: true,
         fullName: true,
         email: true,
+        bio:true,
         username: true,
         githubUrl:true,
         avatar:true,

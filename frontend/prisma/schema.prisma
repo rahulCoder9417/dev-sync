@@ -54,6 +54,7 @@ model User {
   createdAt DateTime @default(now())
   avatar    String?
   githubUrl String?
+  bio String? @default("")
 
   // Relations
   archieveProjects Project[] @relation("archieveProjects")
@@ -242,4 +243,5 @@ enum NotificationType {
   MENTION       // when you are mentioned in chat
   TEAM_INVITE   // when invited to join a team
   SYSTEM        // general system notifications
+  FRIENDSHIP
 }

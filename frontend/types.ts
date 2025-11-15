@@ -10,6 +10,7 @@ export interface ProjectPageMember{
     user: {
         fullName: string;
         avatar: string | null;
+        username:string
     };
     userId: string;
     role?: "MEMBER"|"ADMIN";

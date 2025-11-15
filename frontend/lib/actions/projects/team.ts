@@ -20,6 +20,7 @@ export async function FetchTeam(projectId: string) {
                 select: {
                   fullName: true,
                   avatar: true,
+                  username:true
                 },
               },
             },
@@ -32,6 +33,7 @@ export async function FetchTeam(projectId: string) {
                 select: {
                   fullName: true,
                   avatar: true,
+                  username:true
                 },
               },
             },
@@ -44,6 +46,7 @@ export async function FetchTeam(projectId: string) {
                 select: {
                   fullName: true,
                   avatar: true,
+                  username:true
                 },
               },
             },

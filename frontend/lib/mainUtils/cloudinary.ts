@@ -20,14 +20,42 @@ interface UploadOptions {
   type: UploadType;
 }
 
+export function getPublicIdFromUrl(url: string) {
+  try {
+    // remove query params if any
+    const cleanUrl = url.split("?")[0];
+
+    const parts = cleanUrl.split("/");
+    const filename = parts.pop()!;           // rahul_avatar.jpg
+    const folderPath = parts.slice(parts.indexOf("upload") + 1).join("/"); 
+    const publicId = folderPath + "/" + filename.replace(/\.[^/.]+$/, ""); // remove extension
+
+    return publicId;
+  } catch (err) {
+    return null;
+  }
+}
+
 export async function uploadToCloudinary({
   buffer,
   filename,
   folder = '/',
   type,
-}: UploadOptions): Promise<{ success: boolean; secure_url?: string; public_id?: string; error?: string }> {
-  return new Promise((resolve) => {
+  deleteBeforeUpload = null,
+}: UploadOptions & { deleteBeforeUpload?: string | null }): 
+Promise<{ success: boolean; secure_url?: string; public_id?: string; error?: string }> {
+    
+  return new Promise(async (resolve) => {
     try {
+      // delete previous file if provided
+      if (deleteBeforeUpload) {
+        try {
+          await cloudinary.uploader.destroy(getPublicIdFromUrl(deleteBeforeUpload)!);
+        } catch (err) {
+          console.error("Failed to delete previous Cloudinary file:", err);
+        }
+      }
+
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           resource_type: type,
@@ -42,15 +70,14 @@ export async function uploadToCloudinary({
           resolve({ success: true, secure_url: result.secure_url, public_id: result.public_id });
         }
       );
-      uploadStream.on('error', (err) => {
-        resolve({ success: false, error: err.message || 'Cloudinary stream error' });
-      });
+
       uploadStream.end(buffer);
     } catch (error: any) {
       resolve({ success: false, error: error.message || String(error) });
     }
   });
 }
+
 
 
 

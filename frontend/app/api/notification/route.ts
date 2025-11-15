@@ -38,6 +38,7 @@ export async function GET(
         id:true,
         createdAt:true,
         content:true,
+        type:true,
         sender:{
           select:{
                 id:true,

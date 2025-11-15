@@ -32,6 +32,7 @@ type MemberStatus = "members" | "pendingRequests" | "bannedUsers" | "rejected"
 interface TeamMember {
   id: string
   fullName: string
+  username: string
   avatar?: string | null
   status: string
 }
@@ -404,9 +405,9 @@ useEffect(() => {
                       <div
                         key={member.userId}
                         className={`flex items-center gap-3 p-3 bg-secondary rounded-md hover:bg-hover transition-colors group cursor-pointer ${member.role === "ADMIN" ? "pointer-events-none " : ""}`}
-                        onClick={() => openTeamModal({ id: member.userId, status: status, fullName: member.user.fullName, avatar: member.user.avatar })}
+                        onClick={() => openTeamModal({ id: member.userId, status: status, fullName: member.user.fullName, avatar: member.user.avatar, username: member.user.username })}
                       >
-                        <Avatar fullName={member.user.fullName} avatar={member.user.avatar} />
+                        <Avatar fullName={member.user.fullName} avatar={member.user.avatar} username={member.user.username} />
                         <div className="flex-1 min-w-0">
                           <p className="text-primary font-medium text-sm truncate">{member.user.fullName}</p>
                           <p className={`text-xs capitalize ${getStatusColor(member.role || member.status || "banned")}`}>{capitalize(member.role || member.status || "Banned")}</p>
@@ -497,7 +498,7 @@ useEffect(() => {
             </div>
 
             <div className="flex items-center gap-3 mb-6 p-3 bg-secondary rounded-md">
-              <Avatar fullName={selectedMember.fullName} avatar={selectedMember.avatar} />
+              <Avatar fullName={selectedMember.fullName} avatar={selectedMember.avatar} username={selectedMember.username} getInfo={true} />
               <div>
                 <p className="text-primary font-medium">{selectedMember.fullName}</p>
                 <p className={`text-xs capitalize ${getStatusColor(selectedMember.status)}`}>
