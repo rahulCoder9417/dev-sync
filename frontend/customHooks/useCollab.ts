@@ -47,7 +47,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
     required: number;
     done: string[];
   } | null>(null);
-  const participantsRef = useRef<number>(0);
+  const participantsRef = useRef<Map<string, UserSummary>>(new Map());
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectAttempts = useRef(0);
   const manualClose = useRef(false);
@@ -177,7 +177,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   action: "join",
                 })
               );
-              !payload.room.includes(":") && participantsRef.current++;
+              !payload.room.includes(":") && participantsRef.current.set(payload.user.userId,payload.user);
               break;
 
             case "user_left":
@@ -197,7 +197,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   action: "leave",
                 })
               );
-              !payload.room.includes(":") && participantsRef.current--;
+              !payload.room.includes(":") && participantsRef.current.delete(payload.user.userId);
               break;
 
             case "joined":
@@ -216,7 +216,8 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   action: "join",
                 })
               );
-              !payload.room.includes(":") && participantsRef.current++;
+              
+              !payload.room.includes(":") && participantsRef.current.set(payload.you.userId,payload.you);
               break;
 
             case "left":
@@ -237,7 +238,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                 })
               );
               !payload.room.includes(":")
-                ? (participantsRef.current = 0)
+                ? (participantsRef.current.delete(payload.you.userId))
                 : null;
               break;
             case "changeAdmin":

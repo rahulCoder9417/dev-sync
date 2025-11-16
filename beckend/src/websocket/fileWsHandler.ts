@@ -256,6 +256,7 @@ export class FileWsHandler extends BaseWsHandler {
       return;
     }
     const { projectId, fileId, data, updateType } = parsed;
+    console.log("handle update ne update diya",ws.fullName)
     const room = makeRoomId(projectId, fileId);
     this.room.broadcastToRoom(
       room,
@@ -338,6 +339,7 @@ export class FileWsHandler extends BaseWsHandler {
       return;
     }
     const { projectId, fileId, data, updateType, include } = parsed;
+    console.log("handle synced data ne update data diya",ws.fullName)
     let isIn = this.room
       .getRoomUsers(makeRoomId(projectId, fileId))
       .find((user) => user.userId === include);

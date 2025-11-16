@@ -24,6 +24,7 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
   const dispatch = useAppDispatch();
   const u = useAppSelector((state) => state.user, shallowEqual);
   let userTying = useRef(false)
+  const [fetchingMessages, setFetchingMessages] = useState(false) // for not letting messageend ref to get scrolled
   const [showChatOptions, setShowChatOptions] = useState<string | null>(null)
   const currentUser: User = { id: u.id, fullName: u.fullName, avatar: u.avatar, username: u.username, status: "online" };
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -186,12 +187,17 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
     };
   }, [selectedChat?.id, selectedChat?.type]);
   useEffect(() => {
+    if(fetchingMessages){
+      setFetchingMessages(false)
+      return
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   // Load more messages
   const loadMoreMessages = () => {
     if (pagination && pagination.hasMore && !loading) {
+      setFetchingMessages(true)
       fetchMessages(currentPage + 1);
     }
   };
@@ -287,7 +293,7 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
                 disabled={loading}
                 variant="outline"
                 size="sm"
-                className="text-primary border-primary"
+                className=" border-primary"
               >
                 {loading ? (
                   <>
@@ -295,7 +301,7 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
                     Loading...
                   </>
                 ) : (
-                  `Load More Messages (${pagination.totalMessages - messages.length} remaining)`
+                  `Load More Messages (${pagination.totalMessages - messages.length } remaining)`
                 )}
               </Button>
             </div>

@@ -160,6 +160,9 @@
   body {
     @apply bg-background text-foreground;
   }
+  button {
+    @apply cursor-pointer;
+  }
 }
 @layer utilities {
   .bg-primary { background-color: var(--bg-primary); }

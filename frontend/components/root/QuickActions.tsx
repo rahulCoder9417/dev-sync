@@ -1,5 +1,5 @@
 
-import { Plus, GitBranch, Users, Star } from "lucide-react";
+import { Plus, GitBranch, Users, Star, FolderCheck } from "lucide-react";
 import Link from "next/link";
 
 const actions = [
@@ -18,13 +18,13 @@ const actions = [
   {
     title: "Join Team",
     icon: Users,
-    href:"/dashboard",
+    href:"/team",
     color: "var(--warning)"
   },
   {
-    title: "Browse Templates",
-    icon: Star,
-    href:"/dashboard",
+    title: "See projects",
+    icon: FolderCheck,
+    href:"/projects",
     color: "var(--brand-accent)"
   }
 ];

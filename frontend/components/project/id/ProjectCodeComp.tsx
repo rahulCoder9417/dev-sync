@@ -10,32 +10,6 @@ import { ChatMessage, FileNode, ProjectById, Tab, User } from '@/types';
 import Loader from '@/components/main/Loader';
 import useCollab from '@/customHooks/useCollab';
 import { DeleteToast } from './fileExplorer/DeleteToast';
-export const mockUsers: any[] = [
-  {
-    id: '1',
-    name: 'Alice Johnson',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=32&h=32&fit=crop&crop=face',
-    status: 'online'
-  },
-  {
-    id: '2',
-    name: 'Bob Smith',
-    avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=32&h=32&fit=crop&crop=face',
-    status: 'online'
-  },
-  {
-    id: '3',
-    name: 'Carol Davis',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face',
-    status: 'away'
-  },
-  {
-    id: '4',
-    name: 'David Wilson',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
-    status: 'offline'
-  }
-];
 
 
 export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
@@ -139,6 +113,11 @@ handleFileSelect(t)
       join(data.id)
       
     }
+    return ()=>{
+      console.log("leave")
+      if(data?.id)leave(data?.id!)
+      if(data?.id && tabs[0]?.id)leave(data?.id!,tabs[0].id)
+    }
   },[status])
   if(!data)return <Loader/>
   return (
@@ -158,7 +137,7 @@ handleFileSelect(t)
           />
         )
       }
-      <Header projectName={data.name} mockusers={data.team.members}  />
+      <Header projectName={data.name} users={data.team.members} participantsRef={Array.from(participantsRef.current.keys())}  />
 
       <div className="flex-1 flex overflow-hidden">
         {visibleSection.file && (

@@ -100,7 +100,8 @@ export default class RoomManager {
     const set = this.roomsCode.get(room);
     if (!set) return;
     for (const client of set) {
-      if (client !== except && client.readyState === 1) {
+      console.log("broadcasting to",client.fullName,except?.fullName)
+      if (client.userId !== except?.userId && client.readyState === 1) {
         client.send(JSON.stringify(payload));
       }
     }

@@ -1,5 +1,8 @@
 the unhandeld rejecttion in cloning public gitRepo of uploading to cloudinary
-when one force render the return function wont work(if some one force render it will not leave but join twice )use widow before unload
-dont map with set user map with id and ws
-fix teams that the team are only shown if user made it make it like to show the teams in which user is there
+fix code doubling
+fix file crud error
 fix the code sharing functionality if someone not from team
+implement the saving functionality
+code error fix
+
+chat not connected after signing in

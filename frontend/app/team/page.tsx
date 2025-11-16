@@ -3,7 +3,7 @@ import getDMAndTeam from "@/lib/actions/chat/dmAndTeam";
 import Link from "next/link";
 import { Button } from "@/components/ui/button"
 export interface dmAndTeam {
-  teams: {name:string,memberCount:number,id:string,lastMessage:boolean  ,lastMessageAt:Date}[],
+  teams: {name:string,memberCount:number,id:string,projectId:string,lastMessage:boolean  ,lastMessageAt:Date}[],
   friends: {id:string,userId:string,fullName:string,username:string,avatar?:string | null,lastMessage:boolean,lastMessageAt:Date}[]
 }
 const  Page = async() => {

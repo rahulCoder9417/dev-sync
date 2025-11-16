@@ -3,7 +3,7 @@ import { db } from "../../db/db";
 export const createMessage = async(message: any) => {
     try {
         let res;
-        const { chatType, chatId, id, content, senderId,createdAt, updatedAt } = message;
+        const { chatType, chatId, id, content, senderId,createdAt, updatedAt,isRead } = message;
         if(!chatType || !chatId || !id || !content || !createdAt || !updatedAt){
             throw new Error("Missing parameters");
         }
@@ -16,6 +16,7 @@ export const createMessage = async(message: any) => {
                     dmChatRoomId:chatId,
                     createdAt,
                     updatedAt,
+                    isRead
                 }
             })
         }else{

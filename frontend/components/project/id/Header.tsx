@@ -1,20 +1,26 @@
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Users, Settings } from 'lucide-react';
 import LaptopNotify from '@/components/main/AvatarNotify';
 import Avatar from '@/components/main/Avatar';
-
+import { UserSummary } from '@/types';
 type HeaderProps = {
   projectName: string; 
-  mockusers:{
+  users:{
      user: { 
       id: string; fullName: string; username: string; avatar: string | null; };
       userId: string;
-       role: "ADMIN"|"MEMBER"; }[]}
+       role: "ADMIN"|"MEMBER"; }[];
+  participantsRef: string[];
+      }
 
-const Header = ({ projectName ,mockusers}: HeaderProps) => {
+const Header = ({ projectName ,users,participantsRef}: HeaderProps) => {
+
   const [showAllUsers, setShowAllUsers] = useState(false);
- const onlineUsers = mockusers?.slice(0,1);
+ const onlineUsers = useMemo(()=>{
+  console.log("user online")
+  return users.filter((user)=>participantsRef.includes(user.userId))
+ },[participantsRef.length])
 
   return (
     <header className="bg-secondary border-b border-primary h-16 md:flex hidden items-center  justify-between px-4">
@@ -26,9 +32,9 @@ const Header = ({ projectName ,mockusers}: HeaderProps) => {
       <div className="flex items-center space-x-4">
         <div className="flex items-center space-x-2">
           <div className="flex -space-x-2">
-            {(showAllUsers ? mockusers : onlineUsers?.slice(0, 3))?.map((user :any) => (
+            {(showAllUsers ? onlineUsers : users)?.map((user :any) => (
 
-              <Avatar className=' w-8! h-8!' key={user.user.id} fullName={user.user.fullName} avatar={user.user.avatar} />
+              <Avatar getInfo={true} className=' w-8! h-8!' key={user.user.id} fullName={user.user.fullName} username={user.user.username} avatar={user.user.avatar} />
             ))}
           </div>
           
@@ -38,7 +44,7 @@ const Header = ({ projectName ,mockusers}: HeaderProps) => {
           >
             <Users className="w-4 h-4 " />
             <span className="text-sm cursor-pointer">
-              {showAllUsers ? 'Show Active' : `+${mockusers?.length - onlineUsers?.slice(0, 3)?.length}`}
+              {!showAllUsers ? 'Show Active' : `+${users?.length - onlineUsers?.length}`}
             </span>
           </button>
         </div>

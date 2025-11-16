@@ -42,7 +42,7 @@ const Collaborators: React.FC<Props> = ({ projectId, fileId, setBg, child }) => 
   return (
     <div className="flex -space-x-1 items-center">
       {usersToShow.slice(0, 3).map(user => (
-        <Avatar key={user.userId} fullName={user.fullName} avatar={user.avatar} className="w-6 h-6" />
+        <Avatar key={user.userId} fullName={user.fullName} avatar={user.avatar}  className="w-6 h-6" />
       ))}
       {usersToShow.length > 3 && (
         <div className="w-5 h-5 rounded-full bg-brand text-xs flex items-center justify-center text-white border border-bg-primary">

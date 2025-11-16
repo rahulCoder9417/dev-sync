@@ -9,6 +9,7 @@ export async function getUserByEmail(email: string) {
         username: true,
         fullName: true,
         email: true,
+        avatar:true
       },
     });
     return user;

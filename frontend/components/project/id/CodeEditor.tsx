@@ -71,21 +71,31 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   }, [activeTab?.id]);
 
   /** 🧩 Yjs doc initialization and outgoing updates */
+  const updateHandlerRef = useRef<(u: Uint8Array) => void>(()=>{});
+
   useEffect(() => {
-    const ydoc = docRef.current;
-
-
-    const updateHandler = (update: Uint8Array) => {
+    updateHandlerRef.current = (update) => {
       const tab = activeTabRef.current;
       if (!tab || readOnly) return;
-      sendMessage("update", projectId, tab.id, { data: Array.from(update), updateType: "text" });
+  
+      sendMessage("update", projectId, tab.id, {
+        data: Array.from(update),
+        updateType: "text",
+      });
     };
-
-    ydoc.on("update", updateHandler);
+  }, [readOnly]);
+  
+  useEffect(() => {
+    const ydoc = docRef.current;
+    if (!ydoc) return;
+  
+    const wrapper = (update: Uint8Array) => updateHandlerRef.current?.(update);
+  
+    ydoc.on("update", wrapper);
     return () => {
-      ydoc.off("update", updateHandler);
+      ydoc.off("update", wrapper);
     };
-  }, [readOnly]); 
+  }, [docRef.current]);
 
 
   /** 📦 Collaborators / readOnly logic */
@@ -103,7 +113,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         }
         showToast(false, "You are not the owner of this file");
       } else {
-        setReadOnly(false);
+        if(readOnly) setReadOnly(false);
         setIsFirstSync(activeTab.id);
       }
     }
@@ -127,7 +137,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         });
         return;
       }
-
+      console.log("hmm wahi",update)
       const ytext = docRef.current.getText("monaco");
       const updateArray = new Uint8Array(update.data);
       if (update.type === "FirstSync") ytext.delete(0, ytext.length);

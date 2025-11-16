@@ -12,7 +12,7 @@ import { FaUserAstronaut } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
 import cuid from "cuid";
 import { saveNode } from '@/lib/mainUtils/fileOp';
-
+import { UserSummary } from '@/types';
 interface FileExplorerProps {
   files: FileNode[];
   setFiles: React.Dispatch<React.SetStateAction<FileNode[]>>;
@@ -21,7 +21,7 @@ interface FileExplorerProps {
   onFileSelect: (file: any) => void;
   onTabClose: (fileId: string) => void;
   projectId: string;
-  particapantsRef: number | null;
+  particapantsRef: Map<string, UserSummary>;
   setTabs: (tabs: Tab[]) => void;
   sendMessage: (message: string, projectId: string, fileId: string | undefined, data: any) => void;
   setdeletionMenu: (menu: any) => void;

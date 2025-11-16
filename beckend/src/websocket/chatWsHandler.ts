@@ -171,7 +171,6 @@ export class ChatWsHandler extends BaseWsHandler {
       return;
     }
     let isRead = false
-
     if(chatType === "direct"){
       if(this.room.chatRooms.get(chatId)?.size ===2){
         isRead = true
@@ -242,90 +241,11 @@ export class ChatWsHandler extends BaseWsHandler {
       senderId:ws.userId,
       createdAt:new Date(createdAt),
       updatedAt:new Date(updatedAt),
-      isRead: isRead,
+       isRead,
     })  
     if(!res){
       ws.send(JSON.stringify({ error: "failedToCreateMessaage" }));
       return;
-    }
-  }
-
-  private async handleTypingStatus(ws: ExtWebSocket, message: any) {
-    const { roomId, isTyping } = message;
-    if (roomId === undefined || isTyping === undefined) {
-      ws.send(JSON.stringify({ error: "missing_parameters" }));
-      return;
-    }
-
-    // Broadcast typing status to others in the room
-    this.room.broadcastToRoom(
-      roomId,
-      {
-        type: "user_typing",
-        userId: ws.userId,
-        username: ws.username,
-        isTyping,
-      },
-      ws
-    );
-  }
-
-  private async handleMessageRead(ws: ExtWebSocket, message: any) {
-    const { roomId, messageId } = message;
-    if (!roomId || !messageId) {
-      ws.send(JSON.stringify({ error: "missing_parameters" }));
-      return;
-    }
-
-    const roomMessages = this.messageHistory.get(roomId);
-    if (!roomMessages) return;
-
-    const messageToUpdate = roomMessages.find(msg => msg.id === messageId);
-    if (messageToUpdate && !messageToUpdate.readBy.includes(ws.userId)) {
-      messageToUpdate.readBy.push(ws.userId);
-      
-      // Broadcast read receipt to all in the room
-      this.room.broadcastToRoom(roomId, {
-        type: "message_read",
-        messageId,
-        readBy: messageToUpdate.readBy,
-        readByUser: {
-          userId: ws.userId,
-          username: ws.username,
-          fullName: ws.fullName,
-          avatar: ws.avatar,
-        },
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
-
-  private async handleMessageDelete(ws: ExtWebSocket, message: any) {
-    const { roomId, messageId } = message;
-    if (!roomId || !messageId) {
-      ws.send(JSON.stringify({ error: "missing_parameters" }));
-      return;
-    }
-
-    const roomMessages = this.messageHistory.get(roomId);
-    if (!roomMessages) return;
-
-    const messageToUpdate = roomMessages.find(msg => msg.id === messageId);
-    if (messageToUpdate) {
-      messageToUpdate.deleted = true;
-      
-      // Broadcast delete receipt to all in the room
-      this.room.broadcastToRoom(roomId, {
-        type: "message_deleted",
-        messageId,
-        deletedBy: {
-          userId: ws.userId,
-          username: ws.username,
-          fullName: ws.fullName,
-          avatar: ws.avatar,
-        },
-        timestamp: new Date().toISOString(),
-      });
     }
   }
 }

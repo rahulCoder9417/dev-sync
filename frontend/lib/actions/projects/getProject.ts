@@ -24,7 +24,13 @@ export async function getProjects({
 
     const where: any = {};
     if (type === "recent" ) {
-      where.ownerId = dbUser.id;
+      where.team = {
+        members:{
+          some:{
+            userId:dbUser.id
+          }
+        }
+      }
     } else if (type === "public") {
       where.AND = [{ type: "PUBLIC" }, { ownerId: dbUser.id }];
     } else if (type === "private") {
@@ -42,7 +48,15 @@ export async function getProjects({
     }
 
     const projects = await db.project.findMany({
-      where,
+      where:{
+        team:{
+          members:{
+            some:{
+              userId:dbUser.id
+            }
+          }
+        }
+      },
       orderBy: type === "recent" ? { updatedAt: "desc" } : undefined,
       take: Number(limit) || undefined,
       include: {

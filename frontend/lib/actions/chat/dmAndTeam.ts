@@ -15,6 +15,12 @@ export default async function getDMAndTeam() {
     },
     select: {
       id: true,
+      projects:{
+        select:{
+          id:true,
+          
+        }
+      },
       name: true,
       _count: {
         select: { members: true },
@@ -35,17 +41,18 @@ export default async function getDMAndTeam() {
       updatedAt: true,
     },
   });
-
   const formattedTeams = teams
     .filter((team) => team._count.members >= 2)
-    .map((team) => ({
+    .map((team) =>{
+      return({
       type: "team",
       id: team.id,
       name: team.name,
+      projectId:team.projects[0]?.id  || "",
       memberCount: team._count.members,
       lastMessage: team.messages[0]?.isRead ,
       lastMessageAt: team.messages[0]?.createdAt || team.updatedAt,
-    }));
+    })});
 
   /* -------------------- FRIENDSHIPS (DMs) -------------------- */
   const friendships = await db.friendship.findMany({
@@ -83,6 +90,7 @@ export default async function getDMAndTeam() {
         orderBy: { createdAt: "desc" },
         take: 1,
         select: {
+          senderId: true,
           isRead: true,
           createdAt: true,
         },
@@ -100,7 +108,7 @@ export default async function getDMAndTeam() {
       fullName: friend.fullName,
       username: friend.username,
       avatar: friend.avatar,
-      lastMessage: f.messages[0]?.isRead ,
+      lastMessage: f.messages[0]?.senderId === dbUser.id || f.messages[0]?.isRead,
       lastMessageAt: f.messages[0]?.createdAt || f.updatedAt,
     };
   });
