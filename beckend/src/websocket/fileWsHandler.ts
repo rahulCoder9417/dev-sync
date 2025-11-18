@@ -86,6 +86,9 @@ export class FileWsHandler extends BaseWsHandler {
         case "message":
           this.handleMessageIncoming(ws, parsed as any);
           break;
+        case "fileSave":
+          this.handleFileSave(ws, parsed as any);
+          break;
         default:
           ws.send(JSON.stringify({ error: "unknown_action" }));
       }
@@ -101,6 +104,34 @@ export class FileWsHandler extends BaseWsHandler {
     }
   }
 
+  private handleFileSave(ws: ExtWebSocket, parsed: ClientMessage) {
+    if(!parsed || typeof parsed !== "object" || parsed.action!=="fileSave") {
+      ws.send(JSON.stringify({ error: "invalid_message" }));
+      return;
+    }
+    const { projectId, fileId, content } =parsed;
+    const room = projectId;
+    if (!room || typeof room !== "string") {
+      ws.send(JSON.stringify({ error: "room_required" }));
+      return;
+    }
+    this.room.broadcastToRoom(
+      room,
+      {
+        type: "fileSave",
+        room,
+        from: {
+          userId: ws.userId,
+          username: ws.username,
+          fullName: ws.fullName,
+        },
+        projectId: projectId,
+        fileId: fileId,
+        content,
+      },
+      ws
+    );
+  }
   private handleJoinRoom(ws: ExtWebSocket, parsed: ClientMessage) {
     if (parsed.action !== "join") {
       ws.send(JSON.stringify({ error: "invalid_message" }));
@@ -157,7 +188,6 @@ export class FileWsHandler extends BaseWsHandler {
       return;
     }
 
-    // Broadcast the message to the room (including sender)
     this.room.broadcastToRoom(
       room,
       {
@@ -256,7 +286,6 @@ export class FileWsHandler extends BaseWsHandler {
       return;
     }
     const { projectId, fileId, data, updateType } = parsed;
-    console.log("handle update ne update diya",ws.fullName)
     const room = makeRoomId(projectId, fileId);
     this.room.broadcastToRoom(
       room,
@@ -319,7 +348,8 @@ export class FileWsHandler extends BaseWsHandler {
       ws.send(JSON.stringify({ error: "invalid_message" }));
       return;
     }
-    const { projectId, fileId } = parsed;
+    const { projectId, fileId ,data} = parsed;
+
     let owner = this.room.getRoomUsers(makeRoomId(projectId, fileId))[0];
     if (owner && owner.userId !== ws.userId) {
       owner.send(
@@ -328,6 +358,7 @@ export class FileWsHandler extends BaseWsHandler {
           room: makeRoomId(projectId, fileId),
           fileId,
           to: ws.userId,
+          data,
         })
       );
     }
@@ -339,7 +370,6 @@ export class FileWsHandler extends BaseWsHandler {
       return;
     }
     const { projectId, fileId, data, updateType, include } = parsed;
-    console.log("handle synced data ne update data diya",ws.fullName)
     let isIn = this.room
       .getRoomUsers(makeRoomId(projectId, fileId))
       .find((user) => user.userId === include);

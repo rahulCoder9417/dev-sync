@@ -24,7 +24,7 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
   });
   const [toggleOpen, setToggleOpen] = useState(false);
 
-  const {join,status,sendMessage,participantsRef,deletionMenu,setdeletionMenu,leave} = useCollab({wsUrl:process.env.NEXT_PUBLIC_WS_URL!,})
+  const {join,status,sendMessage,participantsRef,deletionMenu,setdeletionMenu,leave} = useCollab({wsUrl:process.env.NEXT_PUBLIC_WS_URL!,autoConnect:(data?.isOwner || data?.isTeamMember)})
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
   const toggleSection = (key: keyof typeof visibleSection) => {
@@ -47,30 +47,31 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
 
   const handleFileSelect = (file:{content:string} & Tab) => {
     if (file.type === 'file') {
-      const existingTab = tabs.find(tab => tab.id === file.id);
-
-      if (existingTab) {
-        // Switch to existing tab
-        setTabs(tabs.map(tab => ({
-          ...tab,
-          isActive: tab.id === file.id
-        })));
-      } else {
-        // Create new tab
+      setTabs(prevTabs => {
+        const existingTab = prevTabs.find(tab => tab.id === file.id);
+      
+        if (existingTab) {
+          return prevTabs.map(tab => ({
+            ...tab,
+            isActive: tab.id === file.id
+          }));
+        }
+      
         const newTab: Tab = {
           id: file.id,
           name: file.name,
-          type: 'file',
-          content: file.content || '',
+          type: "file",
+          content: file.content || "",
           isActive: true,
           isDirty: false
         };
-
-        setTabs([
-          ...tabs.map(tab => ({ ...tab, isActive: false })),
+      
+        return [
+          ...prevTabs.map(tab => ({ ...tab, isActive: false })),
           newTab
-        ]);
-      }
+        ];
+      });
+      
    join(data?.id!,file.id)
     }
   };
@@ -156,6 +157,7 @@ handleFileSelect(t)
               isTeam={data.isTeamMember!}
               tabs={tabs}
               setTabs={setTabs}
+              setFiles={setFiles}
               onTabClose={handleTabClose}
               onTabSelect={handleTabSelect}
             />

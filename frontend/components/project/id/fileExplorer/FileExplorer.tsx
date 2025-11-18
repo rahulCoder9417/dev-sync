@@ -22,7 +22,7 @@ interface FileExplorerProps {
   onTabClose: (fileId: string) => void;
   projectId: string;
   particapantsRef: Map<string, UserSummary>;
-  setTabs: (tabs: Tab[]) => void;
+  setTabs:  React.Dispatch<React.SetStateAction<Tab[]>>;
   sendMessage: (message: string, projectId: string, fileId: string | undefined, data: any) => void;
   setdeletionMenu: (menu: any) => void;
 }
@@ -51,6 +51,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   const toggleFolder = useCallback((folderId: string) => {
     setExpandedFolders(prev => {
       const next = new Set(prev);
+      console.log("toggleFolder",folderId,next)
       if (next.has(folderId)) next.delete(folderId)
       else next.add(folderId);
       return next;
@@ -98,26 +99,35 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   };
 
 
-
   const addNode = (
     tree: FileNode[],
     nodeId: string,
-    newNode: any
+    newNode: FileNode
   ): FileNode[] => {
-    if (!nodeId) { if (newNode.type === "file") { return [...tree, newNode] } else { return [newNode, ...tree] } }
+    if (!nodeId) { 
+      return newNode.type === "file"
+        ? [...tree, newNode]
+        : [newNode, ...tree];
+    }
+  
     return tree.map(node => {
       if (node.id === nodeId) {
-        if (newNode.type === "folder") { node.children = [newNode, ...(node.children || [])]; } else {
-          node.children = [...(node.children || []), newNode];
-        }
-        return node;
+        const children = node.children ?? [];
+        const updatedChildren = newNode.type === "folder"
+          ? [newNode, ...children]
+          : [...children, newNode];
+  
+        return { ...node, children: updatedChildren }; // <-- immutable update
       }
+  
       if (node.children) {
         return { ...node, children: addNode(node.children, nodeId, newNode) };
       }
+  
       return node;
     });
   };
+  
 
   const fileOpSelector = useAppSelector((state) => state.collabCodeFileOp.projects, shallowEqual)
 
@@ -138,6 +148,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           newTree = removeNode(newTree, item.id)[0]
           break;
         case "save":
+          setTabs(prev => prev.map(t =>
+            t.id === item.id ? { ...t, content: item.content, isDirty: false } : t
+          ));
           newTree = saveNode(newTree, item.id, item.content!)
           break;
         default:
@@ -186,7 +199,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
   const handleCreate = async (type: string, nodeId: string, name: string) => {
     let id = cuid()
-    let newNode = {id,name,type : type as "file" | "folder",projectId,parentId:null,createdAt:"",updatedAt:"", children: type === "folder" ? [] : undefined}
+    let newNode = {id,name,type : type as "file" | "folder",projectId,parentId:nodeId,createdAt:"",updatedAt:"", children: type === "folder" ? [] : undefined}
   
     if (nodeId === null) {
       if (type === "file") {

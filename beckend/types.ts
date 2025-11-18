@@ -46,6 +46,7 @@ type FileOperationMessage = BaseMessage & ( | { action: 'changeAdmin'; projectId
   | { action: 'message'; projectId?: string; fileId?: string; data?: any }
   | { action: 'vote_delete'; projectId: string; fileId: string; fullName: string; fileName: string; }
   | { action: 'cancel_voting'; projectId: string; fileId: string; fullName: string; fileName: string; }
+  | { action: 'fileSave'; projectId: string; fileId: string; content: string; }
 
 );
 

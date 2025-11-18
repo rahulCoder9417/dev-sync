@@ -27,7 +27,7 @@ const page = async({params}:{params:{id:string}}) => {
       </div>
     </div>
   }
-  return <ProjectCodeComp data={data.responseData} />
+  return <ProjectCodeComp data={data.responseData}  />
 }
 
 export default page

@@ -5,10 +5,14 @@ interface PresenceState {
       string, 
       { type: string; name?: string; newNode?: FileNode; id: string,content?:string }[]
     >;
+    fileSaveProjects:Record<string,{projectId:string,fileId:string,content:string}[]>;
   }
 
 const initialState: PresenceState = {
   projects: {},
+  fileSaveProjects:{
+
+  }
 };
 
 interface UpdateFileOpPayload {
@@ -50,8 +54,26 @@ const fileOpSlice = createSlice({
     clearProjectOps: (state, action: PayloadAction<{ projectId: string }>) => {
       state.projects[action.payload.projectId] = [];
     },
+
+    addSaveFileOp: (state, action: PayloadAction<{ projectId: string,fileId:string,content:string }>) => {
+      const { projectId,fileId,content } = action.payload;
+      if (!state.fileSaveProjects[projectId]) state.fileSaveProjects[projectId] = [];
+      state.fileSaveProjects[projectId].push({ projectId,fileId,content });
+    },
+
+    consumeSaveFileOp: (
+      state,
+      action: PayloadAction<{ projectId: string }>
+    ) => {
+      if (state.fileSaveProjects[action.payload.projectId]?.length) {
+        state.fileSaveProjects[action.payload.projectId].shift(); // just remove it
+      }
+    },
+    clearSaveFileOp: (state, action: PayloadAction<{ projectId: string }>) => {
+      state.fileSaveProjects[action.payload.projectId] = [];
+    },
   },
 });
 
-export const { addFileOp ,consumeFileOp,clearProjectOps} = fileOpSlice.actions;
+export const { addFileOp ,consumeFileOp,clearProjectOps,addSaveFileOp,consumeSaveFileOp,clearSaveFileOp} = fileOpSlice.actions;
 export default fileOpSlice.reducer;

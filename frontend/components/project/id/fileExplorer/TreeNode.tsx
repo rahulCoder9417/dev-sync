@@ -47,8 +47,9 @@ const TreeNodeInner: React.FC<Props> = ({ node,errorMarkers,  sendMessage, depth
   const handleClick = useCallback(() => {
     console.log("click",action)
     if (action) return
+    console.log("click",node)
     if (node.type === 'folder') onToggle(node.id);
-
+    
     else onSelect(node);
   }, [node, onSelect, onToggle,action]);
 
@@ -156,7 +157,7 @@ const TreeNodeInner: React.FC<Props> = ({ node,errorMarkers,  sendMessage, depth
 const propsAreEqual = (prev: Props, next: Props) => {
   return prev.node.id === next.node.id
     && prev.node.name === next.node.name
-    && prev.expandedFolders.has(prev.node.id) === next.expandedFolders.has(next.node.id)
+    && prev.expandedFolders.size === next.expandedFolders.size
     && prev.errorMarkers?.[prev.node.id] == next.errorMarkers?.[next.node.id]
     && prev.depth === next.depth
     && prev.adminMenu === next.adminMenu

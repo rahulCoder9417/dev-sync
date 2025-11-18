@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface UpdateState {
-  updates:Record<string,{type:string,data:any}[]>;
+  updates:Record<string,{type:string,data:any,stateDiff?:any}[]>;
 }
 
 const initialState: UpdateState = {
@@ -13,10 +13,10 @@ const updateSlice = createSlice({
   name: "update",
   initialState,
   reducers: {
-    updateCode: (state, action: PayloadAction<{type:string,data:any,fileId:string}>) => {
-      const { type,data,fileId } = action.payload;
+    updateCode: (state, action: PayloadAction<{type:string,data:any,fileId:string,stateDiff?:any}>) => {
+      const { type,data,fileId,stateDiff } = action.payload;
       if(!state.updates[fileId]) state.updates[fileId] = [];
-      state.updates[fileId].push({type,data})
+      state.updates[fileId].push({type,data,stateDiff})
 
         },
     consumeUpdate: (state, action: PayloadAction<{fileId:string}>) => {

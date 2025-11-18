@@ -4,39 +4,60 @@ import * as Y from "yjs";
 import { MonacoBinding } from "y-monaco";
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { XCircle, Save } from 'lucide-react';
-import { Tab } from '@/types';
+import { Tab, FileNode } from '@/types';
 import { showToast } from "@/components/main/Toast";
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { shallowEqual } from 'react-redux';
 import { consumeUpdate } from "@/lib/redux/features/collabCodeEditorUpdate";
 import PreviewCloud from "./PreviewCloud";
 import CodeTabHeader from "./CodeTabHeader";
+import { consumeSaveFileOp } from "@/lib/redux/features/collabCodeFileOp";
 
 interface CodeEditorProps {
   isTeam: boolean;
+
   tabs: Tab[];
   setErrorMarkers: (errorMarkers: any) => void;
   errorMarkers: Record<string, boolean> | null;
   sendMessage: (message: string, projectId: string, fileId: string | undefined, data?: any) => boolean;
-  setTabs: (tabs: Tab[]) => void;
+  setTabs: React.Dispatch<React.SetStateAction<Tab[]>>;
+  setFiles: React.Dispatch<React.SetStateAction<FileNode[]>>;
   onTabClose: (tabId: string) => void;
   onTabSelect: (tab: Tab) => void;
   projectId: string;
 }
 
+export const saveNode = (tree: any, nodeId: string, content: string) => {
+  return tree.map((node: any) => {
+    if (node.id === nodeId) {
+      
+      return { ...node, content };
+    }
+    if (node.children) {
+      return { ...node, children: saveNode(node.children, nodeId, content) };
+    }
+    return node;
+  });
+};
 const CodeEditor: React.FC<CodeEditorProps> = ({
   projectId, tabs, errorMarkers, setErrorMarkers,
-  sendMessage, setTabs, onTabClose, onTabSelect, isTeam
+  sendMessage, setTabs, setFiles, onTabClose, onTabSelect, isTeam
 }) => {
 
   const [tabToClose, setTabToClose] = useState<string | null>(null);
   const [readOnly, setReadOnly] = useState(false);
   const [isFirstSync, setIsFirstSync] = useState<string | null>(null);
 
+
   const activeTab = tabs.find(tab => tab.isActive);
   const dispatch = useAppDispatch();
-  const docRef = useRef<Y.Doc>(new Y.Doc());
-  const bindingRef = useRef<MonacoBinding>(null);
+
+  // ⭐ Map of Y.Doc per file/tab
+  const docsRef = useRef<Map<string, Y.Doc>>(new Map());
+
+  // ⭐ Current Y.Doc for the active tab
+  let docRef = useRef<Y.Doc>(new Y.Doc());
+  const bindingRef = useRef<MonacoBinding | null>(null);
 
   const collaboratorsMap = useAppSelector(
     (state) => activeTab ? (state.collabCodeUser.projects?.[projectId]?.[activeTab.id] ?? []) : [],
@@ -49,54 +70,156 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   );
 
   const userId = useAppSelector((state) => state.user.id, shallowEqual);
+  const t = () => {
+    const d = new Date();
+    return `${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}:${String(d.getMilliseconds()).padStart(3, "0")}`;
+  };
 
+  // ⭐ Helper to get/create a Y.Doc per tab/file
+  const getOrCreateDoc = useCallback((tabId: string) => {
+    const docs = docsRef.current;
+    if (!docs.has(tabId)) {
+      docs.set(tabId, new Y.Doc());
+    }
+    return docs.get(tabId)!;
+  }, []);
 
   const handleCodeChange = useCallback((tabId: string, content: string) => {
     if (!isTeam) return;
-    setTabs(tabs.map(tab =>
-      tab.id === tabId ? { ...tab, content, isDirty: content !== tab.content } : tab
+    setTabs(prev => prev.map(t =>
+      t.id === tabId ? { ...t, isDirty: content !== t.content } : t
     ));
-  }, [tabs]);
+  }, [isTeam, setTabs]);
 
   const activeTabRef = useRef<Tab | null>(activeTab);
+  const silentMode = useRef(false);
+
+  // 💾 Save: copy current Y.Text -> activeTab.content and clear isDirty
+  const handleSave = useCallback(async () => {
+    const tab = activeTabRef.current;
+    if (!tab || readOnly) return;
+    try {
+      const ytext = docRef.current.getText("monaco");
+      const newContent = ytext.toString();
+      setTabs(prev => prev.map(t =>
+        t.id === tab.id ? { ...t, content: newContent, isDirty: false } : t
+      ));
+      // sync file tree content as well
+      setFiles(prev => saveNode(prev, tab.id, newContent));
+      const res: any = await fetch(`/api/projects/fileItem/updateContent`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: tab.id, content: newContent }),
+      }).then(res => res.json())
+      if (res.status !== 200) {
+        showToast(false, "Error saving content  -> " + res.error, "Please do a refresh");
+        return
+      }
+      sendMessage("fileSave", projectId, tab.id, { content: newContent });
+    } catch (e) {
+      console.error("Save failed", e);
+    }
+  }, [setTabs, setFiles]);
+  const savePending = useAppSelector(
+    (state) => state.collabCodeFileOp.fileSaveProjects?.[projectId] ?? [],
+    shallowEqual
+  );
+  useEffect(() => {
+    if (savePending.length === 0) return
+    savePending.forEach((item: any) => {
+      console.log("hmm",item.content,item.fileId)
+      setTabs(prev => prev.map(t =>
+        t.id === item.fileId ? { ...t, content: item.content, isDirty: false } : t
+      ));
+     
+      setFiles(prev => saveNode(prev, item.fileId, item.content!))
+    
+      if (item.fileId !== activeTab?.id){
+        const ydoc = docsRef.current.get(item.fileId);
+        if (ydoc) {
+          const ytext = ydoc.getText("monaco");
+          ytext.delete(0, ytext.length);
+          ytext.insert(0, item.content);
+        }
+      }
+      dispatch(consumeSaveFileOp({ projectId }))
+
+    })
+  }, [savePending]);
 
   /** 🧠 Active tab changes */
   useEffect(() => {
     if (!activeTab?.id) return;
+
+    // ⭐ Destroy previous binding so it stops listening to thegit  old doc/editor
+    if (bindingRef.current) {
+      try {
+        bindingRef.current.destroy?.(true);
+
+      } catch (e) {
+        // pass 
+      }
+      bindingRef.current = null;
+    }
+
+    // ⭐ Switch docRef to the doc for this tab
+    const ydoc = getOrCreateDoc(activeTab.id);
+
+    const ytext = ydoc.getText("monaco");
+
+    // only because the code will be sent by the other user if some one joined the same file
+    silentMode.current = true;
+    if (ytext.length === 0 && activeTab.content) {
+      console.log("inserting the contesnts of save",activeTab.content)
+      ytext.insert(0, activeTab.content);
+      console.log("insertedok")
+    }
+    setTimeout(() => {
+      silentMode.current = false;
+    }, 0);
+    docRef.current = ydoc;
+
     activeTabRef.current = activeTab;
-    const ytext = docRef.current.getText("monaco");
+   
+  }, [activeTab?.id, getOrCreateDoc]);
 
-    ytext.delete(0, ytext.length);
-    ytext.insert(0, activeTab?.content || "");
-  }, [activeTab?.id]);
+  const updateHandlerRef = useRef<((update: Uint8Array) => void) | null>(null);
 
-  /** 🧩 Yjs doc initialization and outgoing updates */
-  const updateHandlerRef = useRef<(u: Uint8Array) => void>(()=>{});
-
+  // 🔁 Outgoing Yjs updates → sendMessage
   useEffect(() => {
-    updateHandlerRef.current = (update) => {
+
+    const ydoc = docRef.current;
+
+    if (updateHandlerRef.current) {
+      ydoc.off("update", updateHandlerRef.current);
+    }
+
+    const handler = (update: Uint8Array) => {
+      if (silentMode.current || readOnly) {
+        return;
+      }
       const tab = activeTabRef.current;
-      if (!tab || readOnly) return;
-  
+      if (!tab) return;
+
       sendMessage("update", projectId, tab.id, {
         data: Array.from(update),
-        updateType: "text",
+        updateType: "text"
       });
     };
-  }, [readOnly]);
-  
-  useEffect(() => {
-    const ydoc = docRef.current;
-    if (!ydoc) return;
-  
-    const wrapper = (update: Uint8Array) => updateHandlerRef.current?.(update);
-  
-    ydoc.on("update", wrapper);
-    return () => {
-      ydoc.off("update", wrapper);
-    };
-  }, [docRef.current]);
 
+    updateHandlerRef.current = handler;
+    ydoc.on("update", handler);
+
+    return () => {
+      if (updateHandlerRef.current) {
+        ydoc.off("update", updateHandlerRef.current);
+        updateHandlerRef.current = null;
+      }
+    };
+    // ⭐ Depend on activeTab.id so handler moves to the new doc when tab changes
+  }, [readOnly, activeTab?.id, projectId, sendMessage]);
 
   /** 📦 Collaborators / readOnly logic */
   useEffect(() => {
@@ -108,65 +231,84 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       if (!isOwner) {
         if (!readOnly) setReadOnly(true);
         if (isFirstSync !== activeTab.id) {
-          sendMessage("sync", projectId, activeTab.id);
-          setIsFirstSync(activeTab.id);
+
+          setTimeout(() => {
+            console.log("syncing")
+            console.log(docRef.current.getText("monoco").toString())
+            docRef.current.getText("monaco").delete(0, docRef.current.getText("monaco").length)
+            sendMessage("sync", projectId, activeTab.id);
+            setIsFirstSync(activeTab.id);
+          }, 0);
         }
-        showToast(false, "You are not the owner of this file");
       } else {
-        if(readOnly) setReadOnly(false);
+        if (readOnly) setReadOnly(false);
         setIsFirstSync(activeTab.id);
       }
     }
-  }, [collaboratorsMap, activeTab?.id]);
+  }, [collaboratorsMap, activeTab?.id, isFirstSync]);
 
   /** 🔁 Incoming updates from Yjs / Redux */
   useEffect(() => {
-        if (!updatesMap || updatesMap.length === 0) return;
+    if (!updatesMap || updatesMap.length === 0) return;
 
     updatesMap.forEach((update) => {
       const tab = activeTabRef.current;
       if (!tab) return;
 
-
       if (update.type === "sync") {
-        const fullState = Y.encodeStateAsUpdate(docRef.current);
+
+        const diffData = Y.encodeStateAsUpdate(docRef.current);
         sendMessage("syncedData", projectId, tab.id, {
-          data: Array.from(fullState),
+          data: Array.from(diffData),
           updateType: "FirstSync",
           include: update.data
         });
+        dispatch(consumeUpdate({ fileId: tab.id }));
         return;
       }
-      console.log("hmm wahi",update)
+
       const ytext = docRef.current.getText("monaco");
+      console.log(ytext.toString(), ytext)
       const updateArray = new Uint8Array(update.data);
-      if (update.type === "FirstSync") ytext.delete(0, ytext.length);
-      Y.applyUpdate(docRef.current, updateArray);
+
+      try {
+        Y.applyUpdate(docRef.current, updateArray);
+        console.log("✅ Update applied successfully");
+      } catch (error) {
+        console.error("❌ Failed to apply update:", error);
+      }
 
       dispatch(consumeUpdate({ fileId: tab.id }));
     });
-  }, [updatesMap]);
-
+  }, [updatesMap, dispatch, projectId, sendMessage]);
 
   /** 🧩 Editor mount handler */
   const handleEditorMount: OnMount = (editor, monaco) => {
     if (!activeTab || typeof window === "undefined") return;
 
-    const ydoc = docRef.current;
-    const ytext = ydoc.getText("monaco");
+    // ⭐ Always get the doc for this specific tab
+    const ydoc = getOrCreateDoc(activeTab.id);
+    docRef.current = ydoc;
 
-    if (ytext.length === 0 && activeTab.content) {
-      ytext.insert(0, activeTab.content);
-    }
 
     const model = monaco.editor.createModel(
-      ytext.toString(),
+      ydoc.getText("monaco").toString(),
       getLanguage(activeTab.name ?? "plaintext")
     );
     editor.setModel(model);
 
-    const binding = new MonacoBinding(ytext, model, new Set([editor]), null);
-      bindingRef.current = binding;
+    // ⌨️ Ctrl/Cmd+S to Save
+    try {
+      const keybinding = (monaco as any).KeyMod.CtrlCmd | (monaco as any).KeyCode.KeyS;
+      editor.addCommand(keybinding, () => {
+        handleSave();
+      });
+    } catch (e) {
+      // no-op
+    }
+
+    const binding = new MonacoBinding(ydoc.getText("monaco"), model, new Set([editor]), null);
+    bindingRef.current = binding;
 
     monaco.editor.onDidChangeMarkers(() => {
       const markers = monaco.editor.getModelMarkers({ resource: model.uri });
@@ -212,7 +354,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       svelte: 'svelte',
     };
 
-    // Treat known binary/media files as plain text
     const binaryExtensions = new Set([
       'woff', 'woff2', 'ttf', 'otf', 'eot',
       'svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico',
@@ -223,7 +364,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
     return map[ext] || 'plaintext';
   };
-
 
   const SUPPORTED_EXTS = {
     images: ["png", "jpg", "jpeg", "gif", "webp"],
@@ -258,6 +398,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             <PreviewCloud url={activeTab.content!} type={checkNotEditor() as any} />
           ) : (
             <Editor
+              key={activeTab.id}
               onMount={handleEditorMount}
               height="100%"
               defaultLanguage="plaintext"
@@ -271,7 +412,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                 wordWrap: 'on',
                 scrollBeyondLastLine: false,
                 automaticLayout: true,
-                readOnly: !isTeam || readOnly,
+                readOnly: !isTeam || readOnly || !bindingRef.current,
               }}
             />
           )
@@ -293,6 +434,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => {
+                  handleSave();
                   onTabClose(tabToClose);
                   setTabToClose(null);
                 }}

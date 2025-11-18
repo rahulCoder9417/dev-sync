@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { ServerPayload, UserSummary } from "@/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { changeAdmin, updatePresence } from "@/lib/redux/features/collabCodeUserState";
-import { addFileOp } from "@/lib/redux/features/collabCodeFileOp";
+import { addFileOp, addSaveFileOp } from "@/lib/redux/features/collabCodeFileOp";
 import { updateCode } from "@/lib/redux/features/collabCodeEditorUpdate";
 import { parseRoomKey ,makeRoomKey} from "@/lib/mainUtils/roomParser";
 
@@ -100,12 +100,23 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                 })
               );
               break;
+            case "fileSave":
+              showToast(true,"File saved by ii" )
+              dispatch(
+                addSaveFileOp({
+                  projectId: payload.projectId,
+                  fileId: payload.fileId,
+                  content: payload.content,
+                })
+              );
+              break;
             case "sync":
               dispatch(
                 updateCode({
                   fileId: payload.fileId,
                   type: "sync",
                   data: payload.to,
+                  stateDiff: payload.data,
                 })
               );
               break;
@@ -423,7 +434,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
       console.warn("[collab] trying to send but socket not open");
       setTimeout(() => {
         send(msg);
-      }, 0);
+      }, 20);
       return false;
     }
 
