@@ -10,16 +10,17 @@ import { ChatMessage, FileNode, ProjectById, Tab, User } from '@/types';
 import Loader from '@/components/main/Loader';
 import useCollab from '@/customHooks/useCollab';
 import { DeleteToast } from './fileExplorer/DeleteToast';
+import ChatComponent from '@/components/team/chatComponent';
 
 
 export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
   const [errorMarkers,setErrorMarkers] = useState<Record<string, boolean> | null>(null)
   const [files, setFiles] = useState<FileNode[]>(data?.files!);
   const [tabs, setTabs] = useState<Tab[]>([]);
-  const [visibleSection, setVisibleSection] = useState<{file: boolean; code: boolean; ai: boolean; preview: boolean;}>({
+  const [visibleSection, setVisibleSection] = useState<{file: boolean; code: boolean; chat: boolean; preview: boolean;}>({
     file: true,
     code: true,
-    ai: false,
+    chat: false,
     preview: false
   });
   const [toggleOpen, setToggleOpen] = useState(false);
@@ -170,9 +171,10 @@ handleFileSelect(t)
           </div>
         )}
 
-        {(visibleSection.ai && data?.isTeamMember) && (
-          <div className="w-[25%] max-md:w-1/2 min-w-[300px]">
-            <ChatBot />
+        {(visibleSection.chat && data?.isTeamMember) && (
+          <div className="w-[25%] max-md:w-1/2 min-w-[300px] overflow-y-auto">
+            {/* no use of last message */}
+            <ChatComponent selectedChat={{type:"team",id:data.team.id!,name:data.name}} dmAndTeam={{teams:[{id:data.team.id!,name:data.name,memberCount:data.team.members.length,projectId:data.id,lastMessage:false,lastMessageAt:new Date(),}],friends:[]}} />
           </div>
         )}
       </div>
@@ -182,12 +184,12 @@ handleFileSelect(t)
         <div className="relative">
           {toggleOpen && (
             <div className="absolute cursor-pointer bottom-14 right-0 flex flex-col items-end gap-2">
-              {(data?.isTeamMember ?["file", "preview", "ai"]:["file","preview"]).map((section) => (
+              {(data?.isTeamMember ?["file", "preview", "chat"]:["file","preview"]).map((section) => (
                 <button
                   key={section}
                   onClick={() => toggleSection(section as keyof typeof visibleSection)}
                   className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${visibleSection[section as keyof typeof visibleSection]
-                    ? 'bg-green-500 text-white'
+                    ? 'bg-secondary text-white'
                     : 'bg-gray-300 text-black'
                     }`}
                 >

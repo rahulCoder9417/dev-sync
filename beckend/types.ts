@@ -47,7 +47,7 @@ type FileOperationMessage = BaseMessage & ( | { action: 'changeAdmin'; projectId
   | { action: 'vote_delete'; projectId: string; fileId: string; fullName: string; fileName: string; }
   | { action: 'cancel_voting'; projectId: string; fileId: string; fullName: string; fileName: string; }
   | { action: 'fileSave'; projectId: string; fileId: string; content: string; }
-
+  | { action: 'awareness'; projectId: string; fileId: string; type: "cursor" | "selection" | "scroll"; scroll?: { top: number; left: number }; cursor?: { line: number; column: number }; selection?: { start: { line: number; column: number }; end: { line: number; column: number } } }
 );
 
 // Chat message types

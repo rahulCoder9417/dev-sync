@@ -12,6 +12,9 @@ import { consumeUpdate } from "@/lib/redux/features/collabCodeEditorUpdate";
 import PreviewCloud from "./PreviewCloud";
 import CodeTabHeader from "./CodeTabHeader";
 import { consumeSaveFileOp } from "@/lib/redux/features/collabCodeFileOp";
+import * as awarenessProtocol from "y-protocols/awareness";
+import { theme } from "@/lib/mainUtils/themeMonoco";
+import { fa } from "zod/v4/locales";
 
 interface CodeEditorProps {
   isTeam: boolean;
@@ -30,7 +33,7 @@ interface CodeEditorProps {
 export const saveNode = (tree: any, nodeId: string, content: string) => {
   return tree.map((node: any) => {
     if (node.id === nodeId) {
-      
+
       return { ...node, content };
     }
     if (node.children) {
@@ -53,8 +56,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const dispatch = useAppDispatch();
 
   // ⭐ Map of Y.Doc per file/tab
+  const decorationsRef = useRef<Map<string, Map<string, string[]>>>(new Map());
   const docsRef = useRef<Map<string, Y.Doc>>(new Map());
-
+  const awarenessMap = useRef<Map<string, any>>(new Map());// there is actually no  use as i am not allowing multiple user awareness
+  const editorRef = useRef<any>(null);
+  const monacoRef = useRef<any>(null);
+  const pendingScrollRef = useRef<{top: number, left: number} | null>(null);
   // ⭐ Current Y.Doc for the active tab
   let docRef = useRef<Y.Doc>(new Y.Doc());
   const bindingRef = useRef<MonacoBinding | null>(null);
@@ -83,6 +90,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
     return docs.get(tabId)!;
   }, []);
+
+  const getOrCreateAwareness = useCallback((tabId: string) => {
+    if (!awarenessMap.current.has(tabId)) {
+      const doc = docsRef.current.get(tabId);
+      const awareness = new awarenessProtocol.Awareness(doc!);
+      awareness.setLocalState({});
+      awarenessMap.current.set(tabId, awareness);
+    }
+    return awarenessMap.current.get(tabId);
+  }, []);
+
 
   const handleCodeChange = useCallback((tabId: string, content: string) => {
     if (!isTeam) return;
@@ -129,14 +147,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   useEffect(() => {
     if (savePending.length === 0) return
     savePending.forEach((item: any) => {
-      console.log("hmm",item.content,item.fileId)
+      console.log("hmm", item.content, item.fileId)
       setTabs(prev => prev.map(t =>
         t.id === item.fileId ? { ...t, content: item.content, isDirty: false } : t
       ));
-     
+
       setFiles(prev => saveNode(prev, item.fileId, item.content!))
-    
-      if (item.fileId !== activeTab?.id){
+
+      if (item.fileId !== activeTab?.id) {
         const ydoc = docsRef.current.get(item.fileId);
         if (ydoc) {
           const ytext = ydoc.getText("monaco");
@@ -152,7 +170,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   /** 🧠 Active tab changes */
   useEffect(() => {
     if (!activeTab?.id) return;
-
+    setIsFirstSync("")
     // ⭐ Destroy previous binding so it stops listening to thegit  old doc/editor
     if (bindingRef.current) {
       try {
@@ -172,7 +190,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     // only because the code will be sent by the other user if some one joined the same file
     silentMode.current = true;
     if (ytext.length === 0 && activeTab.content) {
-      console.log("inserting the contesnts of save",activeTab.content)
+      console.log("inserting the contesnts of save", activeTab.content)
       ytext.insert(0, activeTab.content);
       console.log("insertedok")
     }
@@ -182,7 +200,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     docRef.current = ydoc;
 
     activeTabRef.current = activeTab;
-   
+
   }, [activeTab?.id, getOrCreateDoc]);
 
   const updateHandlerRef = useRef<((update: Uint8Array) => void) | null>(null);
@@ -233,8 +251,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         if (isFirstSync !== activeTab.id) {
 
           setTimeout(() => {
-            console.log("syncing")
-            console.log(docRef.current.getText("monoco").toString())
             docRef.current.getText("monaco").delete(0, docRef.current.getText("monaco").length)
             sendMessage("sync", projectId, activeTab.id);
             setIsFirstSync(activeTab.id);
@@ -247,7 +263,69 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   }, [collaboratorsMap, activeTab?.id, isFirstSync]);
 
-  /** 🔁 Incoming updates from Yjs / Redux */
+  const updateRemoteDecorations = useCallback((
+    editor: any,
+    monaco: any,
+    tabId: string,
+    remoteUserId: string,
+    cursor?: any,
+    selection?: any
+  ) => {
+    // Initialize decoration map for this tab if needed
+    if (!decorationsRef.current.has(tabId)) {
+      decorationsRef.current.set(tabId, new Map());
+    }
+
+    const tabDecorations = decorationsRef.current.get(tabId)!;
+    const oldDecorations = tabDecorations.get(remoteUserId) || [];
+
+    const newDecorations: any[] = [];
+
+    // Add cursor decoration if provided
+    if (cursor) {
+      newDecorations.push({
+        range: new monaco.Range(
+          cursor.lineNumber || cursor.line,  // Handle both formats
+          cursor.column,
+          cursor.lineNumber || cursor.line,
+          cursor.column
+        ),
+        options: {
+          className: "remote-cursor",
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+        }
+      });
+    }
+
+    // Add selection decoration if provided
+    if (selection && selection.start && selection.end) {
+      const isSamePosition =
+        selection.start.lineNumber === selection.end.lineNumber &&
+        selection.start.column === selection.end.column;
+
+      // Only show selection if start and end are different
+      if (!isSamePosition) {
+        newDecorations.push({
+          range: new monaco.Range(
+            selection.start.lineNumber,
+            selection.start.column,
+            selection.end.lineNumber,
+            selection.end.column
+          ),
+          options: {
+            className: "remote-selection",
+            isWholeLine: false,
+            stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+          }
+        });
+      }
+    }
+
+    // Apply decorations and store new IDs
+    const newIds = editor.deltaDecorations(oldDecorations, newDecorations);
+    tabDecorations.set(remoteUserId, newIds);
+  }, []);
+
   useEffect(() => {
     if (!updatesMap || updatesMap.length === 0) return;
 
@@ -255,20 +333,93 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       const tab = activeTabRef.current;
       if (!tab) return;
 
+      if (update.type === "awareness") {
+        if (!readOnly) {
+          dispatch(consumeUpdate({ fileId: tab.id }));
+          return;
+        }
+        const editor = editorRef.current
+        const monaco = monacoRef.current
+        const awareness = awarenessMap.current.get(tab.id);
+        if (update.data.type === "cursor") {
+          awareness.setLocalStateField("remoteCursor", {
+            ...update.data.cursor,
+            userId: update.data.userId
+          });
+          const existingSelection = awareness?.getLocalState()?.remoteSelection;
+
+          // Update both cursor and selection (if exists from same user)
+          updateRemoteDecorations(
+            editor,
+            monaco,
+            tab.id,
+            update.data.userId,
+            update.data.cursor,
+            existingSelection?.userId === update.data.userId ? existingSelection : undefined
+          );
+        }
+
+        if (update.data.type === "selection") {
+          awareness.setLocalStateField("remoteSelection", {
+            ...update.data.selection,
+            userId: update.data.userId
+          });
+
+          // Get existing cursor if any
+          const existingCursor = awareness?.getLocalState()?.remoteCursor;
+
+          // Update both cursor and selection
+          updateRemoteDecorations(
+            editor,
+            monaco,
+            tab.id,
+            update.data.userId,
+            existingCursor?.userId === update.data.userId ? existingCursor : undefined,
+            update.data.selection
+          );
+        }
+
+        if (update.data.type === "scroll") {
+          const editor = editorRef.current;
+          
+          if (editor?.setScrollTop && editor?.setScrollLeft) {
+            editor.setScrollTop(update.data.scroll.top);
+            editor.setScrollLeft(update.data.scroll.left);
+          } else {
+            // Editor not ready - queue it
+            pendingScrollRef.current = {
+              top: update.data.scroll.top,
+              left: update.data.scroll.left
+            };
+          }
+        }
+
+        dispatch(consumeUpdate({ fileId: tab.id }));
+        return;
+      }
+
+
       if (update.type === "sync") {
 
         const diffData = Y.encodeStateAsUpdate(docRef.current);
         sendMessage("syncedData", projectId, tab.id, {
           data: Array.from(diffData),
           updateType: "FirstSync",
-          include: update.data
+          include: update.data,
+
+        });
+        // send first scroll awareness
+
+        const top = editorRef.current!.getScrollTop();
+        const left = editorRef.current!.getScrollLeft();
+        sendMessage("awareness", projectId, tab.id, {
+          type: "scroll",
+          scroll: { top, left }
         });
         dispatch(consumeUpdate({ fileId: tab.id }));
         return;
       }
 
-      const ytext = docRef.current.getText("monaco");
-      console.log(ytext.toString(), ytext)
       const updateArray = new Uint8Array(update.data);
 
       try {
@@ -289,7 +440,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     // ⭐ Always get the doc for this specific tab
     const ydoc = getOrCreateDoc(activeTab.id);
     docRef.current = ydoc;
-
+    editorRef.current = editor;
+    monacoRef.current = monaco;
 
     const model = monaco.editor.createModel(
       ydoc.getText("monaco").toString(),
@@ -310,12 +462,76 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     const binding = new MonacoBinding(ydoc.getText("monaco"), model, new Set([editor]), null);
     bindingRef.current = binding;
 
+    const awareness = getOrCreateAwareness(activeTab.id);
+
+    binding.awareness = awareness; // REQUIRED for MonacoBinding awareness handling
+//scroll
+if (pendingScrollRef.current) {
+  const { top, left } = pendingScrollRef.current;
+    editor?.setScrollTop(top);
+    editor?.setScrollLeft(left);
+    pendingScrollRef.current = null;
+}
     monaco.editor.onDidChangeMarkers(() => {
       const markers = monaco.editor.getModelMarkers({ resource: model.uri });
       const errors = markers.filter(m => m.severity === monaco.MarkerSeverity.Error);
       const hasErrors = errors.length > 0;
       setErrorMarkers({ [activeTab.id]: hasErrors });
     });
+
+    monaco.editor.defineTheme("devsync-blue-dark", theme as any)
+    monaco.editor.setTheme(readOnly ? "devsync-blue-dark" : "vs-dark")
+    editor.onDidChangeCursorPosition((e) => {
+      if (readOnly) return;
+
+      const pos = editor.getPosition();
+      if (!pos) return;
+      awareness.setLocalStateField("cursor", {
+        line: pos.lineNumber,
+        column: pos.column,
+        userId
+      })
+      sendMessage("awareness", projectId, activeTab.id, {
+        type: "cursor",
+        cursor: pos
+      });
+    });
+
+    editor.onDidChangeCursorSelection((e) => {
+      if (readOnly) return;
+
+      const sel = editor.getSelection();
+      if (!sel) return;
+      awareness.setLocalStateField("selection", {
+        start: sel.getStartPosition(),
+        end: sel.getEndPosition(),
+        userId
+      });
+      sendMessage("awareness", projectId, activeTab.id, {
+        type: "selection",
+        selection: {
+          start: sel.getStartPosition(),
+          end: sel.getEndPosition()
+        }
+      });
+    });
+
+    editor.onDidScrollChange((e) => {
+      if (readOnly) return;
+
+      const top = editor.getScrollTop();
+      const left = editor.getScrollLeft();
+      awareness.setLocalStateField("scroll", {
+        top,
+        left,
+        userId
+      });
+      sendMessage("awareness", projectId, activeTab.id, {
+        type: "scroll",
+        scroll: { top, left }
+      });
+    });
+
   };
 
   const getLanguage = (name: string): string => {
@@ -398,13 +614,13 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             <PreviewCloud url={activeTab.content!} type={checkNotEditor() as any} />
           ) : (
             <Editor
-              key={activeTab.id}
+              key={`${activeTab.id}-${readOnly}`}
               onMount={handleEditorMount}
               height="100%"
               defaultLanguage="plaintext"
               language={getLanguage(activeTab.name)}
               onChange={(value) => handleCodeChange(activeTab.id, value!)}
-              theme="vs-dark"
+              theme={"vs-dark"}
               options={{
                 fontFamily: "'Fira Code', monospace",
                 fontSize: 14,

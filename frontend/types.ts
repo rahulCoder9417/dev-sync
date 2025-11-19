@@ -57,6 +57,7 @@ export interface User {
     | { type: "update"; room: string; fileId: string; updateType: string; data: any }
     | { type: "joined"; room: string; you: UserSummary }
     | { type: "left"; room: string; you: UserSummary }
+    | { type: "awareness"; fileId: string,projectId:string; from: UserSummary; data: {type:string,scroll?:{top:number,left:number},cursor?:{x:number,y:number},selection?:{start:number,end:number}} }
     | { type: "user_joined"; room: string; user: UserSummary }
     | { type: "user_left"; room: string; user: UserSummary }
     | { type: "message"; room: string; from: UserSummary; data: any }

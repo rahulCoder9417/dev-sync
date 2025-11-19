@@ -89,6 +89,9 @@ export class FileWsHandler extends BaseWsHandler {
         case "fileSave":
           this.handleFileSave(ws, parsed as any);
           break;
+        case "awareness":
+          this.handleAwareness(ws, parsed as any);
+          break;
         default:
           ws.send(JSON.stringify({ error: "unknown_action" }));
       }
@@ -102,6 +105,39 @@ export class FileWsHandler extends BaseWsHandler {
         })
       );
     }
+  }
+
+  private handleAwareness(ws : ExtWebSocket,parsed : ClientMessage){
+    if(!parsed || typeof parsed !== "object" || parsed.action!=="awareness") {
+      ws.send(JSON.stringify({ error: "invalid_message" }));
+      return;
+    }
+    const { projectId,fileId,type,scroll,cursor,selection} = parsed;
+    const room = makeRoomId(projectId,fileId);
+    if (!room || typeof room !== "string") {
+      ws.send(JSON.stringify({ error: "room_required" }));
+      return;
+    }
+    this.room.broadcastToRoom(
+      room,
+      {
+        type: "awareness",
+        room,
+        from: {
+          userId: ws.userId,
+          username: ws.username,
+          fullName: ws.fullName,
+        },
+        projectId: projectId,
+        fileId: fileId,
+        data:{type,
+          userId:ws.userId,
+        scroll,
+        cursor,
+        selection},
+      },
+      ws
+    );
   }
 
   private handleFileSave(ws: ExtWebSocket, parsed: ClientMessage) {

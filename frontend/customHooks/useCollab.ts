@@ -100,6 +100,15 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                 })
               );
               break;
+            case "awareness":
+              dispatch(
+                updateCode({
+                  fileId: payload.fileId,
+                  type: payload.type,
+                  data: payload.data,
+                })
+              );
+              break;
             case "fileSave":
               showToast(true,"File saved by ii" )
               dispatch(

@@ -227,6 +227,14 @@
   .animate-bounce-avatar:nth-child(4) {
     animation-delay: 0.6s;
   }
+  .remote-cursor {
+    border-left: 2px solid #4f89fc; /* blue cursor */
+  }
+  
+  .remote-selection {
+    background: rgba(79, 137, 252, 0.25); /* translucent highlight */
+  }
+  
   
   
 }
