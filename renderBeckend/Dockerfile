@@ -110,8 +110,6 @@ RUN npm install
 COPY . .
 # Skip prisma generate during build
 ENV SKIP_PRISMA_GENERATE=1
-ENV DATABASE_URL=postgresql://Dev-sync_owner:npg_UQNV2Zb4iSjm@ep-long-forest-a8my4ix9-pooler.eastus2.azure.neon.tech/Dev-sync?sslmode=require&channel_binding=require
-
 RUN npm run build
 # =====================================================================
 # 13. Expose Render Port
