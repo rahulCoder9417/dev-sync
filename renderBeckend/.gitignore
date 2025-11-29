@@ -48,6 +48,9 @@ projects/*/*.log
 .cache/
 .nyc_output/
 
-# Rai
+# clerk configuration (can include secrets)
+/.clerk/
+
+/lib/generated/prisma
 
 /generated/prisma

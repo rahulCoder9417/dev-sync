@@ -5,9 +5,13 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "prisma generate && tsx watch server.ts",
+
     "build": "tsc",
-    "prebuild": "prisma generate",
-    "start": "node dist/server.js",
+
+    "prebuild": "if [ \"$SKIP_PRISMA_GENERATE\" != \"1\" ]; then prisma generate; fi",
+
+    "start": "prisma generate && node dist/server.js",
+
     "prisma:generate": "prisma generate"
   },
   "dependencies": {

@@ -108,6 +108,10 @@ COPY package.json package-lock.json* ./
 RUN npm install
 
 COPY . .
+# Skip prisma generate during build
+ENV SKIP_PRISMA_GENERATE=1
+
+
 RUN npm run build
 # =====================================================================
 # 13. Expose Render Port
