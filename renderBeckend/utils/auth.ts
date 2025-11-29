@@ -1,5 +1,5 @@
 import { verifyToken } from "@clerk/backend";
-import { db } from "../lib/db/db";
+import { db } from "../lib/db/db.js";
 
 export async function getAuthData(token: string):Promise<string | null> {
   try {

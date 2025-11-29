@@ -1,9 +1,9 @@
 import express from "express";
 import http from "http";
 import cors from "cors";
-import { handleUpgrade } from "./utils/upgradeRouter";
-import config from "./config/index";
-import router from "./routes/index";
+import { handleUpgrade } from "./utils/upgradeRouter.js";
+import config from "./config/index.js";
+import router from "./routes/index.js";
 
 const app = express();
 const server = http.createServer(app);

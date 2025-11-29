@@ -1,6 +1,6 @@
 import { parse } from "url";
-import handleUpgradeWs from "../ws/terminalHandler";
-import { getAuthData } from "./auth";
+import handleUpgradeWs from "../ws/terminalHandler.js";
+import { getAuthData } from "./auth.js";
 
 export async function handleUpgrade(request: any, socket: any, head: any) {
   const { pathname } = parse(request.url || "");

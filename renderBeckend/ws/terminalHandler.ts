@@ -1,5 +1,5 @@
 import { WebSocketServer, WebSocket } from "ws";
-import { ExtendedWebSocket } from "../types";
+import { ExtendedWebSocket } from "../types.js";
 import { IncomingMessage } from "http";
 
 class TerminalWS {
