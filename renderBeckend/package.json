@@ -9,8 +9,8 @@
     "build": "tsc",
 
     "prebuild": "if [ \"$SKIP_PRISMA_GENERATE\" != \"1\" ]; then prisma generate; fi",
-
-    "start": "prisma generate && node dist/server.js",
+    "postinstall": "prisma generate",
+    "start": "node dist/server.js",
 
     "prisma:generate": "prisma generate"
   },
