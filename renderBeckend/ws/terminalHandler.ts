@@ -1,13 +1,12 @@
 import { WebSocketServer, WebSocket } from "ws";
+import { ExtendedWebSocket } from "../types";
+import { IncomingMessage } from "http";
 
 class TerminalWS {
   private wss: WebSocketServer;
   private heartbeatInterval: NodeJS.Timeout | null = null;
 
-  // Local extension type for extra fields
-  private static asExt(ws: WebSocket) {
-    return ws as WebSocket & { userId?: string; isAlive?: boolean };
-  }
+
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
@@ -16,22 +15,19 @@ class TerminalWS {
   }
 
   private setup() {
-    this.wss.on("connection", (ws: WebSocket, userId: string) => {
-      const ext = TerminalWS.asExt(ws);
-      ext.userId = userId;
-      ext.isAlive = true;
-      ext.send("connected");
+    this.wss.on("connection", (ws: ExtendedWebSocket, req: IncomingMessage) => {
+      ws.send("connected");
 
-      ext.on("pong", () => {
-        ext.isAlive = true;
+      ws.on("pong", () => {
+        ws.isAlive = true;
       });
 
-      ext.on("message", (msg: Buffer) => {
+      ws.on("message", (msg: Buffer) => {
         console.log("[WS] received:", msg.toString());
       });
 
-      ext.on("close", () => {
-        console.log(`[WS] client disconnected userId=${userId}`);
+      ws.on("close", () => {
+        console.log(`[WS] client disconnected userId=${ws.userId}`);
       });
     });
 
@@ -46,15 +42,15 @@ class TerminalWS {
   private startHeartbeat() {
     if (this.heartbeatInterval) return;
     this.heartbeatInterval = setInterval(() => {
-      this.wss.clients.forEach((client: WebSocket) => {
-        const ext = TerminalWS.asExt(client);
-        if (ext.isAlive === false) {
-          console.log(`[WS] Terminating stale connection for userId=${ext.userId}`);
-          return ext.terminate();
+      this.wss.clients.forEach((client: ExtendedWebSocket) => {
+        
+        if (client.isAlive === false) {
+          console.log(`[WS] Terminating stale connection for userId=${client.userId}`);
+          return client.terminate();
         }
-        ext.isAlive = false;
+        client.isAlive = false;
         try {
-          ext.ping();
+          client.ping();
         } catch (e) {
           console.error("[WS] ping error", e);
         }
@@ -62,9 +58,11 @@ class TerminalWS {
     }, 30000);
   }
 
-  public upgrade(req: any, socket: any, head: any, userId: string) {
+  public upgrade(req: IncomingMessage, socket: any, head: any, userId: string) {
     this.wss.handleUpgrade(req, socket, head, (ws) => {
-      this.wss.emit("connection", ws, userId);
+      ws.userId = userId;
+      ws.isAlive = true;
+      this.wss.emit("connection", ws, req);
     });
   }
 
@@ -78,7 +76,4 @@ class TerminalWS {
 }
 
 const terminalWS = new TerminalWS();
-export const close = async () => {
-  terminalWS.close();
-};
 export default terminalWS;

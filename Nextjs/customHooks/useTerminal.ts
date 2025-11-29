@@ -19,7 +19,7 @@ export default function useTerminal(opts: {
   autoConnect?: boolean;
   onMessage?: (msg: TerminalMessage) => void;
 } = {}) {
-  const { wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "", autoConnect = true, onMessage } = opts;
+  const { wsUrl = process.env.NEXT_PUBLIC_WS_URL_TERMINAL ?? "", autoConnect = true, onMessage } = opts;
   const { getToken } = useAuth();
 
   const [status, setStatus] = useState<
@@ -31,7 +31,7 @@ export default function useTerminal(opts: {
 
   const buildWsUrl = useCallback(async () => {
     const token = await getToken({ template: "beckend-email-get" });
-    if (!wsUrl) throw new Error("NEXT_PUBLIC_WS_URL not set");
+    if (!wsUrl) throw new Error("NEXT_PUBLIC_WS_URL_TERMINAL not set");
     if (!token) throw new Error("No auth token available");
     return `${wsUrl}/ws/terminal?token=${token}`;
   }, [wsUrl, getToken]);

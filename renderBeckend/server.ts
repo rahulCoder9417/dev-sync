@@ -4,7 +4,6 @@ import cors from "cors";
 import { handleUpgrade } from "./utils/upgradeRouter";
 import config from "./config/index";
 import router from "./routes/index";
-import { close } from "./ws/terminalHandler";
 
 const app = express();
 const server = http.createServer(app);
