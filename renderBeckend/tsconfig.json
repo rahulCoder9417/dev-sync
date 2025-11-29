@@ -8,11 +8,10 @@
       "rootDir": "./",
       "outDir": "dist"
     },
-    "include": [
-      "**/*.ts"
-    ],
+    "include": ["**/*.ts", "global.d.ts"],
     "exclude": [
       "node_modules",
-      "dist"
+      "dist",
+      "lib/generated/prisma"
     ]
   }

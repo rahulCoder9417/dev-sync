@@ -1,4 +1,5 @@
 "use client";
+import { showToast } from "@/components/main/Toast";
 import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -50,8 +51,8 @@ export default function useTerminal(opts: {
 
       ws.onmessage = (ev) => {
         try {
-          const payload = JSON.parse(ev.data) as TerminalMessage;
-          onMessage?.(payload);
+          console.log("[WS] received:", JSON.parse(ev.data));
+          const payload = JSON.parse(ev.data) 
         } catch (e) {
           // ignore non-JSON
         }
@@ -77,7 +78,7 @@ export default function useTerminal(opts: {
     } catch (e) {
       setStatus("error");
     }
-  }, [buildWsUrl, onMessage]);
+  }, [buildWsUrl]);
 
   const disconnect = useCallback(() => {
     manualClose.current = true;
