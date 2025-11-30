@@ -221,7 +221,7 @@ export const initializeTerminalProject = async (req: Request, res: Response) => 
 
     // STEP 11: Return success response
     const mapData = await fs.readFile(
-        path.join(projectDir, "fileMap.json"),
+        path.join(PROJECTS_BASE_DIR,projectId, "fileMap.json"),
         "utf8"
       );
       
