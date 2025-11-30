@@ -34,7 +34,7 @@ export default function useTerminal(opts: {
     const token = await getToken({ template: "beckend-email-get" });
     if (!wsUrl) throw new Error("NEXT_PUBLIC_WS_URL_TERMINAL not set");
     if (!token) throw new Error("No auth token available");
-    return `${wsUrl}/ws/terminal?token=${token}`;
+    return `wss${wsUrl}/ws/terminal?token=${token}`;
   }, [wsUrl, getToken]);
 
   const connect = useCallback(async () => {
@@ -51,10 +51,8 @@ export default function useTerminal(opts: {
       };
 
       ws.onmessage = (ev) => {
-        console.log("[WS] received:", ev.data);
         try {
           const payload = JSON.parse(ev.data) 
-          console.log("[WS] received:", payload);
           onMessage?.(payload);
         } catch (e) {
           console.log("[WS] received:", e);

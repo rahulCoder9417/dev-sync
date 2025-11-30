@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Header from '@/components/project/id/Header';
 import FileExplorer from '@/components/project/id/fileExplorer/FileExplorer';
 import CodeEditor from '@/components/project/id/CodeEditor';
-import Preview from '@/components/project/id/Preview';
+import Preview from '@/components/project/id/preview/Preview';
 import ChatBot from '@/components/project/id/ChatBot';
 
 import { ChatMessage, FileNode, ProjectById, Tab, User } from '@/types';
@@ -167,7 +167,7 @@ handleFileSelect(t)
 
         {visibleSection.preview && (
           <div className="w-[25%] max-md:w-1/2">
-            <Preview />
+            <Preview projectId={data.id}/>
           </div>
         )}
 
