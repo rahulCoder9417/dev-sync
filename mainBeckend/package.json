@@ -21,11 +21,11 @@
   "license": "MIT",
   "dependencies": {
     "@clerk/backend": "^2.9.4",
-    "@prisma/client": "^7.0.1",
+    "@prisma/client": "^5.22.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
-    "prisma": "^7.0.1",
+    "prisma": "^5.22.0",
     "ws": "^8.14.2",
     "y-protocols": "^1.0.6",
     "yjs": "^13.6.27",
