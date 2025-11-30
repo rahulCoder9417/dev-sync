@@ -16,7 +16,11 @@ class TerminalWS {
 
   private setup() {
     this.wss.on("connection", (ws: ExtendedWebSocket, req: IncomingMessage) => {
-      ws.send("connected");
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send("connected");
+      } else {
+        ws.on("open", () => ws.send("connected"));
+      }
 
       ws.on("pong", () => {
         ws.isAlive = true;

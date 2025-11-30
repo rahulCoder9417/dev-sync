@@ -39,11 +39,12 @@ export default function useTerminal(opts: {
 
   const connect = useCallback(async () => {
     setStatus("connecting");
+    console.log("[WS] connecting...");
     try {
       const url = await buildWsUrl();
       const ws = new WebSocket(url);
       wsRef.current = ws;
-
+      console.log("[WS] connected",url,ws.OPEN);
       ws.onopen = () => {
         setStatus("connected");
         reconnectAttempts.current = 0;
@@ -105,6 +106,7 @@ export default function useTerminal(opts: {
   const stop = useCallback(() => send({ action: "stop" }), [send]);
 
   useEffect(() => {
+    console.log("autoConnect", autoConnect);
     if (autoConnect) connect();
     return () => {
       disconnect();
