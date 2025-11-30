@@ -44,17 +44,20 @@ export default function useTerminal(opts: {
       const url = await buildWsUrl();
       const ws = new WebSocket(url);
       wsRef.current = ws;
-      console.log("[WS] connected",url,ws.OPEN);
       ws.onopen = () => {
         setStatus("connected");
+        console.log("[WS] connected");
         reconnectAttempts.current = 0;
       };
 
       ws.onmessage = (ev) => {
+        console.log("[WS] received:", ev.data);
         try {
-          console.log("[WS] received:", JSON.parse(ev.data));
           const payload = JSON.parse(ev.data) 
+          console.log("[WS] received:", payload);
+          onMessage?.(payload);
         } catch (e) {
+          console.log("[WS] received:", e);
           // ignore non-JSON
         }
       };
