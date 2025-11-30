@@ -2,9 +2,9 @@ import { RawData } from "ws";
 import { ExtWebSocket, BaseWsHandler } from "./baseWsHandler";
 import { ClientMessage } from "../../types";
 import RoomManager from "../utils/roomManagerChat";
-import getFriends from "../../lib/action/user/getFriends";
-import { createMessage } from "../../lib/action/chat/message";
-import { createNotification } from "../../lib/action/chat/notification";
+import getFriends from "../lib/action/user/getFriends";
+import { createMessage } from "../lib/action/chat/message";
+import { createNotification } from "../lib/action/chat/notification";
 
 export class ChatWsHandler extends BaseWsHandler {
   private messageHistory: Map<string, any[]> = new Map();

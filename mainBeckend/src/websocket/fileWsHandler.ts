@@ -1,7 +1,7 @@
 import { RawData } from "ws";
 import { ExtWebSocket, BaseWsHandler } from "./baseWsHandler";
 import { ClientMessage } from "../../types";
-import { deleteFileOrFolder } from "../../lib/action/fileitem/deleteFile";
+import { deleteFileOrFolder } from "../lib/action/fileitem/deleteFile";
 import RoomManager from "../utils/roomManagerFile";
 import makeRoomId from "../utils/makeRoomId";
 

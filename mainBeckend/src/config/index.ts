@@ -1,6 +1,9 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import dotenv from "dotenv";
+import path from "path";
 
+dotenv.config({
+  path: path.resolve(process.cwd(), ".env"),
+});
 interface CorsConfig {
   origin: string | string[];
   methods: string[];

@@ -31,6 +31,6 @@
   "exclude": [
     "node_modules",
     "dist",
-    "lib/generated/prisma"
+    "src/lib/generated/prisma"
   ]
 }
