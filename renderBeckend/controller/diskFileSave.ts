@@ -131,7 +131,7 @@ async function createFileMap( files: any[],
 export const initializeTerminalProject = async (req: Request, res: Response) => {
   try {
   
-
+    console.log(req.body);
     // STEP 1: Extract projectId from body
     const { projectId ,userId} = req.body;
 
