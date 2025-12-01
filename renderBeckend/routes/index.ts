@@ -7,5 +7,5 @@ router.get("/ping", (req, res) => {
   res.json({ ok: true, message: "pong" });
 });
 
-router.post("/terminal/:projectId/:userId",initializeTerminalProject);
+router.post("/terminal/saveFile",initializeTerminalProject);
 export default router;

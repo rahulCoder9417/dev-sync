@@ -16,7 +16,7 @@ const Preview = ({ projectId }: { projectId: string }) => {
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/terminal`,
+          `https${process.env.NEXT_PUBLIC_WS_URL_TERMINAL}/terminal`,
           {
             method: "POST",
             headers: {
@@ -40,6 +40,7 @@ const Preview = ({ projectId }: { projectId: string }) => {
         setdiskStorageSet("connected");
       } catch (err: any) {
         showToast(false, "Network error", err.message);
+        console.log(err); 
         setdiskStorageSet("error");
       }
     };

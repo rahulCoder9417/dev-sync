@@ -132,8 +132,8 @@ export const initializeTerminalProject = async (req: Request, res: Response) => 
   try {
   
 
-    // STEP 1: Extract projectId from params
-    const { projectId ,userId} = req.params;
+    // STEP 1: Extract projectId from body
+    const { projectId ,userId} = req.body;
 
     // STEP 2: Validate projectId
     if (!projectId || typeof projectId !== "string") {
