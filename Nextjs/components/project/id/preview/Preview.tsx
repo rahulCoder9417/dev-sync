@@ -1,6 +1,5 @@
 "use client"
 import { showToast } from '@/components/main/Toast'
-import useTerminal from '@/customHooks/useTerminal'
 import { useAppSelector } from '@/lib/redux/hooks'
 import React, { useEffect, useState } from 'react'
 import NewLoader from '@/components/main/SpiningLoader'
@@ -13,7 +12,7 @@ const Preview = ({ projectId,terminalLoaded ,setTerminalLoaded}: { projectId: st
   useEffect(() => {
     const init = async () => {
       setdiskStorageSet("connecting");
-console.log(  `https${process.env.NEXT_PUBLIC_WS_URL_TERMINAL}/terminal/saveFile`)
+      console.log(`https${process.env.NEXT_PUBLIC_WS_URL_TERMINAL}/terminal/saveFile`)
       try {
         const res = await fetch(
           `https${process.env.NEXT_PUBLIC_WS_URL_TERMINAL}/api/terminal/saveFile`,
@@ -36,7 +35,7 @@ console.log(  `https${process.env.NEXT_PUBLIC_WS_URL_TERMINAL}/terminal/saveFile
           setdiskStorageSet("error");
           return;
         }
-
+        showToast(true, "Project initialized successfully");
         setdiskStorageSet("connected");
         setTerminalLoaded(true);
       } catch (err: any) {

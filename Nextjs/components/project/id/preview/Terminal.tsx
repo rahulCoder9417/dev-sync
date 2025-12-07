@@ -63,7 +63,8 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
         }
       }
     },
-    projectId: projectId
+    projectId: projectId,
+    termRef: termRef,
   })
 
   // Prevent xterm crash by ensuring element has real size
@@ -142,10 +143,10 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
   }
 
   return (
-    <div className={`${className} h-full flex flex-col`}>
+    <div className={`${className} h-full w-full flex flex-col`}>
       <div
         ref={terminalRef}
-        className={`${"flex-1"} bg-neutral-900 transition-all`}
+        className={`w-full bg-neutral-900 transition-all`}
         data-status={status}
       />
 

@@ -65,9 +65,19 @@ class TerminalWS {
         cwd: path.join(this.room.PROJECT_ROOT,ws.projectId),
         env,
       });
-
+      ws.send(JSON.stringify({
+        type: "output",
+        data: `🖼️  GUI Display ready: ${gui.display} (VNC port: ${gui.vncPort})\r\n`,
+      }));
+      ws.send(JSON.stringify({
+        type: "output",
+        data: `💡 Access GUI at: /gui/${ws.userId}\r\n\r\n`,
+      }));
       ptyProcess.onData((data) => {
-        ws.send(data);
+        ws.send(JSON.stringify({
+          type: "output",
+          data,
+        }));
     
         // Clean ANSI codes for detection
         const cleanData = data.replace(/\x1b\[[0-9;]*m/g, '');
@@ -104,8 +114,14 @@ class TerminalWS {
             startedAt: new Date(),
           };
     
-          ws.send(`\n\n✅ Preview ready! Your app is running on port ${detectedPort}\n`);
-          ws.send(`PREVIEW:${detectedPort}:${token}\n`);
+          ws.send(JSON.stringify({
+            type: "output",
+            data: `\n\n✅ Preview ready! Your app is running on port ${detectedPort}\n`,
+          }));
+          ws.send(JSON.stringify({
+            type: "output",
+            data: `PREVIEW:${detectedPort}:${token}\n`,
+          }));
           console.log(`✅ Preview URL generated: port=${detectedPort} for user=${ws.userId}`);
         }
       });
@@ -119,6 +135,9 @@ class TerminalWS {
       });
 
       ws.on("close", () => {
+        ws.send(JSON.stringify({
+          type: "exit",
+        }));
         console.log(`[WS] client disconnected userId=${ws.userId}`);
       });
     });

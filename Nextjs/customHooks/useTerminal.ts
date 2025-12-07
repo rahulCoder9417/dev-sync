@@ -1,9 +1,8 @@
 "use client";
 import { showToast } from "@/components/main/Toast";
 import { useAuth } from "@clerk/nextjs";
-import { randomUUID } from "crypto";
 import { useCallback, useEffect, useRef, useState } from "react";
-
+import { Terminal as XTerminal } from "xterm";
 export type TerminalMessage =
   | { type: "output"; data: string }
   | { type: "started"; shell: string; cols: number; rows: number; cwd: string }
@@ -21,10 +20,23 @@ export default function useTerminal(opts: {
   autoConnect?: boolean;
   onMessage?: (msg: TerminalMessage) => void;
   projectId?: string;
+  termRef?: React.RefObject<XTerminal | null>;
 } = {}) {
-  const { wsUrl = process.env.NEXT_PUBLIC_WS_URL_TERMINAL ?? "", projectId = "",autoConnect = true, onMessage } = opts;
+  const { wsUrl = process.env.NEXT_PUBLIC_WS_URL_TERMINAL ?? "", projectId = "",autoConnect = true, onMessage,termRef } = opts;
   const { getToken } = useAuth();
-const [terminalId, setterminalId] = useState<Record<string, string>>({})
+  // Generate a stable terminalId per hook instance using browser crypto if available
+  const genId = () => {
+    const g: any = typeof globalThis !== "undefined" ? (globalThis as any) : {};
+    const c = g.crypto;
+    if (c && typeof c.randomUUID === "function") return c.randomUUID();
+    // Fallback UUID v4 polyfill
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (ch) => {
+      const r = (Math.random() * 16) | 0;
+      const v = ch === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  };
+  const terminalIdRef = useRef<string>(genId());
   const [status, setStatus] = useState<
     "idle" | "connecting" | "connected" | "closed" | "error" | "reconnecting"
   >("idle");
@@ -36,28 +48,29 @@ const [terminalId, setterminalId] = useState<Record<string, string>>({})
     const token = await getToken({ template: "beckend-email-get" });
     if (!wsUrl) throw new Error("NEXT_PUBLIC_WS_URL_TERMINAL not set");
     if (!token) throw new Error("No auth token available");
-    const t = randomUUID()
-    setterminalId({
-    [Object.keys(terminalId).length]:  t,
-    })
-    return `wss${wsUrl}/ws/terminal?token=${token}&terminalId=${terminalId[Object.keys(terminalId).length]}&projectId=${projectId}`;
-  }, [wsUrl, getToken]);
+    const t = terminalIdRef.current;
+    return `wss${wsUrl}/ws/terminal?token=${token}&terminalId=${t}&projectId=${projectId}`;
+  }, [wsUrl, projectId, getToken]);
 
   const connect = useCallback(async () => {
     setStatus("connecting");
     console.log("[WS] connecting...");
     try {
       const url = await buildWsUrl();
+      console.log(url,"jjj")
       const ws = new WebSocket(url);
       wsRef.current = ws;
       ws.onopen = () => {
         setStatus("connected");
         console.log("[WS] connected");
+        
+      termRef?.current?.write(`✓ Connected \r\n`);
         showToast(true,"Terminal connected")
         reconnectAttempts.current = 0;
       };
 
       ws.onmessage = (ev) => {
+        console.log("[WS] received:", ev);
         try {
           const payload = JSON.parse(ev.data) 
           onMessage?.(payload);
@@ -85,6 +98,7 @@ const [terminalId, setterminalId] = useState<Record<string, string>>({})
         }, delay);
       };
     } catch (e) {
+      console.log(e)
       setStatus("error");
     }
   }, [buildWsUrl]);
