@@ -7,9 +7,7 @@ class RoomManager {
     private nextGuiIndex = 0;
     private GUI_BASE_DISPLAY = 100;
     private GUI_BASE_VNC_PORT = 5900;
-    private __filename = fileURLToPath(import.meta.url);
-    private __dirname = path.dirname(this.__filename);
-    public PROJECT_ROOT = path.join(this.__dirname, "projects");
+    public PROJECT_ROOT = "/usr/src/app/projects"
     public getUserSession(userId: string) {
         if (!this.sessions[userId]) {
           this.sessions[userId] = { terminals: {}, gui: null, previews: {} };
