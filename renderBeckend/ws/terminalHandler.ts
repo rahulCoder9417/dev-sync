@@ -21,13 +21,13 @@ class TerminalWS {
 
  
  // ---- TOKEN GENERATION ----
- private generatePreviewToken(userId, port) {
+ private generatePreviewToken(userId: string, port: string) {
    const secret = process.env.PREVIEW_SECRET || "supersecret";
    const data = `${userId}:${port}`;
    return crypto.createHmac("sha256", secret).update(data).digest("hex");
  }
  
- private verifyPreviewToken(token, userId, port) {
+ private verifyPreviewToken(token: string, userId: string, port: string) {
    const secret = process.env.PREVIEW_SECRET || "supersecret";
    const recalculated = crypto
      .createHmac("sha256", secret)

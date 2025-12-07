@@ -19,7 +19,6 @@ import {
 import { ProjectPageMember, ProjectPageType, TeamType } from "@/types";
 import { updateProjectStatus } from "@/lib/actions/projects/updateProjectStatus";
 import { showToast } from "../main/Toast";
-import { format } from "date-fns";
 import Link from "next/link";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { joinTeam, manageProjectTeamMember } from "@/lib/actions/projects/team";
@@ -53,13 +52,13 @@ useEffect(() => {
   
   if (!stateUser?.id) return;
 
-  if (teamInfo.bannedUsers.some(b => b.userId === stateUser.id)) {
+  if (teamInfo.bannedUsers.some((b:TeamType["team"]["bannedUsers"]) => b.userId === stateUser.id)) {
     setStatus("banned");
-  }else if (teamInfo.members.some(m => m.userId === stateUser.id)) {
+  }else if (teamInfo.members.some((m:TeamType["team"]["members"]) => m.userId === stateUser.id)) {
     setStatus("member");
-  }  else if (teamInfo.pendingRequests.some(r => (r.userId === stateUser.id)&& r.status==="pending" )) {
+  }  else if (teamInfo.pendingRequests.some((r:TeamType["team"]["pendingRequests"]) => (r.userId === stateUser.id)&& r.status==="pending" )) {
     setStatus("pending");
-  }  else if (teamInfo.pendingRequests.some(r => (r.userId === stateUser.id)&& r.status==="rejected" )) {
+  }  else if (teamInfo.pendingRequests.some((r:TeamType["team"]["pendingRequests"]) => (r.userId === stateUser.id)&& r.status==="rejected" )) {
     setStatus("rejected");
   } else {
     setStatus("idle");
@@ -158,7 +157,7 @@ useEffect(() => {
       name: editForm.name,
       description: editForm.description,
       type: editForm.type,
-      updatedAt: format(new Date(), "yyyy-MM-dd"),
+      updatedAt: (new Date(), "yyyy-MM-dd"),
     }))
     setShowSettingsModal(false)
     showToast(true, "Setting Updated")
@@ -168,22 +167,22 @@ useEffect(() => {
     let s;
     let data;
     console.log(newStatus,currentStat)
-    let [{ user, userId }] = teamData[currentStat].filter(i => i.userId === memberId)
+    let [{ user, userId }] = teamData[currentStat].filter((i:TeamType["team"]["members"]) => i.userId === memberId)
     switch (newStatus) {
       case newStatus = "rejected":
         s = "revoke"// "approve" | "revoke" | "ban"
         const status = "rejected"
-        data = { ...teamData, pendingRequests: [...teamData["pendingRequests"].filter(i => i.userId !== userId),{ user, userId,status }] }
+        data = { ...teamData, pendingRequests: [...teamData["pendingRequests"].filter((i:TeamType["team"]["pendingRequests"]) => i.userId !== userId),{ user, userId,status }] }
         break;
       case newStatus = "bannedUsers":
         s = "ban"
         const reason = ""
-        data = { ...teamData, [currentStat]: teamData[currentStat].filter(i => i.userId !== userId), [newStatus]: [...teamData[newStatus],{ user, userId,reason }]  }
+        data = { ...teamData, [currentStat]: teamData[currentStat].filter((i:TeamType["team"]["members"]) => i.userId !== userId), [newStatus]: [...teamData[newStatus],{ user, userId,reason }]  }
         break;
       case newStatus = "members":
         const role = "MEMBER"
         s = "approve"
-        data = { ...teamData, [currentStat]: teamData[currentStat].filter(i => i.userId !== userId), [newStatus]: [...teamData[newStatus],{ user, userId,role }] }
+        data = { ...teamData, [currentStat]: teamData[currentStat].filter((i:TeamType["team"]["members"]) => i.userId !== userId), [newStatus]: [...teamData[newStatus],{ user, userId,role }] }
         break;
 
       default:
@@ -218,12 +217,12 @@ useEffect(() => {
     const a = res.message === "You Are removed" ? "idle" : "pending"
     let d;
     if (a==="idle") {
-      d={...teamData,members:teamData["members"].filter(i=>i.userId !== stateUser.id)}
+      d={...teamData,members:teamData["members"].filter((i:TeamType["team"]["members"]) => i.userId !== stateUser.id)}
     }else{
-      console.log(teamData.pendingRequests.filter(i => i.userId === stateUser.id))
-    let [{ user, userId }] = teamData.pendingRequests.filter(i => i.userId === stateUser.id)
+      console.log(teamData.pendingRequests.filter((i:TeamType["team"]["pendingRequests"]) => i.userId === stateUser.id))  
+    let [{ user, userId }] = teamData.pendingRequests.filter((i:TeamType["team"]["pendingRequests"]) => i.userId === stateUser.id)
       if (userStatus==="rejected") {
-        d={ ...teamData,pendingRequests: [...teamData.pendingRequests.filter(i => i.userId !== userId) ,{user,userId,status:"pending"}]}
+        d={ ...teamData,pendingRequests: [...teamData.pendingRequests.filter((i:TeamType["team"]["pendingRequests"]) => i.userId !== userId) ,{user,userId,status:"pending"}]}
       }else{
         d={ ...teamData,pendingRequests:[...teamData.pendingRequests,{user,userId,status:"pending"}]}
       }
@@ -372,13 +371,13 @@ useEffect(() => {
                   members = teamData["members"]
                   break;
                 case "pendingRequests":
-                  members = teamData["pendingRequests"].filter(i => i.status === "pending")
+                  members = teamData["pendingRequests"].filter((i:TeamType["team"]["pendingRequests"]) => i.status === "pending")
                   break;
                 case "bannedUsers":
-                  members = teamData["bannedUsers"]
+                  members = teamData["bannedUsers"]   
                   break;
                 case "rejected":
-                  members = teamData["pendingRequests"].filter(i => i.status === "rejected")
+                  members = teamData["pendingRequests"].filter((i:TeamType["team"]["pendingRequests"]) => i.status === "rejected")
                   break;
 
                 default:
