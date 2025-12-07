@@ -132,6 +132,13 @@ class TerminalWS {
 
       ws.on("message", (msg: Buffer) => {
         console.log("[WS] received:", msg.toString());
+        const data = JSON.parse(msg.toString());
+        if (data.type === "input") {
+          ptyProcess.write(data.data);
+        }
+        if (data.type === "resize") {
+          ptyProcess.resize(data.cols, data.rows);
+        }
       });
 
       ws.on("close", () => {
