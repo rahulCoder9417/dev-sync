@@ -2,8 +2,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import { ExtendedWebSocket } from "../types.js";
 import { IncomingMessage } from "http";
 import RoomManager from "../utils/roomManager.js";
-// @ts-ignore
-import pty from "node-pty";
+//@ts-ignore
+import { spawn, IPty } from "node-pty";
 import path from "path";
 import crypto from "crypto";
 
@@ -58,7 +58,7 @@ class TerminalWS {
       // Set environment with DISPLAY variable
       let env = { ...process.env, DISPLAY: gui.display };
 
-      const ptyProcess = pty.spawn("bash", [], {
+      const ptyProcess: IPty = spawn("bash", [], {
         name: "xterm-color",
         cols: 80,
         rows: 25,
@@ -66,7 +66,7 @@ class TerminalWS {
         env,
       });
 
-      ptyProcess.on("data", (data) => {
+      ptyProcess.onData((data) => {
         ws.send(data);
     
         // Clean ANSI codes for detection

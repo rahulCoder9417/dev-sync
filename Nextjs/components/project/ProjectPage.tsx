@@ -24,6 +24,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { joinTeam, manageProjectTeamMember } from "@/lib/actions/projects/team";
 import Avatar from "../main/Avatar";
 import { capitalize } from "@/lib/mainUtils/capitals";
+import { format } from "date-fns";
 
 type ProjectType = "PUBLIC" | "PRIVATE" | "GENRATED"
 type MemberStatus = "members" | "pendingRequests" | "bannedUsers" | "rejected"
@@ -157,7 +158,7 @@ useEffect(() => {
       name: editForm.name,
       description: editForm.description,
       type: editForm.type,
-      updatedAt: (new Date(), "yyyy-MM-dd"),
+      updatedAt: format(new Date(), "yyyy-MM-dd"),
     }))
     setShowSettingsModal(false)
     showToast(true, "Setting Updated")
