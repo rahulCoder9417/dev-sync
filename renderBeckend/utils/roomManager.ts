@@ -1,12 +1,15 @@
 import { Session } from "../types.js";
 import { spawn } from "child_process";
 import path from "path";
+import { fileURLToPath } from "url";
 class RoomManager {
     private sessions: Record<string, Session> = {};
     private nextGuiIndex = 0;
     private GUI_BASE_DISPLAY = 100;
     private GUI_BASE_VNC_PORT = 5900;
-    public PROJECT_ROOT = path.join(__dirname, "projects");
+    private __filename = fileURLToPath(import.meta.url);
+    private __dirname = path.dirname(this.__filename);
+    public PROJECT_ROOT = path.join(this.__dirname, "projects");
     public getUserSession(userId: string) {
         if (!this.sessions[userId]) {
           this.sessions[userId] = { terminals: {}, gui: null, previews: {} };
