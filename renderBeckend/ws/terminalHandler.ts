@@ -6,6 +6,7 @@ import RoomManager from "../utils/roomManager.js";
 import { spawn, IPty } from "node-pty";
 import path from "path";
 import crypto from "crypto";
+import { getRealProjectDir } from "../utils/getProjectDir.js";
 
 class TerminalWS {
   private wss: WebSocketServer;
@@ -42,8 +43,8 @@ class TerminalWS {
    return recalculated === token;
  } 
 
-  private setup() {
-    this.wss.on("connection", (ws: ExtendedWebSocket, req: IncomingMessage) => {
+  private  async setup() {
+    this.wss.on("connection", async(ws: ExtendedWebSocket, req: IncomingMessage) => {
       console.log(
         `🖥️  Terminal WS connected: user=${ws.userId}, terminal=${ws.terminalId}`
       );
@@ -54,15 +55,14 @@ class TerminalWS {
       console.log(
         `🖼️  GUI session assigned: DISPLAY=${gui.display} VNC=:${gui.vncPort} for user=${ws.userId}`
       );
-
+      let cwd = await getRealProjectDir(this.room.PROJECT_ROOT,ws.projectId);
       // Set environment with DISPLAY variable
       let env = { ...process.env, DISPLAY: gui.display };
-      console.log(path.join(this.room.PROJECT_ROOT,ws.projectId))
       const ptyProcess: IPty = spawn("bash", [], {
         name: "xterm-color",
         cols: 80,
         rows: 25,
-        cwd: path.join(this.room.PROJECT_ROOT,ws.projectId),
+        cwd,
         env,
       });
       ws.send(JSON.stringify({

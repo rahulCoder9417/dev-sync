@@ -130,7 +130,7 @@ export default function useTerminal(opts: {
 
   useEffect(() => {
     console.log("autoConnect", autoConnect);
-    if (autoConnect) connect();
+    if (autoConnect && status === "idle") connect();
     return () => {
       disconnect();
     };
