@@ -7,16 +7,16 @@ import NewLoader from '@/components/main/SpiningLoader'
 import { X } from 'lucide-react'
 import Terminal from './Terminal'
 
-const Preview = ({ projectId }: { projectId: string }) => {
+const Preview = ({ projectId,terminalLoaded ,setTerminalLoaded}: { projectId: string,terminalLoaded:boolean,setTerminalLoaded:React.Dispatch<React.SetStateAction<boolean>> }) => {
   const [diskStorageSet, setdiskStorageSet] = useState<"idle" | "connecting" | "connected" | "error">("idle")
   const userId = useAppSelector((state) => state.user.id)
   useEffect(() => {
     const init = async () => {
       setdiskStorageSet("connecting");
-
+console.log(  `https${process.env.NEXT_PUBLIC_WS_URL_TERMINAL}/terminal/saveFile`)
       try {
         const res = await fetch(
-          `https${process.env.NEXT_PUBLIC_WS_URL_TERMINAL}/terminal`,
+          `https${process.env.NEXT_PUBLIC_WS_URL_TERMINAL}/api/terminal/saveFile`,
           {
             method: "POST",
             headers: {
@@ -38,6 +38,7 @@ const Preview = ({ projectId }: { projectId: string }) => {
         }
 
         setdiskStorageSet("connected");
+        setTerminalLoaded(true);
       } catch (err: any) {
         showToast(false, "Network error", err.message);
         console.log(err); 
@@ -45,8 +46,8 @@ const Preview = ({ projectId }: { projectId: string }) => {
       }
     };
 
-    init();
-  }, []);
+   if(!terminalLoaded) init();
+  }, [terminalLoaded]);
 
   if (diskStorageSet === "connecting" || diskStorageSet === "idle") {
     return <div className='w-full h-full flex items-center justify-center bg-secondary'>
@@ -62,7 +63,7 @@ const Preview = ({ projectId }: { projectId: string }) => {
     </div>;
   }
   return <div className='w-full h-full flex items-center justify-center bg-secondary'>
-    <Terminal/>
+    <Terminal projectId={projectId}/>
   </div>;
 }
 export default Preview

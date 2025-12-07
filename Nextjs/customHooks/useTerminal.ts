@@ -1,6 +1,7 @@
 "use client";
 import { showToast } from "@/components/main/Toast";
 import { useAuth } from "@clerk/nextjs";
+import { randomUUID } from "crypto";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type TerminalMessage =
@@ -19,10 +20,11 @@ export default function useTerminal(opts: {
   wsUrl?: string;
   autoConnect?: boolean;
   onMessage?: (msg: TerminalMessage) => void;
+  projectId?: string;
 } = {}) {
-  const { wsUrl = process.env.NEXT_PUBLIC_WS_URL_TERMINAL ?? "", autoConnect = true, onMessage } = opts;
+  const { wsUrl = process.env.NEXT_PUBLIC_WS_URL_TERMINAL ?? "", projectId = "",autoConnect = true, onMessage } = opts;
   const { getToken } = useAuth();
-
+const [terminalId, setterminalId] = useState<Record<string, string>>({})
   const [status, setStatus] = useState<
     "idle" | "connecting" | "connected" | "closed" | "error" | "reconnecting"
   >("idle");
@@ -34,7 +36,11 @@ export default function useTerminal(opts: {
     const token = await getToken({ template: "beckend-email-get" });
     if (!wsUrl) throw new Error("NEXT_PUBLIC_WS_URL_TERMINAL not set");
     if (!token) throw new Error("No auth token available");
-    return `wss${wsUrl}/ws/terminal?token=${token}`;
+    const t = randomUUID()
+    setterminalId({
+    [Object.keys(terminalId).length]:  t,
+    })
+    return `wss${wsUrl}/ws/terminal?token=${token}&terminalId=${terminalId[Object.keys(terminalId).length]}&projectId=${projectId}`;
   }, [wsUrl, getToken]);
 
   const connect = useCallback(async () => {
@@ -47,6 +53,7 @@ export default function useTerminal(opts: {
       ws.onopen = () => {
         setStatus("connected");
         console.log("[WS] connected");
+        showToast(true,"Terminal connected")
         reconnectAttempts.current = 0;
       };
 

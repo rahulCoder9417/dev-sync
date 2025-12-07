@@ -16,6 +16,7 @@ import ChatComponent from '@/components/team/chatComponent';
 export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
   const [errorMarkers,setErrorMarkers] = useState<Record<string, boolean> | null>(null)
   const [files, setFiles] = useState<FileNode[]>(data?.files!);
+  const [terminalLoaded,setTerminalLoaded] = useState(false)
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [visibleSection, setVisibleSection] = useState<{file: boolean; code: boolean; chat: boolean; preview: boolean;}>({
     file: true,
@@ -167,7 +168,7 @@ handleFileSelect(t)
 
         {visibleSection.preview && (
           <div className="w-[25%] max-md:w-1/2">
-            <Preview projectId={data.id}/>
+            <Preview setTerminalLoaded={setTerminalLoaded} terminalLoaded={terminalLoaded} projectId={data.id}/>
           </div>
         )}
 
