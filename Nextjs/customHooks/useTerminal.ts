@@ -10,10 +10,10 @@ export type TerminalMessage =
   | { error: string; [k: string]: any };
 
 export type TerminalClientMessage =
-  | { action: "start"; cols?: number; rows?: number; cwd?: string }
-  | { action: "input"; data: string }
-  | { action: "resize"; cols: number; rows: number }
-  | { action: "stop" };
+  | { type: "start"; cols?: number; rows?: number; cwd?: string }
+  | { type: "input"; data: string }
+  | { type: "resize"; cols: number; rows: number }
+  | { type: "stop" };
 
 export default function useTerminal(opts: {
   wsUrl?: string;
@@ -121,12 +121,12 @@ export default function useTerminal(opts: {
   }, []);
 
   const start = useCallback((cols?: number, rows?: number, cwd?: string) => {
-    return send({ action: "start", cols, rows, cwd });
+    return send({ type: "start", cols, rows, cwd });
   }, [send]);
 
-  const input = useCallback((data: string) => send({ action: "input", data }), [send]);
-  const resize = useCallback((cols: number, rows: number) => send({ action: "resize", cols, rows }), [send]);
-  const stop = useCallback(() => send({ action: "stop" }), [send]);
+  const input = useCallback((data: string) => send({ type: "input", data }), [send]);
+  const resize = useCallback((cols: number, rows: number) => send({ type: "resize", cols, rows }), [send]);
+  const stop = useCallback(() => send({ type: "stop" }), [send]);
 
   useEffect(() => {
     console.log("autoConnect", autoConnect);

@@ -57,7 +57,7 @@ class TerminalWS {
 
       // Set environment with DISPLAY variable
       let env = { ...process.env, DISPLAY: gui.display };
-
+      console.log(path.join(this.room.PROJECT_ROOT,ws.projectId))
       const ptyProcess: IPty = spawn("bash", [], {
         name: "xterm-color",
         cols: 80,
@@ -134,6 +134,7 @@ class TerminalWS {
         console.log("[WS] received:", msg.toString());
         const data = JSON.parse(msg.toString());
         if (data.type === "input") {
+          console.log('writing',data.data)
           ptyProcess.write(data.data);
         }
         if (data.type === "resize") {
