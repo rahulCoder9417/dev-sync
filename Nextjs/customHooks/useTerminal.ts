@@ -61,6 +61,7 @@ export default function useTerminal(opts: {
       const ws = new WebSocket(url);
       wsRef.current = ws;
       ws.onopen = () => {
+        ws.send(JSON.stringify({ action: "start" }));
         setStatus("connected");
         console.log("[WS] connected");
         
