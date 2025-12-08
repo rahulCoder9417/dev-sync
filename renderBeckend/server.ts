@@ -155,7 +155,7 @@ app.use("/preview/:userId/:port*", (req, res, next) => {
       res.statusCode = 502;
       res.end(`<h1>Proxy Error</h1><p>${err.message}</p><p>Make sure your app is built and running with 'npm start'</p>`);
     },
-  });
+  }) as any;
 
   return proxy(req, res, next);
 });
