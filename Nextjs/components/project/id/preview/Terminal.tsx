@@ -130,14 +130,14 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
     return () => el.removeEventListener("transitionend", handler)
   }, [showGUI])
 
-  const API_URL = process.env.NEXT_PUBLIC_BASE_URL || ""
+  const API_URL = "https"+process.env.NEXT_PUBLIC_WS_URL_TERMINAL
   const guiURL = `${API_URL}/gui/${encodeURIComponent(userId || "")}`
 
   const openPreview = (p: PortInfo) => {
     const url = `${API_URL}/preview/${encodeURIComponent(
       userId || ""
     )}/${encodeURIComponent(p.port)}?token=${encodeURIComponent(p.token)}`
-
+    console.log(url)
     if (setIframeUrl) setIframeUrl(url)
     else window.open(url, "_blank")
   }

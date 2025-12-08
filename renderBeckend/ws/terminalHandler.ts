@@ -20,7 +20,6 @@ class TerminalWS {
     this.room = new RoomManager();
   }
 
- 
  // ---- TOKEN GENERATION ----
  private generatePreviewToken(userId: string, port: string) {
    const secret = process.env.PREVIEW_SECRET || "supersecret";
@@ -28,20 +27,7 @@ class TerminalWS {
    return crypto.createHmac("sha256", secret).update(data).digest("hex");
  }
  
- private verifyPreviewToken(token: string, userId: string, port: string) {
-   const secret = process.env.PREVIEW_SECRET || "supersecret";
-   const recalculated = crypto
-     .createHmac("sha256", secret)
-     .update(`${userId}:${port}`)
-     .digest("hex");
  
-   console.log(`🔐 Token verification: userId=${userId}, port=${port}`);
-   console.log(`   Received token: ${token}`);
-   console.log(`   Expected token: ${recalculated}`);
-   console.log(`   Match: ${recalculated === token}`);
- 
-   return recalculated === token;
- } 
 
   private  async setup() {
     this.wss.on("connection", async(ws: ExtendedWebSocket, req: IncomingMessage) => {
