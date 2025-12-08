@@ -23,6 +23,37 @@ app.use(cors({
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// ==================================================================================
+//  REFRER use karke asset ke userId port milgya
+// ==================================================================================
+app.use((req, res, next) => {
+  const url = req.path; // e.g. /vite.svg
+  const referer = req.get("referer");
+
+  // Ignore if no referer or request is already inside preview route
+  const previewPattern = /^\/preview\/[^/]+\/\d+\//;
+  if (!referer || previewPattern.test(url)) {
+    return next();
+  }
+
+  // Detect assets
+  const isAsset = /\.(png|jpe?g|gif|svg|ico|webp|avif|css|map|js|woff2?|ttf|otf)$/i.test(url);
+  if (!isAsset) return next();
+
+  // Extract preview info from referer
+  const match = referer.match(/\/preview\/([^/]+)\/(\d+)\?token=([^&]+)/);
+  if (!match) return next();
+
+  const [, userId, port, token] = match;
+
+  // Rewrite only once
+  const rewritten = `/preview/${userId}/${port}${url}?token=${token}`;
+
+  console.log(`🔁 Asset fix: ${url} → ${rewritten}`);
+
+  return res.redirect(rewritten);
+});
+
 
 // API routes
 app.use("/api", router);
