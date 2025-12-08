@@ -7,9 +7,9 @@ export function verifyPreviewToken(token: string, userId: string, port: string) 
      .digest("hex");
  
    console.log(`🔐 Token verification: userId=${userId}, port=${port}`);
-   console.log(`   Received token: ${token}`);
-   console.log(`   Expected token: ${recalculated}`);
-   console.log(`   Match: ${recalculated === token}`);
+   console.log(`   Received token: >${token}<`);
+   console.log(`   Expected token: >${recalculated}<`);
+   console.log(`   Match: ${recalculated.trim() === token.trim()}`);
  
-   return recalculated === token;
+   return recalculated.trim() === token.trim();
  } 
