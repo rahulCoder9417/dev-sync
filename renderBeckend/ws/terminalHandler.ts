@@ -27,7 +27,9 @@ class TerminalWS {
    return crypto.createHmac("sha256", secret).update(data).digest("hex");
  }
  
- 
+ public guu(userId :string){
+  this.room.ensureGuiSession(userId);
+ }
 
   private  async setup() {
     this.wss.on("connection", async(ws: ExtendedWebSocket, req: IncomingMessage) => {

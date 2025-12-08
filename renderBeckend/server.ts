@@ -9,6 +9,7 @@ import { verifyPreviewToken } from "./utils/verifyToken.js";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import type { IncomingMessage, ServerResponse } from "http";
 
+import guu from "./ws/terminalHandler.js";
 const app = express();
 const server = http.createServer(app);
 
@@ -70,6 +71,7 @@ app.use("/novnc", express.static("/usr/share/novnc"));
 // ---- /gui/:userId → redirects into noVNC with proper WS path ----
 app.get("/gui/:userId", (req, res) => {
   const { userId } = req.params;
+  const gui = guu.guu(userId);
   const encodedUser = encodeURIComponent(userId);
   const url = `/novnc/vnc.html?path=websockify/${encodedUser}&autoconnect=true&resize=scale`;
   res.redirect(url);
