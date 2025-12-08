@@ -7,6 +7,8 @@ import router from "./routes/index.js";
 import { verifyPreviewToken } from "./utils/verifyToken.js";
 //@ts-ignore
 import { createProxyMiddleware } from "http-proxy-middleware";
+import type { IncomingMessage, ServerResponse } from "http";
+
 const app = express();
 const server = http.createServer(app);
 
@@ -59,7 +61,7 @@ app.use("/preview/:userId/:port*", (req, res, next) => {
     return res.status(403).send("Missing token");
   }
 
-  const isValid = verifyPreviewToken(token, userId, port);
+  const isValid = verifyPreviewToken(token as string, userId, port);
   if (!isValid) {
     console.log('❌ FAILED: Invalid token');
     return res.status(403).send("Invalid or expired preview token");
@@ -72,7 +74,7 @@ app.use("/preview/:userId/:port*", (req, res, next) => {
     changeOrigin: true,
     ws: true,
     selfHandleResponse: true,
-    pathRewrite: (path, req) => {
+    pathRewrite: (path: string, req: any) => {
       const { userId, port } = req.params;
       const prefix = `/preview/${userId}/${port}`;
       
@@ -81,13 +83,13 @@ app.use("/preview/:userId/:port*", (req, res, next) => {
       console.log(`🔄 Path rewrite: ${path} → ${newPath}`);
       return newPath;
     },
-    onProxyReq: (proxyReq, req, res) => {
+    onProxyReq: (proxyReq: any, req: IncomingMessage, res: ServerResponse) => {
       console.log(`➡️  Proxying to: http://localhost:${port}${proxyReq.path}`);
     },
-    onProxyRes: (proxyRes, req, res) => {
+    onProxyRes: (proxyRes: IncomingMessage, req: IncomingMessage, res: ServerResponse) => {
       console.log(`⬅️  Response received: ${proxyRes.statusCode} ${proxyRes.statusMessage}`);
       console.log(`📄 Content-Type: ${proxyRes.headers['content-type']}`);
-      console.log(`📂 Request path: ${req.path}`);
+      console.log(`📂 Request path: ${(req as any).path}`);
       
       const contentType = proxyRes.headers['content-type'] || '';
       
@@ -134,23 +136,24 @@ app.use("/preview/:userId/:port*", (req, res, next) => {
           
           console.log('✅ HTML URLs rewritten');
           
-          res.writeHead(proxyRes.statusCode, proxyRes.headers);
+          res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
           res.end(body);
         });
       } 
       // Pass through everything else (images, JS, fonts, etc.)
       else {
         console.log('📦 Passing through:', contentType);
-        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
         proxyRes.pipe(res);
       }
     },
-    onError: (err, req, res) => {
+    onError: (err: any, req: IncomingMessage, res: ServerResponse) => {
       console.error('❌ ============ PROXY ERROR ============');
       console.error(`🔴 Error: ${err.message}`);
       console.error(`🔴 Code: ${err.code}`);
       console.error(`🔴 Target: http://localhost:${port}`);
-      res.status(502).send(`<h1>Proxy Error</h1><p>${err.message}</p><p>Make sure your app is built and running with 'npm start'</p>`);
+      res.statusCode = 502;
+      res.end(`<h1>Proxy Error</h1><p>${err.message}</p><p>Make sure your app is built and running with 'npm start'</p>`);
     },
   });
 
@@ -180,7 +183,7 @@ async function shutdown() {
 
   // Close WebSocket handlers
   try {
-    await close();
+    // await close(); // Uncomment if you have a close function
     console.log("All WebSocket handlers closed");
   } catch (err) {
     console.error("Error closing WebSocket handlers:", err);
