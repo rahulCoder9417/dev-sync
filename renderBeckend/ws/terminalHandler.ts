@@ -17,10 +17,11 @@ class TerminalWS {
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
+    
+    this.vncWss = new WebSocketServer({ noServer: true });
     this.setup();
     this.startHeartbeat();
     this.room = new RoomManager();
-    this.vncWss = new WebSocketServer({ noServer: true });
   }
 
   // ---- TOKEN GENERATION ----
@@ -165,7 +166,7 @@ class TerminalWS {
       }
     });
 
-    this.vncWss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
+    this.vncWss?.on("connection", (ws: WebSocket, req: IncomingMessage) => {
       const url = new URL(req.url, "http://localhost");
       const [, , encodedUserId] = url.pathname.split("/");
       const userId = decodeURIComponent(encodedUserId || "");
