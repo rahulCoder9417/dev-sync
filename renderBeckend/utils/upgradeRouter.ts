@@ -1,5 +1,6 @@
 import { parse } from "url";
 import handleUpgradeWs from "../ws/terminalHandler.js";
+import fileSyncWS from "../ws/fileSyncHandler.js";
 import { getAuthData } from "./auth.js";
 import { verifyPreviewToken } from "./verifyToken.js";
 import http from "http";
@@ -39,6 +40,12 @@ export async function handleUpgrade(request: any, socket: any, head: any) {
         terminalId,
         projectId
       );
+    }
+    // file sync channel: main backend -> render backend
+    else if (pathname === "/ws/file-sync") {
+      // No DB writes or UI broadcasts here; accept connection and handle events
+      fileSyncWS.upgrade(request, socket, head);
+      return;
     }
     //vnc
     else if (pathname.startsWith("/websockify/")) {

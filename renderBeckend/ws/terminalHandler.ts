@@ -17,7 +17,6 @@ class TerminalWS {
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
-    
     this.vncWss = new WebSocketServer({ noServer: true });
     this.setup();
     this.startHeartbeat();
