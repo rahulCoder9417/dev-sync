@@ -4,6 +4,7 @@ import { ClientMessage } from "../../types";
 import { deleteFileOrFolder } from "../lib/action/fileitem/deleteFile";
 import RoomManager from "../utils/roomManagerFile";
 import makeRoomId from "../utils/makeRoomId";
+import { sendFileCreated, sendFileDeleted, sendFileRenamed, sendFileUpdated } from "../services/renderSyncClient";
 
 export class FileWsHandler extends BaseWsHandler {
   private fileVotes: Map<string, Set<string>> = new Map();
@@ -61,6 +62,7 @@ export class FileWsHandler extends BaseWsHandler {
           break;
         case "fileOp":
           this.handleFileUpdate(ws, parsed as any);
+          
           break;
         case "cancel_voting":
           this.handleCancelVoting(ws, parsed as any);
@@ -167,6 +169,11 @@ export class FileWsHandler extends BaseWsHandler {
       },
       ws
     );
+    sendFileUpdated({
+      projectId,
+      fileFolderId :fileId!,
+      content,
+    });
   }
   private handleJoinRoom(ws: ExtWebSocket, parsed: ClientMessage) {
     if (parsed.action !== "join") {
@@ -245,6 +252,22 @@ export class FileWsHandler extends BaseWsHandler {
       },
       ws
     );
+
+    if(type==="create"){
+      sendFileCreated({
+        projectId,
+        fileName,
+        fileFolderId :parsed.newNode.id,
+        isDir :parsed.newNode.type==="folder",
+        parentId :fileId!,
+      });
+    }else if(type==="rename"){
+      sendFileRenamed({
+        projectId,
+      fileFolderId :fileId!,
+        fileName ,
+      });
+    }
   }
 
   private handleCancelVoting(ws: ExtWebSocket, parsed: ClientMessage) {
@@ -302,6 +325,10 @@ export class FileWsHandler extends BaseWsHandler {
         fileId,
         deletedBy: key.split(":")[2],
         fileName,
+      });
+      sendFileDeleted({
+        projectId,
+        fileFolderId :fileId!,
       });
     } else {
       this.room.broadcastToRoom(projectId, {

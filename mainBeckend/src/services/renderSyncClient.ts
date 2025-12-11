@@ -5,7 +5,7 @@ import { RenderFileEvent } from "../types/renderSync";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-const RENDER_WS_URL = process.env.RENDER_WS_URL || "ws://localhost:4000/ws/file-sync";
+const RENDER_WS_URL = (process.env.RENDER_WS_URL || "ws://localhost:4000") +"/ws/file-sync";
 
 class RenderSyncClient {
   private ws: WebSocket | null = null;
@@ -64,36 +64,31 @@ export const renderSyncClient = new RenderSyncClient();
 // Convenience helpers to be called after DB has been updated successfully
 export function sendFileCreated(args: {
   projectId: string;
-  projectName: string;
-  path: string;
-  isDir?: boolean;
-  content?: string;
+  fileName: string;
+  fileFolderId: string;
+  isDir: boolean;
+  parentId: string;
 }) {
-  const base = {
-    type: "file:create" as const,
-    projectId: args.projectId,
-    projectName: args.projectName,
-    path: args.path.replace(/\\/g, "/"),
-  };
   const ev: RenderFileEvent = {
-    ...base,
-    ...(args.isDir !== undefined ? { isDir: args.isDir } : {}),
-    ...(args.content !== undefined ? { content: args.content } : {}),
+    type: "file:create",
+    fileName: args.fileName,
+    projectId: args.projectId,
+    fileFolderId: args.fileFolderId,
+    isDir: args.isDir,
+    parentId: args.parentId,
   } as RenderFileEvent;
   renderSyncClient.send(ev);
 }
 
 export function sendFileUpdated(args: {
   projectId: string;
-  projectName: string;
-  path: string;
+      fileFolderId: string;
   content: string;
 }) {
   const ev: RenderFileEvent = {
     type: "file:update",
     projectId: args.projectId,
-    projectName: args.projectName,
-    path: args.path.replace(/\\/g, "/"),
+    fileFolderId: args.fileFolderId,
     content: args.content,
   };
   renderSyncClient.send(ev);
@@ -101,30 +96,26 @@ export function sendFileUpdated(args: {
 
 export function sendFileDeleted(args: {
   projectId: string;
-  projectName: string;
-  path: string;
+  fileFolderId: string;
 }) {
   const ev: RenderFileEvent = {
     type: "file:delete",
     projectId: args.projectId,
-    projectName: args.projectName,
-    path: args.path.replace(/\\/g, "/"),
+    fileFolderId: args.fileFolderId,
   };
   renderSyncClient.send(ev);
 }
 
 export function sendFileRenamed(args: {
   projectId: string;
-  projectName: string;
-  from: string;
-  to: string;
+  fileName:string;
+  fileFolderId: string;
 }) {
   const ev: RenderFileEvent = {
     type: "file:rename",
     projectId: args.projectId,
-    projectName: args.projectName,
-    from: args.from.replace(/\\/g, "/"),
-    to: args.to.replace(/\\/g, "/"),
+    fileFolderId: args.fileFolderId,
+    fileName: args.fileName,
   };
   renderSyncClient.send(ev);
 }

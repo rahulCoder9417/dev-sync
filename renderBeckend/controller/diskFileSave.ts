@@ -121,126 +121,98 @@ async function createFileMap( files: any[],
     );
     
     await fs.writeFile(path.join(PROJECTS_BASE_DIR, projectId, "fileMap.json"), JSON.stringify(fileMap));
+
 }
 
+export async function loadProjectIntoDisk(projectId: string,authCheck:boolean, userId?: string) {
+  const project = await db.project.findUnique({
+    where: { id: projectId },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      team: {
+        select: {
+          members: { select: { userId: true } }
+        }
+      },
+      files: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          content: true,
+          parentId: true,
+        }
+      }
+    }
+  });
 
+  if (!project) throw new Error("Project not found.");
+
+  if(authCheck){
+    const isOwner = project.ownerId === userId;
+    const isTeamMember = project.team?.members.some(m => m.userId === userId);
+
+    if (!isOwner && !isTeamMember) {
+      throw new Error("Unauthorized access.");
+    }
+  }
+
+  const projectDir = path.join(PROJECTS_BASE_DIR, projectId, project.name);
+
+  try {
+    await fs.access(projectDir);
+    return {
+      status: "exists",
+      projectDir,
+      projectName: project.name,
+    };
+  } catch {
+    // continue only if folder does NOT exist
+  }
+
+  await fs.mkdir(projectDir, { recursive: true });
+
+  const fileTree = buildFileTree(project.files);
+  await createFileMap(fileTree, projectDir, projectId);
+
+  return {
+    status: "created",
+    projectDir,
+    projectName: project.name,
+  };
+}
+
+   
 
 /**
  * MAIN CONTROLLER WITH MIDDLEWARE
  */
-export const initializeTerminalProject = async (req: Request, res: Response) => {
+export const initializeTerminalProject = async (req, res) => {
   try {
-  
-    console.log(req.body);
-    // STEP 1: Extract projectId from body
-    const { projectId ,userId} = req.body;
+    const { projectId, userId } = req.body;
 
-    // STEP 2: Validate projectId
-    if (!projectId || typeof projectId !== "string") {
+    if (!projectId) {
       return res.status(400).json({
         ok: false,
-        error: "projectId is required and must be a string",
-      });
-    }
-      // STEP 3: Check if project directory already exists
-      try {
-        await fs.access(path.join(PROJECTS_BASE_DIR, projectId));
-        return res.json({
-          ok: true,
-          success: true,
-          message: "Project directory already exists",
-          projectPath: path.join(PROJECTS_BASE_DIR, projectId),
-          status: "exists",
-        });
-      } catch {
-        // Directory doesn't exist, continue
-      }
-
-    // STEP 4: Fetch project from database
-    const project = await db.project.findUnique({
-      where: { id: projectId },
-      select: {
-        id: true,
-        name: true,
-        ownerId: true,
-        team: {
-          select: {
-            members: {
-              select: {
-                userId: true,
-              },
-            },
-          },
-        },
-        files: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            content: true,
-            parentId: true,
-          },
-        },
-      },
-    });
-
-    // STEP 5: Check if project exists
-    if (!project) {
-      return res.status(404).json({
-        ok: false,
-        error: "Project not found",
+        error: "projectId is required"
       });
     }
 
-    // STEP 6: Check authorization (owner or team member)
-    const isOwner = project.ownerId ===userId;
-    const teamMembers = project.team?.members ?? [];
-    const isTeamMember = teamMembers.some((m) => m.userId === userId);
+    const result = await loadProjectIntoDisk(projectId, true,userId);
 
-    if (!isOwner && !isTeamMember) {
-      return res.status(403).json({
-        ok: false,
-        error: "You don't have access to this project",
-      });
-    }
-
-    // STEP 7: Define project directory path
-    const projectDir = path.join(PROJECTS_BASE_DIR, projectId,project.name);
-
-
-
-    // STEP 8: Create project directory
-    await fs.mkdir(projectDir, { recursive: true });
-    console.log(`📁 Created project directory: ${projectDir}`);
-
-    // STEP 9: Build file tree
-    const fileTree = buildFileTree(project.files);
-
-    // STEP 10: Create all files and folders
-    await createFileMap(fileTree, projectDir,projectId);
-
-    // STEP 11: Return success response
-    const mapData = await fs.readFile(
-        path.join(PROJECTS_BASE_DIR,projectId, "fileMap.json"),
-        "utf8"
-      );
-      
-    res.json({
+    return res.json({
       ok: true,
       success: true,
-      message: "Project directory created successfully",
-      projectPath: projectDir,
-      projectName: project.name,
-      map:mapData,
-      totalFiles: project.files.length,
-      status: "created",
+      ...result
     });
-  } catch (error: any) {
-    console.error("Error initializing terminal project:", error);
-    res.status(500).json({
+
+  } catch (e: any) {
+    console.error(e);
+    return res.status(500).json({
       ok: false,
-      error: "Failed to initialize project",
-      details: error.message,
+      error: e.message || "Failed to load project"
     });
   }
 };

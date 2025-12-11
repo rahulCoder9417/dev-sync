@@ -5,30 +5,27 @@ export type RenderFileEvent =
   | {
       type: "file:create";
       projectId: string;
-      projectName: string; // for resolving folder name on disk
-      path: string; // relative to project root (e.g. src/index.ts)
-      isDir?: boolean;
-      content?: string; // empty or undefined for folder
+      fileFolderId: string;
+      isDir: boolean;
+      parentId :string;
+      fileName :string;
     }
   | {
       type: "file:update";
       projectId: string;
-      projectName: string;
-      path: string; // relative path
-      content: string; // full content to write
+      fileFolderId: string;
+      content: string;
     }
   | {
       type: "file:delete";
       projectId: string;
-      projectName: string;
-      path: string; // relative path (file or directory)
+      fileFolderId: string;
     }
   | {
       type: "file:rename";
       projectId: string;
-      projectName: string;
-      from: string; // relative path
-      to: string; // relative path
+      fileFolderId: string;
+      fileName: string;
     };
 
 export function isIgnoredPath(relPath: string): boolean {
