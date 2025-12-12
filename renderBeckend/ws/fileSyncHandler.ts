@@ -62,7 +62,6 @@ export class FileSyncWS {
   
       case "file:create": {
         let parentAbs = await getFilePath(projectDir, ev.projectId, ev.parentId);
-        console.log(parentAbs)
         if (!parentAbs) return;
   
         const newAbs = path.join(parentAbs, ev.fileName);

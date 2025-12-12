@@ -24,7 +24,6 @@ class RenderSyncClient {
       // flush queued events
       for (const ev of this.queue) {
         try {
-          console.log("sending",ev)
           this.ws?.send(JSON.stringify(ev));
         } catch {}
       }
@@ -42,19 +41,16 @@ class RenderSyncClient {
   }
 
   public send(event: RenderFileEvent) {
-    console.log("sending")
     // ignore prohibited directories early (double safety)
     try {
       const first = (event as any).path?.split("/")[0];
       if (first && ["node_modules", "dist", "build", ".next", "out"].includes(first)) {
-        console.log("ignoring",event)
         return;
       }
     } catch {}
 
     this.ensureConnection();
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log(event)
       this.ws.send(JSON.stringify(event));
     } else {
       this.queue.push(event);

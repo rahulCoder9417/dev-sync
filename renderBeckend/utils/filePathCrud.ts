@@ -17,7 +17,6 @@ export async function loadFile(projectRoot: string, projectId: string) {
 
 export async function getFilePath(projectRoot: string, projectId: string, fileId: string) {
   await loadFile(projectRoot, projectId);
-  console.log(cache.get(projectId),fileId)
   if(!fileId){
     //it is in root 
     return await getRealProjectDir(projectRoot, projectId,);

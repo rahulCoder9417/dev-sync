@@ -1,5 +1,6 @@
 the unhandeld rejecttion in cloning public gitRepo of uploading to cloudinary
 chat not connected after signing in
+use redis for messaging and rate limiting
 check terminal  for project of express server and ws (they are actually, made debug)
 make it copy  ctrl c in terminal
 chat ==>https://claude.ai/chat/5a340d5c-d118-4e9e-980f-7fd9e316a619 -- to know about how terminal works
