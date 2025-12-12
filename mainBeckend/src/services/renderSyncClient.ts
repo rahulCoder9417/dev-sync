@@ -41,16 +41,17 @@ class RenderSyncClient {
   }
 
   public send(event: RenderFileEvent) {
+    console.log("sending")
     // ignore prohibited directories early (double safety)
     try {
       const first = (event as any).path?.split("/")[0];
       if (first && ["node_modules", "dist", "build", ".next", "out"].includes(first)) {
+        console.log("ignoring",event)
         return;
       }
     } catch {}
 
     this.ensureConnection();
-
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(event));
     } else {

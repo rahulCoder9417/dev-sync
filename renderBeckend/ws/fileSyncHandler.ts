@@ -56,7 +56,7 @@ export class FileSyncWS {
   }
 
   private async handleEvent(ev: RenderFileEvent) {
-    const projectDir = await getRealProjectDir(this.PROJECT_ROOT, ev.projectId);
+    const projectDir = this.PROJECT_ROOT
   
     switch (ev.type) {
   

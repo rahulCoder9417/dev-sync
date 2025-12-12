@@ -125,6 +125,20 @@ async function createFileMap( files: any[],
 }
 
 export async function loadProjectIntoDisk(projectId: string,authCheck:boolean, userId?: string) {
+  
+  try {
+      const items = await fs.readdir(path.join(PROJECTS_BASE_DIR, projectId), { withFileTypes: true });
+    
+      const folder = items.find((i) => i.isDirectory());
+    
+    return {
+      status: "exists",
+      projectDir: path.join(PROJECTS_BASE_DIR, projectId,folder?.name),
+      projectName: folder.name,
+    };
+  } catch {
+    // continue only if folder does NOT exist
+  }
   const project = await db.project.findUnique({
     where: { id: projectId },
     select: {
@@ -161,16 +175,6 @@ export async function loadProjectIntoDisk(projectId: string,authCheck:boolean, u
 
   const projectDir = path.join(PROJECTS_BASE_DIR, projectId, project.name);
 
-  try {
-    await fs.access(projectDir);
-    return {
-      status: "exists",
-      projectDir,
-      projectName: project.name,
-    };
-  } catch {
-    // continue only if folder does NOT exist
-  }
 
   await fs.mkdir(projectDir, { recursive: true });
 
