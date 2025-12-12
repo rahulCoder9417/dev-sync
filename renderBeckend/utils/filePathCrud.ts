@@ -16,7 +16,8 @@ export async function loadFile(projectRoot: string, projectId: string) {
 
 export async function getFilePath(projectRoot: string, projectId: string, fileId: string) {
   await loadFile(projectRoot, projectId);
-  return cache.get(projectId)?.[fileId] ?? null;
+  console.log(cache.get(projectId)[fileId])
+  return cache.get(projectId)?.[fileId] || null;
 }
 
 async function saveFileMap(projectRoot: string, projectId: string) {

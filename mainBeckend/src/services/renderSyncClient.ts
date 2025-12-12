@@ -24,6 +24,7 @@ class RenderSyncClient {
       // flush queued events
       for (const ev of this.queue) {
         try {
+          console.log("sending",ev)
           this.ws?.send(JSON.stringify(ev));
         } catch {}
       }
@@ -53,6 +54,7 @@ class RenderSyncClient {
 
     this.ensureConnection();
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log(event)
       this.ws.send(JSON.stringify(event));
     } else {
       this.queue.push(event);
