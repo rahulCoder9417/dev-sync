@@ -4,7 +4,7 @@ import { loadProjectIntoDisk } from "../controller/diskFileSave.js";
 
 const cache = new Map<string, Record<string, string>>();
 
-async function loadFile(projectRoot: string, projectId: string) {
+export async function loadFile(projectRoot: string, projectId: string) {
   if (cache.has(projectId)) return;
   await loadProjectIntoDisk(projectId, false);
   const mapPath = path.join(projectRoot, projectId, "fileMap.json");

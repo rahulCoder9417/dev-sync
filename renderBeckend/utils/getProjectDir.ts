@@ -1,8 +1,16 @@
 import fs from "fs/promises";
 import path from "path";
+import { loadFile } from "./filePathCrud.js";
 
-export async function getRealProjectDir(baseDir, projectId) {
-  const root = path.join(baseDir, projectId);
+export async function getRealProjectDir(baseDir, projectId) 
+{
+  let root;
+  try {
+     root = path.join(baseDir, projectId);
+  } catch (error) {
+    await loadFile(baseDir, projectId);
+    root = path.join(baseDir, projectId);
+  }
 
   const items = await fs.readdir(root, { withFileTypes: true });
 
