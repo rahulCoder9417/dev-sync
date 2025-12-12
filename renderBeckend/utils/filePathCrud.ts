@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { loadProjectIntoDisk } from "../controller/diskFileSave.js";
+import { getRealProjectDir } from "./getProjectDir.js";
 
 const cache = new Map<string, Record<string, string>>();
 
@@ -16,7 +17,11 @@ export async function loadFile(projectRoot: string, projectId: string) {
 
 export async function getFilePath(projectRoot: string, projectId: string, fileId: string) {
   await loadFile(projectRoot, projectId);
-  console.log(cache.get(projectId)[fileId])
+  console.log(cache.get(projectId),fileId)
+  if(!fileId){
+    //it is in root 
+    return await getRealProjectDir(projectRoot, projectId,);
+  }
   return cache.get(projectId)?.[fileId] || null;
 }
 
