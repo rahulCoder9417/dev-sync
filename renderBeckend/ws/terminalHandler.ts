@@ -7,6 +7,8 @@ import { spawn, IPty } from "node-pty";
 import path from "path";
 import crypto from "crypto";
 import { getRealProjectDir } from "../utils/getProjectDir.js";
+import { ensureProjectWatcher, stopProjectWatcher } from "../utils/watcher.js";
+
 
 import net from "net";
 class TerminalWS {
@@ -15,6 +17,7 @@ class TerminalWS {
   private room: RoomManager;
   private vncWss: WebSocketServer;
 
+  private projectTerminalCount = new Map<string, number>();
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
     this.vncWss = new WebSocketServer({ noServer: true });
@@ -49,6 +52,11 @@ class TerminalWS {
           `🖼️  GUI session assigned: DISPLAY=${gui.display} VNC=:${gui.vncPort} for user=${ws.userId}`
         );
         let cwd = await getRealProjectDir(this.room.PROJECT_ROOT, ws.projectId);
+        const count = this.projectTerminalCount.get(ws.projectId) ?? 0;
+        if (count === 0) {
+          ensureProjectWatcher(cwd, ws.projectId);
+        }
+        this.projectTerminalCount.set(ws.projectId, count + 1);
         // Set environment with DISPLAY variable
         let env = { ...process.env, DISPLAY: gui.display };
         const ptyProcess: IPty = spawn("bash", [], {
@@ -154,6 +162,17 @@ class TerminalWS {
             })
           );
           console.log(`[WS] client disconnected userId=${ws.userId}`);
+          // 🧹 TERMINAL CLEANUP
+          const count = this.projectTerminalCount.get(ws.projectId) ?? 1;
+          const next = count - 1;
+
+          if (next <= 0) {
+            this.projectTerminalCount.delete(ws.projectId);
+            stopProjectWatcher(ws.projectId);
+            console.log(`🧹 No active terminals, watcher stopped for project=${ws.projectId}`);
+  } else {
+    this.projectTerminalCount.set(ws.projectId, next);
+  }
         });
       }
     );

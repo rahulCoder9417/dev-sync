@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import path from "path";
 import { getRealProjectDir } from "../utils/getProjectDir.js";
 import { deleteFilePath, getFilePath, renameFilePaths, setFilePath } from "../utils/filePathCrud.js";
+import { Sup } from "../utils/pathSuppressor.js";
 
 // Event schema parity with main backend
 
@@ -59,7 +60,8 @@ export class FileSyncWS {
     const projectDir = this.PROJECT_ROOT
   
     switch (ev.type) {
-  
+      // Disappearance events happen instantly.
+      //  must suppress before they happen.
       case "file:create": {
         let parentAbs = await getFilePath(projectDir, ev.projectId, ev.parentId);
         if (!parentAbs) return;
@@ -72,7 +74,8 @@ export class FileSyncWS {
         } else {
           await fs.writeFile(newAbs, "", "utf8");
         }
-  
+   Sup.suppress(newAbs);
+
         await setFilePath(projectDir, ev.projectId, ev.fileFolderId, newAbs);
         break;
       }
@@ -82,13 +85,15 @@ export class FileSyncWS {
         if (!abs) return;
   
         await fs.writeFile(abs, ev.content ?? "", "utf8");
+        Sup.suppress(abs);
         break;
       }
   
       case "file:delete": {
         let abs = await getFilePath(projectDir, ev.projectId, ev.fileFolderId);
         if (!abs) return;
-  
+        Sup.suppress(abs);
+
         await fs.rm(abs, { recursive: true, force: true });
         await deleteFilePath(projectDir, ev.projectId, ev.fileFolderId);
         break;
@@ -102,7 +107,8 @@ export class FileSyncWS {
         const newAbs = path.join(dir, ev.fileName);
   
         if (this.isIgnored(newAbs)) return;
-  
+        Sup.suppress(oldAbs);
+      Sup.suppress(newAbs);
         await fs.rename(oldAbs, newAbs);
         await renameFilePaths(projectDir, ev.projectId, oldAbs, newAbs);
         break;
