@@ -94,12 +94,12 @@ export class FileSyncWS {
         const newAbs = path.join(parentAbs, ev.fileName);
         if (this.isIgnored(newAbs)) return;
   
+        Sup.suppress(newAbs);
         if (ev.isDir) {
           await fs.mkdir(newAbs, { recursive: true });
         } else {
           await fs.writeFile(newAbs, "", "utf8");
         }
-   Sup.suppress(newAbs);
 
         await setFilePath(projectDir, ev.projectId, ev.fileFolderId, newAbs);
         break;
@@ -109,8 +109,8 @@ export class FileSyncWS {
         let abs = await getFilePath(projectDir, ev.projectId, ev.fileFolderId);
         if (!abs) return;
   
-        await fs.writeFile(abs, ev.content ?? "", "utf8");
         Sup.suppress(abs);
+        await fs.writeFile(abs, ev.content ?? "", "utf8");
         break;
       }
   
