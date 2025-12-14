@@ -9,10 +9,6 @@ import  fileSyncWS  from "../ws/fileSyncHandler.js";
 /**
  * Convert absolute path → project-relative path
  */
-
-function toRelative(projectDir: string, absPath: string) {
-  return path.relative(projectDir, absPath);
-}
 const PROJECT_ROOT = "/usr/src/app/projects";
 // ---------------- FILE CREATE ----------------
 
@@ -30,24 +26,22 @@ export async function handleFileCreate(
   projectDir: string,
   projectId: string
 ) {
-  //rel path used cause watcher donot everytim egive path correct src/./index.ts
-  const relPath = toRelative(projectDir, absPath);
 
-  console.log("[FS] file:create", relPath);
+  console.log("[FS] file:create", absPath);
 
-  const parentId =await getFileIdByAbsPath(projectDir, projectId, PROJECT_ROOT +path.dirname(relPath) ||null);
+  const parentId =await getFileIdByAbsPath(projectDir, projectId, absPath ||null);
   const id =cuid()
   fileSyncWS.sendFileEvent({
     type:"create",
     projectId,
     fileFolderId: id || null,
     parentId: parentId || null,
-    fileName: relPath.split("/")[relPath.split("/").length - 1],
+    fileName: absPath.split("/")[absPath.split("/").length - 1],
   })
   const newFileItem = await db.fileItem.create({
     data: {
       id,
-      name:checkFileSeprator(relPath.split("/")[relPath.split("/").length - 1]),
+      name:checkFileSeprator(absPath.split("/")[absPath.split("/").length - 1]),
       type:"file",
       content: "",
       projectId,
@@ -59,11 +53,11 @@ export async function handleFileCreate(
   })
   cache.set(projectId, {
     ...cache.get(projectId),
-    [id]: PROJECT_ROOT+relPath,
+    [id]: absPath,
   })
   reverseCache.set(projectId, {
     ...reverseCache.get(projectId),
-    [PROJECT_ROOT+relPath]: id,
+    [absPath]: id,
   })
 }
 
@@ -74,25 +68,22 @@ export async function handleFolderCreate(
   projectDir: string,
   projectId: string
 ) {
-  
-  const relPath = toRelative(projectDir, absPath);
-
-  console.log("[FS] folder:create", relPath);
+  console.log("[FS] folder:create", absPath);
 
 
-  const parentId =await getFileIdByAbsPath(projectDir, projectId,( PROJECT_ROOT +path.dirname(relPath)) ||null);
+  const parentId =await getFileIdByAbsPath(projectDir, projectId,absPath ||null);
   const id =cuid()
   fileSyncWS.sendFileEvent({
     type:"create",
     projectId,
     fileFolderId: id || null,
     parentId: parentId || null,
-    fileName: relPath.split("/")[relPath.split("/").length - 1] + "/",
+    fileName: absPath.split("/")[absPath.split("/").length - 1] + "/",
   })
   const newFileItem = await db.fileItem.create({
     data: {
       id,
-      name:relPath.split("/")[relPath.split("/").length - 1]+"/",
+      name:absPath.split("/")[absPath.split("/").length - 1]+"/",
       type:"folder",
       content: "",
       projectId,
@@ -104,11 +95,11 @@ export async function handleFolderCreate(
   })
   cache.set(projectId, {
     ...cache.get(projectId),
-    [id]: PROJECT_ROOT+relPath + "/",
+    [id]: absPath + "/",
   })
   reverseCache.set(projectId, {
     ...reverseCache.get(projectId),
-    [PROJECT_ROOT+relPath + "/"]: id,
+    [absPath + "/"]: id,
   })
 }
 
@@ -119,9 +110,9 @@ export async function handleFileUpdate(
   projectDir: string,
   projectId: string
 ) {
-  const relPath = toRelative(projectDir, absPath);
-  const content = await fs.readFile((PROJECT_ROOT+relPath), "utf8");
-  const fileId = reverseCache.get(projectId)?.[PROJECT_ROOT+relPath] ;
+  console.log(absPath)
+  const content = await fs.readFile(absPath, "utf8");
+  const fileId = reverseCache.get(projectId)?.[absPath] ;
   
   fileSyncWS.sendFileEvent({
     type:"save",
@@ -147,15 +138,14 @@ export async function handleFileDelete(
   projectDir: string,
   projectId: string 
 ) {
-  const relPath = toRelative(projectDir, absPath);
   console.log(reverseCache.get(projectId))
-  console.log(PROJECT_ROOT+relPath)
-  const fileId = reverseCache.get(projectId)?.[PROJECT_ROOT+relPath] ;
-  console.log("deleting file--- id" + fileId +" path" + relPath)
+  console.log(absPath)
+  const fileId = reverseCache.get(projectId)?.[absPath] ;
+  console.log("deleting file--- id" + fileId +" path" + absPath)
   fileSyncWS.sendFileEvent({
     type:"delete",
     projectId,
-    fileName: checkFileSeprator(relPath.split("/")[relPath.split("/").length - 1]),
+    fileName: checkFileSeprator(absPath.split("/")[absPath.split("/").length - 1]),
     fileId: fileId || null,
   })
   await db.fileItem.delete({
@@ -169,9 +159,9 @@ export async function handleFileDelete(
   })
   reverseCache.set(projectId, {
     ...reverseCache.get(projectId),
-    [PROJECT_ROOT+relPath]: undefined,
+    [absPath]: undefined,
   })
-  console.log("[FS] file:delete", relPath);
+  console.log("[FS] file:delete", absPath);
 }
 
 // ---------------- FOLDER DELETE ----------------
@@ -181,14 +171,13 @@ export async function handleFolderDelete(
   projectDir: string,
   projectId: string
 ) {
-  const relPath = toRelative(projectDir, absPath);
   console.log(reverseCache.get(projectId))
-  console.log(PROJECT_ROOT+relPath + "/")
-  const fileId = reverseCache.get(projectId)?.[PROJECT_ROOT+relPath + "/"] ;
-  console.log("deleting folder--- id" + fileId +" path" + relPath)
+  console.log(absPath)
+  const fileId = reverseCache.get(projectId)?.[absPath + "/"] ;
+  console.log("deleting folder--- id" + fileId +" path" + absPath)
   fileSyncWS.sendFileEvent({
     type:"delete",
-    fileName: checkFileSeprator(relPath.split("/")[relPath.split("/").length - 1]),
+    fileName: checkFileSeprator(absPath.split("/")[absPath.split("/").length - 1]),
     projectId,
     fileId: fileId || null,
   })
@@ -203,6 +192,6 @@ export async function handleFolderDelete(
   })
   reverseCache.set(projectId, {
     ...reverseCache.get(projectId),
-    [PROJECT_ROOT+relPath + "/"]: undefined,
+    [absPath + "/"]: undefined,
   })
 }
