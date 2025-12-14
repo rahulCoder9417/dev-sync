@@ -1,5 +1,5 @@
 "use client"
-//Use for reference
+//Use for reference,not applied anywhere
 import { showToast } from "@/components/main/Toast";
 import { addOnlineUser, removeOnlineUser, clearOnlineUsers } from "@/lib/redux/features/onlineUserSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";

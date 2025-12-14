@@ -35,6 +35,31 @@ import { Sup } from "../utils/pathSuppressor.js";
       fileName: string;
     };
 
+  type OutGoingFileBroadcast = {
+    type: "save";
+    projectId: string;
+    fileId: string;
+    content: string;
+  }
+  |{
+    type:"rename";
+    projectId: string;
+    fileId: string;
+    fileName: string;
+  }
+  |{
+    type:"delete";
+    projectId: string;
+    fileId: string;
+    fileName: string;
+  }
+  |{
+    type:"create";
+    projectId: string;
+    fileFolderId: string;
+    parentId: string;
+    fileName: string;
+  }
 const IGNORED = new Set(["node_modules", "dist", "build", ".next", "out"]);
 
 export class FileSyncWS {
@@ -127,6 +152,13 @@ export class FileSyncWS {
           console.error("file-sync handler error:", e);
         }
       });
+    });
+  }
+//there will be only one client connected the main beckend
+
+  public sendFileEvent(ev: OutGoingFileBroadcast) {
+    this.wss.clients.forEach((ws) => {
+      ws.send(JSON.stringify(ev));
     });
   }
 

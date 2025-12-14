@@ -7,8 +7,8 @@ export type RenderFileEvent =
       projectId: string;
       fileFolderId: string;
       isDir: boolean;
-      parentId :string;
-      fileName :string;
+      parentId: string;
+      fileName: string;
     }
   | {
       type: "file:update";
@@ -27,6 +27,33 @@ export type RenderFileEvent =
       fileFolderId: string;
       fileName: string;
     };
+
+export type IncomingFileBroadcast = {
+  type: "save";
+  projectId: string;
+  fileId: string;
+  content: string;
+}
+|{
+  type:"rename";
+  projectId: string;
+  fileId: string;
+  fileName: string;
+}
+|{
+  type:"delete";
+  projectId: string;
+  fileId: string;
+  fileName: string;
+}
+|{
+  type:"create";
+  projectId: string;
+  fileFolderId: string;
+  parentId: string;
+  fileName: string;
+}
+;
 
 export function isIgnoredPath(relPath: string): boolean {
   const parts = relPath.split("/").filter(Boolean);

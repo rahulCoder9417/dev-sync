@@ -33,7 +33,7 @@ app.use("/api", router);
 // Initialize WebSocket handlers
 const fileWsHandler = new FileWsHandler();
 const chatWsHandler = new ChatWsHandler();
-
+export {fileWsHandler}
 // WebSocket upgrade handler
 server.on('upgrade', async (request, socket, head) => {
   // Parse URL to determine the WebSocket path

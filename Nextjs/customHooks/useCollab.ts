@@ -132,7 +132,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
             case "file_deleted":
               setTimeout(() => {
                 setdeletionMenu(null)
-              }, 500)
+              }, 50)
               showToast(
                 true,
                 "File deleted by" +

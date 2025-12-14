@@ -53,29 +53,29 @@ function startFsWatcher(projectDir: string, projectId: string) {
     ],
   });
 
-  watcher.on("add", (absPath) => {
+  watcher.on("add", async(absPath) => {
     if (Sup.isSuppressedOrParent(absPath)) return;
-    handleFileCreate(absPath, projectDir, projectId);
+    await handleFileCreate(absPath, projectDir, projectId,);
   });
 
-  watcher.on("addDir", (absPath) => {
+  watcher.on("addDir", async(absPath) => {
     if (Sup.isSuppressedOrParent(absPath)) return;
-    handleFolderCreate(absPath, projectDir, projectId);
+    await handleFolderCreate(absPath, projectDir, projectId);
   });
 
-  watcher.on("change", (absPath) => {
+  watcher.on("change", async(absPath) => {
     if (Sup.isSuppressedOrParent(absPath)) return;
-    handleFileUpdate(absPath, projectDir, projectId);
+    await handleFileUpdate(absPath, projectDir, projectId);
   });
 
-  watcher.on("unlink", (absPath) => {
+  watcher.on("unlink", async(absPath) => {
     if (Sup.isSuppressedOrParent(absPath)) return;
-    handleFileDelete(absPath, projectDir, projectId);
+    await handleFileDelete(absPath, projectDir, projectId);
   });
 
-  watcher.on("unlinkDir", (absPath) => {
+  watcher.on("unlinkDir", async(absPath) => {
     if (Sup.isSuppressedOrParent(absPath)) return;
-    handleFolderDelete(absPath, projectDir, projectId);
+    await handleFolderDelete(absPath, projectDir, projectId);
   });
 
   return watcher;

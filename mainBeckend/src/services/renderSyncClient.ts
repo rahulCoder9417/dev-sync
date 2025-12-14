@@ -1,8 +1,8 @@
 import WebSocket from "ws";
 import dotenv from "dotenv";
 import path from "path";
-import { RenderFileEvent } from "../types/renderSync";
-
+import { IncomingFileBroadcast, RenderFileEvent } from "../types/renderSync";
+import { fileWsHandler } from "../../server";
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const RENDER_WS_URL = (process.env.RENDER_WS_URL || "ws://localhost:4000") +"/ws/file-sync";
@@ -29,7 +29,26 @@ class RenderSyncClient {
       }
       this.queue = [];
     });
-
+    this.ws.on("message", (data) => {
+      const ev :IncomingFileBroadcast = JSON.parse(data.toString());
+      switch (ev.type) {
+        case "save":
+          fileWsHandler.handleSave(ev.projectId,ev.fileId,ev.content);
+          break;
+        case "rename":
+          fileWsHandler.handleRename(ev.projectId,ev.fileId,ev.fileName);
+          break;
+        case "delete":
+          fileWsHandler.handleDelete(ev.projectId,ev.fileId,ev.fileName);
+          break;
+        case "create":
+          fileWsHandler.handleCreate(ev.projectId,ev.fileFolderId,ev.fileName,ev.parentId);
+          break;
+        default:
+          break;
+      }
+      
+    });
     this.ws.on("close", () => {
       this.connecting = false;
       setTimeout(() => this.ensureConnection(), 1000);

@@ -471,6 +471,80 @@ export class FileWsHandler extends BaseWsHandler {
       data: data ?? null,
     });
   }
+
+//function for render terminal second way connection
+public handleSave(projectId:string,fileId:string,content:string){
+  this.room.broadcastToRoom(
+    projectId,
+    {
+      type: "fileSave",
+      room:projectId,
+      projectId,
+      from: {
+        userId: "",
+        username: "",
+        fullName: "From terminal",
+      },
+      fileId: fileId,
+      content,
+    })
+}
+
+public handleCreate(projectId:string,fileId:string,fileName:string,parentId:string){
+  this.room.broadcastToRoom(
+    projectId,
+    {
+      type: "fileOp",
+      room:projectId,
+      from: {
+        userId: "",
+        username: "",
+        fullName: "From terminal",
+      },
+      projectId: projectId,
+      fileId: parentId,
+      action: "create",
+      newNode: {
+        id: fileId,
+        name: fileName,
+        type:fileName.endsWith("/") ?"folder" : "file",
+        children: [],
+        parentId:parentId,
+      },
+    }
+  );
+}
+
+public handleRename(projectId:string,fileId:string,fileName:string){
+  this.room.broadcastToRoom(
+    projectId,
+    {
+      type: "fileOp",
+      room:projectId,
+      from: {
+        userId: "",
+        username: "",
+        fullName: "From terminal",
+      },
+      projectId: projectId,
+      fileId: fileId,
+      action: "rename",
+      fileName: fileName,
+    }
+  );
+}
+
+  public handleDelete(projectId:string,fileId:string,fileName:string){
+    this.room.broadcastToRoom(projectId, {
+      type: "file_deleted",
+      projectId,
+      fileId,
+      deletedBy: "From terminal",
+      fileName,
+    });
+  
+  }
+
 //ignore
   protected GlobalUserList(ws: ExtWebSocket){}
 }

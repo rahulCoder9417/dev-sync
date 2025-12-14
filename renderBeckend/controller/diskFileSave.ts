@@ -121,6 +121,7 @@ async function createFileMap( files: any[],
     );
     
     await fs.writeFile(path.join(PROJECTS_BASE_DIR, projectId, "fileMap.json"), JSON.stringify(fileMap));
+    // Do not persist reverse map to disk; it is maintained in-memory by filePathCrud.ts
 
 }
 
