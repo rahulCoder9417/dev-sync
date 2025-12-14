@@ -23,13 +23,12 @@ export const checkFileSeprator =(absPath:string)=>{
 
 export async function handleFileCreate(
   absPath: string,
-  projectDir: string,
   projectId: string
 ) {
 
   console.log("[FS] file:create", absPath);
 
-  const parentId =await getFileIdByAbsPath(projectDir, projectId, absPath ||null);
+  const parentId =reverseCache.get(projectId)?.[path.dirname(absPath) +"/"] || null;
   const id =cuid()
   const content = await fs.readFile(absPath, "utf8");
   fileSyncWS.sendFileEvent({
@@ -42,7 +41,7 @@ export async function handleFileCreate(
   fileSyncWS.sendFileEvent({
     type:"save",
     projectId,
-    fileId: id || null,
+    fileId: id ,
     content,
   })
   const newFileItem = await db.fileItem.create({
@@ -72,13 +71,12 @@ export async function handleFileCreate(
 
 export async function handleFolderCreate(
   absPath: string,
-  projectDir: string,
   projectId: string
 ) {
   console.log("[FS] folder:create", absPath);
 
 
-  const parentId =await getFileIdByAbsPath(projectDir, projectId,absPath ||null);
+  const parentId =reverseCache.get(projectId)?.[path.dirname(absPath) +"/"] || null;
   const id =cuid()
   fileSyncWS.sendFileEvent({
     type:"create",
@@ -114,7 +112,6 @@ export async function handleFolderCreate(
 
 export async function handleFileUpdate(
   absPath: string,
-  projectDir: string,
   projectId: string
 ) {
   console.log(absPath)
@@ -142,7 +139,6 @@ export async function handleFileUpdate(
 
 export async function handleFileDelete(
   absPath: string,
-  projectDir: string,
   projectId: string 
 ) {
   console.log(reverseCache.get(projectId))
@@ -175,7 +171,6 @@ export async function handleFileDelete(
 
 export async function handleFolderDelete(
   absPath: string,
-  projectDir: string,
   projectId: string
 ) {
   console.log(reverseCache.get(projectId))

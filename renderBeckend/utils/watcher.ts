@@ -55,29 +55,29 @@ function startFsWatcher(projectDir: string, projectId: string) {
   });
   watcher.on("add", async(absPath) => {
     if (Sup.isSuppressedOrParent(absPath)) return;
-    await handleFileCreate(absPath, projectDir, projectId,);
+    await handleFileCreate(absPath, projectId);
   });
 
   watcher.on("addDir", async(absPath) => {
     if (Sup.isSuppressedOrParent(absPath)) return;
-    await handleFolderCreate(absPath, projectDir, projectId);
+    await handleFolderCreate(absPath, projectId);
   });
 
   watcher.on("change", async(absPath) => {
     if (Sup.isSuppressedOrParent(absPath)) return;
-    await handleFileUpdate(absPath, projectDir, projectId);
+    await handleFileUpdate(absPath, projectId);
   });
 
   watcher.on("unlink", async(absPath) => {
     console.log("unlinking  file---",absPath)
     if (Sup.isSuppressedOrParent(absPath)) return;
-    await handleFileDelete(absPath, projectDir, projectId);
+    await handleFileDelete(absPath, projectId);
   });
 
   watcher.on("unlinkDir", async(absPath) => {
     console.log("unlinking  folder---",absPath)
     if (Sup.isSuppressedOrParent(absPath)) return;
-    await handleFolderDelete(absPath, projectDir, projectId);
+    await handleFolderDelete(absPath, projectId);
   });
 
   return watcher;

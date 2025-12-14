@@ -104,6 +104,6 @@ export async function getFileIdByAbsPath(projectRoot: string, projectId: string,
   if (!hasExt && !absPath.endsWith(path.sep)) {
     absPath = absPath + path.sep;
   }
-  return reverse[absPath] ?? null;
+  return reverse[absPath] || null;
   //folder will end with /,src/home/,src/index.ts
 }
