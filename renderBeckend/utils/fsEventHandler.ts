@@ -149,7 +149,7 @@ export async function handleFileDelete(
 ) {
   const relPath = toRelative(projectDir, absPath);
   const fileId = reverseCache.get(projectId)?.[PROJECT_ROOT+relPath] ;
-  
+  console.log("deleting file--- id" + fileId +" path" + relPath)
   fileSyncWS.sendFileEvent({
     type:"delete",
     projectId,
@@ -181,6 +181,7 @@ export async function handleFolderDelete(
 ) {
   const relPath = toRelative(projectDir, absPath);
   const fileId = reverseCache.get(projectId)?.[PROJECT_ROOT+relPath + "/"] ;
+  console.log("deleting folder--- id" + fileId +" path" + relPath)
   fileSyncWS.sendFileEvent({
     type:"delete",
     fileName: checkFileSeprator(relPath.split("/")[relPath.split("/").length - 1]),
