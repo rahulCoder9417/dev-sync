@@ -180,6 +180,7 @@ export async function handleFolderDelete(
   projectId: string
 ) {
   const relPath = toRelative(projectDir, absPath);
+  console.log(reverseCache)
   const fileId = reverseCache.get(projectId)?.[PROJECT_ROOT+relPath + "/"] ;
   console.log("deleting folder--- id" + fileId +" path" + relPath)
   fileSyncWS.sendFileEvent({

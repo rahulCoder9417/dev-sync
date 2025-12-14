@@ -3,6 +3,7 @@ import chokidar from "chokidar";
 import path from "path";
 import { Sup } from "./pathSuppressor.js";
 import { handleFileCreate, handleFileDelete, handleFileUpdate, handleFolderCreate, handleFolderDelete } from "./fsEventHandler.js";
+import { loadFile } from "./filePathCrud.js";
 
 /**
  * One watcher per project
@@ -39,7 +40,7 @@ export function stopProjectWatcher(projectId: string) {
 /**
  * Actual watcher logic
  */
-function startFsWatcher(projectDir: string, projectId: string) {
+async function startFsWatcher(projectDir: string, projectId: string) {
   const watcher = chokidar.watch(projectDir, {
     ignoreInitial: true,
     persistent: true,
@@ -52,7 +53,7 @@ function startFsWatcher(projectDir: string, projectId: string) {
       "**/build/**",
     ],
   });
-
+  await loadFile(projectDir, projectId);
   watcher.on("add", async(absPath) => {
     if (Sup.isSuppressedOrParent(absPath)) return;
     await handleFileCreate(absPath, projectDir, projectId,);
