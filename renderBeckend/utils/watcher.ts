@@ -40,7 +40,7 @@ export function stopProjectWatcher(projectId: string) {
 /**
  * Actual watcher logic
  */
-async function startFsWatcher(projectDir: string, projectId: string) {
+function startFsWatcher(projectDir: string, projectId: string) {
   const watcher = chokidar.watch(projectDir, {
     ignoreInitial: true,
     persistent: true,
