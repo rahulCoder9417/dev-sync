@@ -11,6 +11,7 @@ import { ensureProjectWatcher, stopProjectWatcher } from "../utils/watcher.js";
 
 
 import net from "net";
+import { loadFile } from "../utils/filePathCrud.js";
 class TerminalWS {
   private wss: WebSocketServer;
   private heartbeatInterval: NodeJS.Timeout | null = null;
@@ -54,6 +55,7 @@ class TerminalWS {
         let cwd = await getRealProjectDir(this.room.PROJECT_ROOT, ws.projectId);
         const count = this.projectTerminalCount.get(ws.projectId) ?? 0;
         if (count === 0) {
+          await loadFile(cwd, ws.projectId);
           ensureProjectWatcher(cwd, ws.projectId);
         }
         this.projectTerminalCount.set(ws.projectId, count + 1);
