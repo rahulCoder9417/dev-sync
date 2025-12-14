@@ -31,6 +31,7 @@ export async function handleFileCreate(
 
   const parentId =await getFileIdByAbsPath(projectDir, projectId, absPath ||null);
   const id =cuid()
+  const content = await fs.readFile(absPath, "utf8");
   fileSyncWS.sendFileEvent({
     type:"create",
     projectId,
@@ -38,12 +39,18 @@ export async function handleFileCreate(
     parentId: parentId || null,
     fileName: absPath.split("/")[absPath.split("/").length - 1],
   })
+  fileSyncWS.sendFileEvent({
+    type:"save",
+    projectId,
+    fileId: id || null,
+    content,
+  })
   const newFileItem = await db.fileItem.create({
     data: {
       id,
       name:checkFileSeprator(absPath.split("/")[absPath.split("/").length - 1]),
       type:"file",
-      content: "",
+      content: content,
       projectId,
       parentId: parentId || null,
       createdAt: new Date(),

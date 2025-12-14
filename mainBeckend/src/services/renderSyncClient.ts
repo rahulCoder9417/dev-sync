@@ -11,7 +11,9 @@ class RenderSyncClient {
   private ws: WebSocket | null = null;
   private queue: RenderFileEvent[] = [];
   private connecting = false;
-
+constructor(){
+  this.ensureConnection()
+}
   private ensureConnection() {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) return;
     if (this.connecting) return;
@@ -31,6 +33,7 @@ class RenderSyncClient {
     });
     this.ws.on("message", (data) => {
       const ev :IncomingFileBroadcast = JSON.parse(data.toString());
+      console.log("message",ev)
       switch (ev.type) {
         case "save":
           fileWsHandler.handleSave(ev.projectId,ev.fileId,ev.content);
