@@ -48,7 +48,7 @@ export async function handleFileCreate(
   const newFileItem = await db.fileItem.create({
     data: {
       id,
-      name:checkFileSeprator(absPath.split("/")[absPath.split("/").length - 1]),
+      name:absPath.split("/")[absPath.split("/").length - 1],
       type:"file",
       content: content,
       projectId,
