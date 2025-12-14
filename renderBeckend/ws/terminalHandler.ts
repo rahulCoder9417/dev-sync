@@ -55,7 +55,7 @@ class TerminalWS {
         let cwd = await getRealProjectDir(this.room.PROJECT_ROOT, ws.projectId);
         const count = this.projectTerminalCount.get(ws.projectId) ?? 0;
         if (count === 0) {
-          await loadFile(cwd, ws.projectId);
+          await loadFile(this.room.PROJECT_ROOT, ws.projectId);
           ensureProjectWatcher(cwd, ws.projectId);
         }
         this.projectTerminalCount.set(ws.projectId, count + 1);
