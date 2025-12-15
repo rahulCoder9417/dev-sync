@@ -33,6 +33,14 @@ console.log("parent",reverseCache.get(projectId)[path.dirname(absPath)])
   const parentId =reverseCache.get(projectId)?.[path.dirname(absPath) +"/"] || null;
   const id =cuid()
   const content = await fs.readFile(absPath, "utf8");
+  cache.set(projectId, {
+    ...cache.get(projectId),
+    [id]: absPath,
+  })
+  reverseCache.set(projectId, {
+    ...reverseCache.get(projectId),
+    [absPath]: id,
+  })
   fileSyncWS.sendFileEvent({
     type:"create",
     projectId,
@@ -59,14 +67,6 @@ console.log("parent",reverseCache.get(projectId)[path.dirname(absPath)])
     },
 
   })
-  cache.set(projectId, {
-    ...cache.get(projectId),
-    [id]: absPath,
-  })
-  reverseCache.set(projectId, {
-    ...reverseCache.get(projectId),
-    [absPath]: id,
-  })
 }
 
 // ---------------- FOLDER CREATE ----------------
@@ -81,6 +81,14 @@ export async function handleFolderCreate(
   console.log("parent",reverseCache.get(projectId)[path.dirname(absPath)])
   const parentId =reverseCache.get(projectId)?.[path.dirname(absPath) +"/"] || null;
   const id =cuid()
+  cache.set(projectId, {
+    ...cache.get(projectId),
+    [id]: absPath + "/",
+  })
+  reverseCache.set(projectId, {
+    ...reverseCache.get(projectId),
+    [absPath + "/"]: id,
+  })
   fileSyncWS.sendFileEvent({
     type:"create",
     projectId,
@@ -100,14 +108,6 @@ export async function handleFolderCreate(
       updatedAt: new Date()
     },
 
-  })
-  cache.set(projectId, {
-    ...cache.get(projectId),
-    [id]: absPath + "/",
-  })
-  reverseCache.set(projectId, {
-    ...reverseCache.get(projectId),
-    [absPath + "/"]: id,
   })
 }
 
@@ -159,14 +159,8 @@ export async function handleFileDelete(
       id: fileId,
     },
   })
-  cache.set(projectId, {
-    ...cache.get(projectId),
-    [fileId]: undefined,
-  })
-  reverseCache.set(projectId, {
-    ...reverseCache.get(projectId),
-    [absPath]: undefined,
-  })
+  delete cache.get(projectId)[fileId]
+  delete reverseCache.get(projectId)[absPath]
   console.log("[FS] file:delete", absPath);
 }
 
@@ -181,7 +175,7 @@ export async function handleFolderDelete(
   const fileId = reverseCache.get(projectId)?.[absPath + "/"] ;
   console.log("deleting folder--- id" + fileId +" path" + absPath)
   fileSyncWS.sendFileEvent({
-    type:"delete",
+    type:"delete",  
     fileName: checkFileSeprator(absPath.split("/")[absPath.split("/").length - 1]),
     projectId,
     fileId: fileId || null,
@@ -191,12 +185,7 @@ export async function handleFolderDelete(
       id: fileId,
     },
   })
-  cache.set(projectId, {
-    ...cache.get(projectId),
-    [fileId]: undefined,
-  })
-  reverseCache.set(projectId, {
-    ...reverseCache.get(projectId),
-    [absPath + "/"]: undefined,
-  })
+  delete cache.get(projectId)[fileId]
+  delete reverseCache.get(projectId)[absPath + "/"]
+  console.log("[FS] folder:delete", absPath);
 }
