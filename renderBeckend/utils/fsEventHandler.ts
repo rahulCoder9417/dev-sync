@@ -27,6 +27,8 @@ export async function handleFileCreate(
 ) {
 
   console.log("[FS] file:create", absPath);
+  console.log("projectId",reverseCache.get(projectId))
+  console.log("path.dirname(absPath)",path.dirname(absPath))
 console.log("parent",reverseCache.get(projectId)[path.dirname(absPath)])
   const parentId =reverseCache.get(projectId)?.[path.dirname(absPath) +"/"] || null;
   const id =cuid()
