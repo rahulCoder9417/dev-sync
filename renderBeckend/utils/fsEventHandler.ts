@@ -27,7 +27,7 @@ export async function handleFileCreate(
 ) {
 
   console.log("[FS] file:create", absPath);
-
+console.log("parent",reverseCache.get(projectId)[path.dirname(absPath)])
   const parentId =reverseCache.get(projectId)?.[path.dirname(absPath) +"/"] || null;
   const id =cuid()
   const content = await fs.readFile(absPath, "utf8");
@@ -76,6 +76,7 @@ export async function handleFolderCreate(
   console.log("[FS] folder:create", absPath);
 
 
+  console.log("parent",reverseCache.get(projectId)[path.dirname(absPath)])
   const parentId =reverseCache.get(projectId)?.[path.dirname(absPath) +"/"] || null;
   const id =cuid()
   fileSyncWS.sendFileEvent({
