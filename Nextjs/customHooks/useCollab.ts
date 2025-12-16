@@ -2,7 +2,7 @@
 import { showToast } from "@/components/main/Toast";
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { ServerPayload, UserSummary } from "@/types";
+import { ServerPayload, UserSummary } from "@/lib/types/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { changeAdmin, updatePresence } from "@/lib/redux/features/collabCodeUserState";
 import { addFileOp, addSaveFileOp } from "@/lib/redux/features/collabCodeFileOp";

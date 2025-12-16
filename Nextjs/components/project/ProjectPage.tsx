@@ -16,7 +16,7 @@ import {
   UserMinus,
   MoreVertical,
 } from "lucide-react"
-import { ProjectPageMember, ProjectPageType, TeamType } from "@/types";
+import { ProjectPageMember, ProjectPageType, TeamType } from "@/lib/types/types";
 import { updateProjectStatus } from "@/lib/actions/projects/updateProjectStatus";
 import { showToast } from "../main/Toast";
 import Link from "next/link";

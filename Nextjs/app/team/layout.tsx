@@ -1,4 +1,4 @@
-import { DashboardSidebar } from "@/components/root/DashboardSidebar"
+import { DashboardSidebar } from "@/components/sidebar/DashboardSidebar"
 import HeaderHome from "@/components/root/HeaderHome"
 import React from "react"
 

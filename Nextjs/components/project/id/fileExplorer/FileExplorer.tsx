@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Edit3, Folder, Plus, Trash2, X } from 'lucide-react';
 import TreeNodeMemo from './TreeNode';
-import { Tab, FileNode } from '@/types';
+import { Tab, FileNode } from '@/lib/types/types';
 import { showToast } from '@/components/main/Toast';
 import InputBox from './InputBox';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
@@ -12,7 +12,7 @@ import { FaUserAstronaut } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
 import cuid from "cuid";
 import { saveNode } from '@/lib/mainUtils/fileOp';
-import { UserSummary } from '@/types';
+import { UserSummary } from '@/lib/types/types';
 interface FileExplorerProps {
   files: FileNode[];
   setFiles: React.Dispatch<React.SetStateAction<FileNode[]>>;

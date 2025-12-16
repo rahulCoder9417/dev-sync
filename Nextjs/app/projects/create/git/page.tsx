@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import axios from "axios"
 import { handleConnect } from '@/lib/mainUtils/gitLogin'
 import { useAppSelector } from '@/lib/redux/hooks'
-import { FriendsGet } from '@/types'
+import { FriendsGet } from '@/lib/types/types'
 import { Globe, Lock } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import StatusBox, { DataStat } from '@/components/project/StatusBox'

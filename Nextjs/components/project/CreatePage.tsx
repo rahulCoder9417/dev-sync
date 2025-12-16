@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/components/main/Toast";
 import Avatar from "@/components/main/Avatar";
-import { FriendsGet } from "@/types";
+import { FriendsGet } from "@/lib/types/types";
 import { CreateProjectInput } from "@/lib/actions/projects/makeProject";
 
 interface props{

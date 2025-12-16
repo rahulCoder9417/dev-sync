@@ -1,6 +1,6 @@
-import { getProjectById, getSingleProject } from "./lib/actions/projects/getProject";
-import { FetchTeam } from "./lib/actions/projects/team";
-import { getFriends } from "./lib/actions/user/getFriends";
+import { getProjectById, getSingleProject } from "../actions/projects/getProject";
+import { FetchTeam } from "../actions/projects/team";
+import { getFriends } from "../actions/user/getFriends";
 
 export type ProjectPageType = Awaited<ReturnType<typeof getSingleProject>>;
 export type ProjectById = Awaited<ReturnType<typeof getProjectById>>;

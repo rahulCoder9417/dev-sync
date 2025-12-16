@@ -1,4 +1,4 @@
-import { FileNode } from "@/types";
+import { FileNode } from "@/lib/types/types";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface PresenceState {
     projects: Record<

@@ -3,7 +3,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useAppSelector } from '@/lib/redux/hooks';
 import Avatar from '@/components/main/Avatar';
 import { shallowEqual } from 'react-redux';
-import { FileNode } from '@/types';
+import { FileNode } from '@/lib/types/types';
 
 type User = { userId: string; fullName: string; avatar?: string };
 type Props = { projectId: string; fileId: string; setBg?: (prev: boolean) => void; child?: FileNode[] };

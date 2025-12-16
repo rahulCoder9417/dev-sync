@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { Users, Settings } from 'lucide-react';
 import LaptopNotify from '@/components/main/AvatarNotify';
 import Avatar from '@/components/main/Avatar';
-import { UserSummary } from '@/types';
+import { UserSummary } from '@/lib/types/types';
 type HeaderProps = {
   projectName: string; 
   users:{

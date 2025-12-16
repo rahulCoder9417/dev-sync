@@ -4,7 +4,7 @@ import * as Y from "yjs";
 import { MonacoBinding } from "y-monaco";
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { XCircle, Save } from 'lucide-react';
-import { Tab, FileNode } from '@/types';
+import { Tab, FileNode } from '@/lib/types/types';
 import { showToast } from "@/components/main/Toast";
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { shallowEqual } from 'react-redux';

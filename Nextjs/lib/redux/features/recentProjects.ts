@@ -1,46 +1,24 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { RecentProject } from "@/lib/types/projects";
 
-interface Rec  {
-  id: string;
-  title: string;
-  description: string |null;
-  framework: string;
-  lastUpdated: string;
-  type: "PUBLIC" | "PRIVATE" |"GENRATED";
-  isStared?: boolean;
-  isGitImport?: boolean;
-  isArchived?: boolean;
-  collaborators: Collaborator[];
-}
+type RecentProjectsState = RecentProject[];
 
-interface Collaborator {
-  id: string;
-  fullName: string;
-  email: string;
-}
+const initialState: RecentProjectsState = [];
 
-const initialState:Rec[] = [{
-    id: "",
-    title: "",
-    description: null ,
-    framework: "",
-    type: "PUBLIC",
-    collaborators: [],
-    lastUpdated: "",
-}];
-
-const recentSlice = createSlice({
+const recentProjectsSlice = createSlice({
   name: "recentProjects",
   initialState,
   reducers: {
-    setRecent(state, action: PayloadAction<Rec[]>) {
-      return [ ...action.payload ];
+    setRecentProjects(_, action: PayloadAction<RecentProject[]>) {
+      return action.payload;
     },
-    clearRecent() {
+    clearRecentProjects() {
       return [];
     },
   },
 });
 
-export const { setRecent, clearRecent } = recentSlice.actions;
-export default recentSlice.reducer;
+export const { setRecentProjects, clearRecentProjects } =
+  recentProjectsSlice.actions;
+
+export default recentProjectsSlice.reducer;

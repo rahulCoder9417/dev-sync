@@ -1,7 +1,7 @@
 import { ProjectCodeComp } from "@/components/project/id/ProjectCodeComp"
 import { Button } from "@/components/ui/button"
 import { getProjectById } from "@/lib/actions/projects/getProject"
-import { ProjectById } from "@/types"
+import { ProjectById } from "@/lib/types/types"
 import Link from "next/link"
 
 const page = async({params}:{params:{id:string}}) => {

@@ -7,7 +7,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { clearUser, setUser } from "@/lib/redux/features/userSlice";
 import { Toaster } from "@/components/ui/sonner";
 import { getProjects } from "@/lib/actions/projects/getProject";
-import { clearRecent, setRecent } from "@/lib/redux/features/recentProjects";
+import { clearRecentProjects, setRecentProjects } from "@/lib/redux/features/recentProjects";
 import { ChatPopup } from "@/components/main/ChatPopUp";
 import { useChatInitializer } from "@/lib/redux/chatInitializer";
 
@@ -50,7 +50,7 @@ useChatInitializer(isLoaded)
       
     if(projects){
       dispatch(
-        setRecent(projects.map((i:any)=>({id:i.id,type:i.type,title:i.title,framework:i.framework,description:i.description,lastUpdated:i.lastUpdated,collaborators:i.collaborators}))
+        setRecentProjects(projects.map((i:any)=>({id:i.id,type:i.type,title:i.title,framework:i.framework,description:i.description,lastUpdated:i.lastUpdated,collaborators:i.collaborators}))
       ));
     }
     };
@@ -60,7 +60,7 @@ useChatInitializer(isLoaded)
     
     return () => {
       dispatch(clearUser());
-      dispatch(clearRecent());
+      dispatch(clearRecentProjects());
     };
   }, [isLoaded, user]);
 

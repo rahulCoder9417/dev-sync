@@ -6,7 +6,7 @@ import CodeEditor from '@/components/project/id/CodeEditor';
 import Preview from '@/components/project/id/preview/Preview';
 import ChatBot from '@/components/project/id/ChatBot';
 
-import { ChatMessage, FileNode, ProjectById, Tab, User } from '@/types';
+import { ChatMessage, FileNode, ProjectById, Tab, User } from '@/lib/types/types';
 import Loader from '@/components/main/Loader';
 import useCollab from '@/customHooks/useCollab';
 import { DeleteToast } from './fileExplorer/DeleteToast';

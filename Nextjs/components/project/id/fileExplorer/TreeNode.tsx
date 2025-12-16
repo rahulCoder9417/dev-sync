@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ChevronRight, ChevronDown, Folder, MoreHorizontal } from 'lucide-react';
 import { getFileIcon } from '@/lib/mainUtils/icons';
 import Collaborators from './Collaborators';
-import { FileNode, Tab } from '@/types';
+import { FileNode, Tab } from '@/lib/types/types';
 import InputBox from './InputBox';
 import ChnageAdmin from './ChnageAdmin';
 import { showToast } from '@/components/main/Toast';
