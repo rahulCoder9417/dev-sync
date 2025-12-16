@@ -4,7 +4,7 @@ import { Bell, GitBranch, Plus, Search, Home, Folder, Users, Settings } from 'lu
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '../ui/button';
-import AvatarNotify from '../main/AvatarNotify';
+import AvatarNotify from './AvatarNotify';
 import React, { memo } from 'react';
 
 const mobileNavItems = [

@@ -111,7 +111,6 @@ model Team {
 
     // Relations for chat
   messages        Message[]       @relation("TeamMessages")
-  notifications   Notification[]  // optional but good for new team message notifications
 }
 
 model TeamMember {
@@ -230,9 +229,6 @@ model Notification {
 
   messageId   String?
   message     Message?    @relation(fields: [messageId], references: [id])
-
-  teamId      String?
-  team        Team?       @relation(fields: [teamId], references: [id])
 
   isRead      Boolean     @default(false)
   createdAt   DateTime    @default(now())

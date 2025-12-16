@@ -1,102 +1,186 @@
-"use client";
-import React from "react";
-import { Button } from "../ui/button";
-import { Bell, X } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks"; // ✅ typed useSelector
-import { useState } from "react";
-import Avatar from "./Avatar";
-import { shallowEqual } from "react-redux";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { removeNotification } from "@/lib/redux/features/userSlice";
+'use client';
 
-const AvatarNotify = () => {
-  const { fullName, avatar, notifications } = useAppSelector((state) => state.user, shallowEqual);
-  const [showNotification, setShowNotification] = useState(false)
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { Bell, X } from 'lucide-react';
+import { shallowEqual } from 'react-redux';
+
+import { Button } from '../ui/button';
+import Avatar from './Avatar';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { removeNotification } from '@/lib/redux/features/userSlice';
+import Link from 'next/link';
+import { Notification } from '@/lib/types/notification';
+import { updateChatPopUp } from '@/lib/redux/features/chatPopUpSlice';
+
+
+/* -------------------------------------------------------------------------- */
+/*                                Component                                   */
+/* -------------------------------------------------------------------------- */
+
+function AvatarNotify() {
   const dispatch = useAppDispatch();
-  const getInitials = (name: string) => {
-    const parts = name.trim().split(" ");
-    if (parts.length === 1) return parts[0][0]?.toUpperCase();
-    return parts[0][0]?.toUpperCase() + parts[1][0]?.toUpperCase();
-  };
-  const cancelNotification = async (id: string) => {
-    dispatch(removeNotification(id));
-    await fetch(`/api/notification/delete`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ id }),
-    });
-  }
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const initials = getInitials(fullName || "User");
+  const { fullName, avatar, notifications } = useAppSelector(
+    (state) => state.user,
+    shallowEqual
+  );
+
+  const [isOpen, setIsOpen] = useState(false);
+
+  /* -------------------------------- Utilities ------------------------------- */
+
+  const getInitials = useCallback((name: string) => {
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? '';
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }, []);
+
+  const initials = getInitials(fullName || 'User');
+
+  /* ---------------------------- Event Handlers ------------------------------- */
+
+  const toggleNotifications = () => {
+    setIsOpen((prev) => !prev);
+  };
+
+  const deleteNotification = async (id: string) => {
+    // optimistic UI
+    dispatch(removeNotification(id));
+
+    try {
+      await fetch('/api/notification/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+    } catch (error) {
+      console.error('Failed to delete notification', error);
+    }
+  };
+
+  /* ---------------------------- Cleanup / Effects ----------------------------- */
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isOpen]);
+
+  /* ---------------------------------- UI ------------------------------------ */
 
   return (
-    <div className="bg-inherit flex relative gap-5 md:gap-10 md:mr-5">
-      {/* Bell icon */}
-      <Button onClick={() => { setShowNotification(!showNotification) }} variant="ghost" size="icon" className="relative cursor-pointer mt-2">
-        <Bell className="w-5 h-5 md:w-10 md:h-6" />
-        <span
-          className="absolute -top-1 -right-1 w-3 h-3 p-2 rounded-full text-xs flex items-center justify-center text-white"
-          style={{ background: "var(--error)" }}
-        >
-          {notifications.length}
-        </span>
+    <div
+      ref={containerRef}
+      className="relative flex items-center gap-5 md:gap-10 md:mr-5"
+    >
+      {/* Notification Bell */}
+      <Button
+        onClick={toggleNotifications}
+        variant="ghost"
+        size="icon"
+        className="relative mt-2"
+      >
+        <Bell className="w-5 h-5 md:w-6 md:h-6" />
+
+        {notifications.length > 0 && (
+          <span
+            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full text-[10px] flex items-center justify-center text-white"
+            style={{ background: 'var(--error)' }}
+          >
+            {notifications.length}
+          </span>
+        )}
       </Button>
-      {
 
-        showNotification && (
-          <div className="absolute top-12 right-6 w-72 max-h-96 bg-secondary border border-primary rounded-lg shadow-xl z-50 flex flex-col overflow-hidden">
-            {/* Header */}
-            <div className="py-3 bg-primary text-white flex justify-center items-center">
-              <h2 className="text-lg font-semibold">Notifications</h2>
-            </div>
+      {/* Notifications Panel */}
+      {isOpen && (
+        <div className="absolute top-12 right-6 w-72 max-h-96 bg-secondary border border-primary rounded-lg shadow-xl z-50 flex flex-col overflow-hidden">
+          <div className="py-3 bg-primary text-white text-center font-semibold">
+            Notifications
+          </div>
 
-            {/* Notifications List */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              {notifications.length > 0 ? (
-                notifications.map((i) => (
+          <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            {notifications.length === 0 ? (
+              <p className="text-center text-muted text-sm py-10">
+                No notifications
+              </p>
+            ) : (
+              notifications.map((n: Notification) => (
+                <Link
+                href={n.type === "FRIENDSHIP" ? "/settings" : "#"}
+                onClick={(e) => {
+                  if (n.type === "FRIENDSHIP") {
+                    e.preventDefault();
+                  }
+                }}
+                prefetch={false}
+                key={n.id}
+              >
+                            
                   <div
-                    key={i.id}
-                    className={`relative ${i.type === "FRIENDSHIP" ? "bg-[#7e7979]" : "bg-secondary/20"} flex flex-col rounded-md border border-secondary/20 p-3 hover:bg-secondary/20 transition`}
+                    className={`relative cursor-pointer my-2 flex flex-col rounded-md border border-secondary/20 p-3  ${n.type === "FRIENDSHIP" ? "bg-[#060220]/20" : "bg-primary/20"}`}
+                    onClick={()=>{
+                      dispatch(updateChatPopUp({
+                        isOpen:true,
+                        selectedChat:{
+                          type:"direct",
+                          id:n.message?.dmChatRoomId || "",
+                          name: n.sender.fullName
+                        }
+                      }))
+                    }}
                   >
                     <div className="flex justify-between items-start">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <Avatar
                           className="!w-9 !h-9"
-                          fullName={i.sender.fullName}
-                          avatar={i.sender.avatar}
+                          fullName={n.sender.fullName}
+                          avatar={n.sender.avatar}
                         />
-                        <p className="text-sm font-medium text-gray-800">
-                          {i.sender.fullName}
-                        </p>
+                        <span className="text-sm text-primary font-medium">
+                          {n.sender.fullName}
+                        </span>
                       </div>
+
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => cancelNotification(i.id)}
-                        className="p-1 hover:bg-gray-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteNotification(n.id);
+                        }}
                       >
-                        <X className="w-5 h-5 text-gray-600" />
+                        <X className="w-4 h-4" />
                       </Button>
                     </div>
 
-                    <p className="mt-2 text-sm text-primary">{i.content}</p>
-
-                
-
+                    <p className={`mt-2 truncate ${n.type === "FRIENDSHIP" ? "text-white text-md" : "text-sm text-secondary "}`}>
+                      {n.content}
+                    </p>
                   </div>
-                ))
-              ) : (
-                <p className="text-center text-gray-500 text-sm py-10">No notifications</p>
-              )}
-            </div>
+                </Link>
+              ))
+            )}
           </div>
+        </div>
+      )}
 
-        )
-      }
-      {/* User avatar with initials */}
-      <div className="flex items-center space-x-2">
+      {/* User Avatar */}
+      <div className="flex items-center gap-2">
         {avatar ? (
           <img
             src={avatar}
@@ -109,15 +193,13 @@ const AvatarNotify = () => {
           </div>
         )}
       </div>
-      <div className="md:flex hidden items-center space-x-2">
-        <div className=" font-semibold text-2xl text-primary">
-          {fullName}
-        </div>
+
+      {/* Name */}
+      <div className="hidden md:flex items-center text-primary font-semibold text-lg">
+        {fullName}
       </div>
-
-
     </div>
   );
-};
+}
 
-export default AvatarNotify;
+export default memo(AvatarNotify);

@@ -1,35 +1,18 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db/prisma";
 import { currentUser } from "@clerk/nextjs/server";
+import { middleWare } from "@/lib/mainUtils/beckendMiddleWare";
 export async function GET(
   request: Request,
 ) {
   try {
-    const user = await currentUser();
-    
-    if (!user?.emailAddresses?.[0]?.emailAddress) {
-      throw new Error("Unauthorized");
-    }
-    
-    const email = user.emailAddresses[0].emailAddress;
-    const dbUser = await db.user.findUnique({
-        where: { email },
-        select: {
-          id: true,
-        },
-      });
-      
+    const dbUser = await middleWare()
     
     if (!dbUser) {
-      throw new Error("User not found");
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     };
 
-    if (!dbUser.id) {
-      return NextResponse.json(
-        { error: "Receiver ID is required" },
-        { status: 400 }
-      );
-    }
+    // dbUser.id will always be present due to select above
 
     const notifications = await db.notification.findMany({
       where: {   receiverId:dbUser.id },
@@ -47,6 +30,18 @@ export async function GET(
                 username:true,
           }
         },
+        message:{
+          select:{
+              teamId:true,
+              team:{
+                select:{
+                  name:true
+                }
+              },
+              dmChatRoomId:true,
+          }
+        }
+        
       }
     });
 

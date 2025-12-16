@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import MaxWidth from "@/components/main/MaxWidth";
-import HeaderHome from "@/components/root/HeaderHome";
-import { QuickActions } from "@/components/root/QuickActions";
+import HeaderHome from "@/components/main/HeaderHome";
+import { QuickActions } from "@/components/dashboard/QuickActions";
 import { RecentProjects } from "@/components/root/RecentProjects";
 import { StatsCards } from "@/components/root/StatsCards";
 import { Suspense } from "react";

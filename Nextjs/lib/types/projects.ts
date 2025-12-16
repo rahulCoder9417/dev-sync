@@ -3,10 +3,11 @@ export type ProjectVisibility = "PUBLIC" | "PRIVATE" | "GENERATED";
 export interface Collaborator {
   id: string;
   fullName: string;
-  email: string;
+  avatar?: string | null;
+  email?: string;
 }
 
-export interface RecentProject {
+export interface Project {
   id: string;
   title: string;
   description: string | null;

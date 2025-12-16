@@ -1,28 +1,7 @@
+import { NotificationType } from "@prisma/client";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-
-export interface Notification{
-  id:string;
-  createdAt:string;
-  content:string;
-  type:string;
-  sender:{
-    id:string;
-    fullName:string;
-    avatar:string;
-    username:string;
-  }
-}
-interface UserState {
-  fullName: string;
-  email: string;
-  username: string;
-  id:string;
-  githubUrl:string| null;
-  bio:string;
-  avatar:string;
-  isAuthenticated: boolean;
-  notifications:Notification[];
-}
+import { Notification } from "@/lib/types/notification";
+import { UserState } from "@/lib/types/user";
 
 const initialState: UserState = {
   fullName: "",

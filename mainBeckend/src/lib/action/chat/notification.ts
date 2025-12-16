@@ -1,9 +1,12 @@
+import { NotificationType } from "@prisma/client";
 import { db } from "../../db/db"
 
 export const createNotification = async (
   senderId: string,
   receiverId: string,
   content: string,
+  type:NotificationType,
+  id:string
 ) => {
   // Step 1: Delete any existing notification from this sender to this receiver (and team if provided)
   await db.notification.deleteMany({
@@ -39,7 +42,10 @@ export const createNotification = async (
       senderId,
       receiverId,
       content,
+      type,
+      messageId:id
     },
+
   });
 
   return notification;

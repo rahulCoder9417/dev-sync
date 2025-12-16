@@ -171,6 +171,16 @@ export class ChatWsHandler extends BaseWsHandler {
       return;
     }
     let isRead = false
+    let res =await createMessage({
+      chatType,
+      chatId,
+      id,
+      content,
+      senderId:ws.userId,
+      createdAt:new Date(createdAt),
+      updatedAt:new Date(updatedAt),
+       isRead,
+    })  
     if(chatType === "direct"){
       if(this.room.chatRooms.get(chatId)?.size ===2){
         isRead = true
@@ -213,7 +223,7 @@ export class ChatWsHandler extends BaseWsHandler {
           }
         }))
       }else{
-       await createNotification(ws.userId,reciverId,content)
+       await createNotification(ws.userId,reciverId,content,"MESSAGE",id)
       }
     }else{
 
@@ -233,16 +243,7 @@ export class ChatWsHandler extends BaseWsHandler {
         }
       },ws)
     }
-    let res =await createMessage({
-      chatType,
-      chatId,
-      id,
-      content,
-      senderId:ws.userId,
-      createdAt:new Date(createdAt),
-      updatedAt:new Date(updatedAt),
-       isRead,
-    })  
+   
     if(!res){
       ws.send(JSON.stringify({ error: "failedToCreateMessaage" }));
       return;
