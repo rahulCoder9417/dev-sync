@@ -1,5 +1,5 @@
 import { DashboardSidebar } from "@/components/sidebar/DashboardSidebar"
-import HeaderHome from "@/components/main/HeaderHome"
+import HeaderHome from "@/components/dashboard/HeaderHome"
 import React from "react"
 const layout = ({ children }: { children: React.ReactNode }) => {
   return (

@@ -2,10 +2,11 @@
 import React, { useEffect } from 'react'
 import { useState } from "react";
 import { FilterDropdown } from "@/components/project/FilterDropdown";
-import { Project, ProjectCard } from "@/components/project/ProjectCard";
+import {  ProjectCard } from "@/components/project/ProjectCard";
 import Link from 'next/link';
 import { getProjects } from '@/lib/actions/projects/getProject';
 import { useSearchParams } from 'next/navigation';
+import { Project } from '@/lib/types/projects';
 
 const ProjectSection = () => {
     const [allProjects , setAllProject] = useState<Project[] >([])

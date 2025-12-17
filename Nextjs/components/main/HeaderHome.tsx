@@ -4,7 +4,7 @@ import { Bell, GitBranch, Plus, Search, Home, Folder, Users, Settings } from 'lu
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '../ui/button';
-import AvatarNotify from './AvatarNotify';
+import AvatarNotify from '../main/AvatarNotify';
 import React, { memo } from 'react';
 
 const mobileNavItems = [
@@ -47,17 +47,18 @@ const DesktopActions = memo(() => (
 
 const SearchBar = memo(() => (
   <div className="relative hidden md:block">
+    <Link href="/team">
     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
     <input
       type="text"
-      placeholder="Search projects, files, or team members..."
+      placeholder="Search Friends, or team members..."
       className="pl-10 pr-4 py-2 w-80 rounded-lg border focus:outline-none focus:ring-2 transition-all"
       style={{
         background: 'var(--bg-card)',
         borderColor: 'var(--border-primary)',
         color: 'var(--text-primary)',
       }}
-    />
+    /></Link>
   </div>
 ));
 

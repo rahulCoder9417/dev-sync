@@ -1,10 +1,20 @@
-export type ProjectVisibility = "PUBLIC" | "PRIVATE" | "GENERATED";
+
+export type ProjectVisibility = 'PUBLIC' | 'PRIVATE' | 'GENRATED';
+
+export type ProjectQueryType =
+  | 'recent'
+  | 'public'
+  | 'private'
+  | 'genrated'
+  | 'starred'
+  | 'archived'
+  | 'git-import';
 
 export interface Collaborator {
-  id: string;
   fullName: string;
-  avatar?: string | null;
-  email?: string;
+  avatar?: string|null ;
+  username?: string ;
+  
 }
 
 export interface Project {
@@ -14,8 +24,8 @@ export interface Project {
   framework: string;
   lastUpdated: string;
   type: ProjectVisibility;
-  isStarred?: boolean;
-  isGitImport?: boolean;
-  isArchived?: boolean;
+  isStarred: boolean;
+  isGitImport: boolean;
+  isArchived: boolean;
   collaborators: Collaborator[];
 }

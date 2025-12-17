@@ -123,6 +123,8 @@ function AvatarNotify() {
                 <Link
                 href={n.type === "FRIENDSHIP" ? "/settings" : "#"}
                 onClick={(e) => {
+                  
+                  deleteNotification(n.id);
                   if (n.type === "FRIENDSHIP") {
                     e.preventDefault();
                   }

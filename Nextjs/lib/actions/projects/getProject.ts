@@ -3,6 +3,7 @@
 
 import db from "@/lib/db/prisma"
 import { middleWare } from "@/lib/mainUtils/beckendMiddleWare";
+import { Project } from "@/lib/types/projects";
 function formatDate(date: Date) {
   const d = new Date(date)
   const year = d.getFullYear()
@@ -48,15 +49,7 @@ export async function getProjects({
     }
 
     const projects = await db.project.findMany({
-      where:{
-        team:{
-          members:{
-            some:{
-              userId:dbUser.id
-            }
-          }
-        }
-      },
+      where,
       orderBy: type === "recent" ? { updatedAt: "desc" } : undefined,
       take: Number(limit) || undefined,
       include: {
@@ -69,6 +62,7 @@ export async function getProjects({
                   select: {
                     fullName: true,
                     avatar: true,
+                    username:true
                   },
                 },
               },
@@ -78,7 +72,7 @@ export async function getProjects({
       },
     });
 
-    const formatted = projects.map((proj) => ({
+    const formatted: Project[] = projects.map((proj) => ({
       id: proj.id,
       title: proj.name,
       type: proj.type,
@@ -87,10 +81,11 @@ export async function getProjects({
       lastUpdated: formatDate(proj.updatedAt),
       isStarred: proj.starredBy.some(u => u.id === dbUser.id),
       isArchived: proj.archeivedBy ? true : false,
-      gitImport: proj.isGitImport || false,
+      isGitImport: proj.isGitImport || false,
       collaborators: proj.team?.members.map((m) => ({
         fullName: m.user.fullName,
         avatar: m.user.avatar,
+        username:m.user.username
       })) || [],
     }));
 
@@ -279,4 +274,3 @@ export const getProjectById = async (projectId: string) => {
     return { error: "Something went wrong" ,  status: 500 };
   }
 }
-
