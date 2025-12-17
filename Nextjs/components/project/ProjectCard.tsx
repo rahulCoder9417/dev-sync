@@ -92,7 +92,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <div className="flex items-center justify-between">
         <div className="flex -space-x-2">
           {visibleCollaborators.map((c, idx) => (
-            <Avatar key={idx} fullName={c.fullName} username={c.username} avatar={c.avatar} getInfo={true} />
+            <Avatar key={idx} fullName={c.fullName}  avatar={c.avatar} getInfo={true} />
           ))}
 
           {remainingCount > 0 && (

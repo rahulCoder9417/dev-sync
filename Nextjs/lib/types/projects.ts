@@ -17,6 +17,19 @@ export interface Collaborator {
   
 }
 
+export interface RecentProject {
+  id: string;
+  title: string;
+  description: string | null;
+  framework: string;
+  lastUpdated: string;
+  type: ProjectVisibility;
+  isStarred?: boolean;
+  isGitImport?: boolean;
+  isArchived?: boolean;
+  collaborators: Collaborator[];
+}
+
 export interface Project {
   id: string;
   title: string;
