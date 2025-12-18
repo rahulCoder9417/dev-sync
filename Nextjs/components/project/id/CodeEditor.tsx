@@ -221,7 +221,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       const tab = activeTabRef.current;
       if (!tab) return;
 
-      sendMessage("update", projectId, tab.id, {
+      sendMessage("YjsCodeChanges", projectId, tab.id, {
         data: Array.from(update),
         updateType: "text"
       });

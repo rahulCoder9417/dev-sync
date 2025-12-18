@@ -70,8 +70,8 @@ export class FileWsHandler extends BaseWsHandler {
         case "vote_delete":
           await this.handleVoteDelete(ws, parsed as any);
           break;
-        case "update":
-          this.handleUpdate(ws, parsed as any);
+        case "YjsCodeChanges":
+          this.handleYjsCodeChanges(ws, parsed as any);
           break;
         case "syncUserPresence":
           this.handleSyncUserPresence(ws, parsed as any);
@@ -343,8 +343,8 @@ export class FileWsHandler extends BaseWsHandler {
     }
   }
 
-  private handleUpdate(ws: ExtWebSocket, parsed: ClientMessage) {
-    if (parsed.action !== "update") {
+  private handleYjsCodeChanges(ws: ExtWebSocket, parsed: ClientMessage) {
+    if (parsed.action !== "YjsCodeChanges") {
       ws.send(JSON.stringify({ error: "invalid_message" }));
       return;
     }
@@ -353,7 +353,7 @@ export class FileWsHandler extends BaseWsHandler {
     this.room.broadcastToRoom(
       room,
       {
-        type: "update",
+        type: "YjsCodeChanges",
         room,
         fileId,
         updateType,

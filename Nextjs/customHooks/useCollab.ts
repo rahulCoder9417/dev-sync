@@ -91,7 +91,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
       const performUpdates = () => {
         try {
           switch (payload.type) {
-            case "update":
+            case "YjsCodeChanges":
               dispatch(
                 updateCode({
                   fileId: payload.fileId,

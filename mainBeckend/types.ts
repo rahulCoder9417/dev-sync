@@ -38,7 +38,7 @@ type FileOperationMessage = BaseMessage & ( | { action: 'changeAdmin'; projectId
   | { action: 'chat'; chatType: 'global' | 'team' | 'direct'; id: string; message?: string; type: "join" | "leave" | "message" | "deleteMessage"; messageId?: string }
   | { action: 'syncUserPresence'; projectId: string; }
   | { action: 'join'; projectId?: string; fileId?: string; }
-  | { action: 'update'; projectId: string; fileId: string; updateType: "awareness" | "text"; data: any }
+  | { action: 'YjsCodeChanges'; projectId: string; fileId: string; updateType:  "text"; data: Uint8Array }
   | { action: 'sync'; projectId: string; fileId: string; data: any }
   | { action: 'syncedData'; projectId: string; fileId: string; data: any; updateType: "awareness" | "text"; include: string }
   | { action: 'leave'; projectId?: string; fileId?: string; }
