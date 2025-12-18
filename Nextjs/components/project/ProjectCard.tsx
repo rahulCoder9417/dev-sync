@@ -84,7 +84,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
         <div className="flex items-center gap-1">
           <Calendar className="w-3 text-primary h-3" />
-          <span className="text-xs text-primary">{project.lastUpdated}</span>
+          <span className="text-xs text-primary">{(project.lastUpdated).split("T")[0] }</span>
         </div>
       </div>
 

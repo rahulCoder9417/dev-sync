@@ -25,15 +25,16 @@ export default async function Page({ params }: PageProps) {
   const { username } = params;
 
   const data = await getUserDetails(username);
-  const user= data?.user ?? null;
-
-  if (!user) {
+  if (!data.success) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted">
-        User not found
+       USER NOT FOUND ==== {data.error}
       </div>
     );
   }
+  const user= data.user || null;
+
+  
 
   return (
     <div className="min-h-screen flex-1 bg-primary">

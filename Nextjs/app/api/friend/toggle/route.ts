@@ -8,7 +8,6 @@ export async function PUT(request: Request) {
  if(!dbUser){
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
  }
-console.log("action",action)
  try {
     if(action === "accept"){
         const friendship = await db.friendship.update({
