@@ -29,7 +29,10 @@ export async function POST(req: Request) {
     } else if (type === "generated") {
       where.AND = [{ type: "GENERATED" }, { ownerId: dbUser.id }];
     } else if (type === "archived") {
-      where.AND = [{ ownerId: dbUser.id }, { archeivedBy: dbUser.id }];
+      where.AND =[
+        { ownerId: dbUser.id },
+        { archiveprojectBy: { some: { id: dbUser.id } } }
+      ];
     } else if (type === "git import") {
       where.AND = [{ ownerId: dbUser.id }, { isGitImport: true }];
     } else if (type === "starred") {
@@ -44,6 +47,7 @@ export async function POST(req: Request) {
       take: Number(limit) || undefined,
       include: {
         starredBy: true,
+        archiveprojectBy: true,
         team: {
           include: {
             members: {
@@ -64,7 +68,7 @@ export async function POST(req: Request) {
       framework: proj.packages,
       lastUpdated: format(proj.updatedAt, "yyyy-MM-dd"),
       isStarred: proj.starredBy.some((u) => u.id === dbUser.id),
-      isArchived: !!proj.archeivedBy,
+      isArchived: proj.archiveprojectBy.some((u) => u.id === dbUser.id),
       gitImport: proj.isGitImport || false,
       collaborators:
         proj.team?.members.map((m) => ({

@@ -39,7 +39,10 @@ export async function getProjects({
     } else if (type === "genrated") {
       where.AND = [{ type: "GENERATED" }, { ownerId: dbUser.id }];
     } else if (type === "archived" ) {
-      where.AND = [{ ownerId: dbUser.id }, { archeivedBy: dbUser.id }];
+      where.AND = [
+        { ownerId: dbUser.id },
+        { archiveprojectBy: { some: { id: dbUser.id } } }
+      ];
     } else if (type === "git import" ) {
       where.AND = [{ ownerId: dbUser.id }, { isGitImport: true }];
     } else if (type === "starred") {
@@ -54,6 +57,7 @@ export async function getProjects({
       take: Number(limit) || undefined,
       include: {
         starredBy: true,
+        archiveprojectBy: true,
         team: {
           include: {
             members: {
@@ -80,7 +84,7 @@ export async function getProjects({
       framework: proj.packages,
       lastUpdated: formatDate(proj.updatedAt),
       isStarred: proj.starredBy.some(u => u.id === dbUser.id),
-      isArchived: proj.archeivedBy ? true : false,
+      isArchived: proj.archiveprojectBy.some((u) => u.id === dbUser.id),
       isGitImport: proj.isGitImport || false,
       collaborators: proj.team?.members.map((m) => ({
         fullName: m.user.fullName,
@@ -106,6 +110,7 @@ export const getSingleProject = async (id: string) => {
       where: { id },
       include: {
         starredBy: true,
+        archiveprojectBy: true,
         team: {
           include: {
             members: {
@@ -128,7 +133,7 @@ export const getSingleProject = async (id: string) => {
 
     const isOwner = project.ownerId === dbUser.id;
     const isStarred = project.starredBy.some(u => u.id === dbUser.id);
-    const isArchived = project.archeivedBy === dbUser.id;
+    const isArchived = project.archiveprojectBy.some((u) => u.id === dbUser.id);
     const totalStars = project.starredBy.length;
 
     return {

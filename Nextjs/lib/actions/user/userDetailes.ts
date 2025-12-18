@@ -26,6 +26,7 @@ export async function getUserDetails(username: string) {
             description: true,
             packages: true,
             updatedAt: true,
+            
             type: true,
             isGitImport: true,
             team: {

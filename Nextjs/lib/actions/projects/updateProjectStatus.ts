@@ -22,7 +22,7 @@ export const updateProjectStatus = async ({
 
     const project = await db.project.findUnique({
       where: { id: projectId },
-      include: { starredBy: true },
+      include: { starredBy: true,archiveprojectBy: true },
     });
 
     if (!project) {
@@ -57,12 +57,12 @@ export const updateProjectStatus = async ({
           throw new Error("Only owner can archive/unarchive");
         }
 
-        const isArchived = project.archeivedBy === dbUser.id;
+        const isArchived = project.archiveprojectBy.some((u) => u.id === dbUser.id);
 
         await db.project.update({
           where: { id: projectId },
           data: {
-            archeivedBy: isArchived ? null : dbUser.id,
+            archiveprojectBy: isArchived ? {disconnect:{id:dbUser.id}} : {connect:{id:dbUser.id}},
           },
         });
 
