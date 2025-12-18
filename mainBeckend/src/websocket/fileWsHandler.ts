@@ -439,7 +439,7 @@ export class FileWsHandler extends BaseWsHandler {
     if (!isIn) return;
     isIn.send(
       JSON.stringify({
-        type: "update",
+        type: "YjsCodeChanges",
         room: makeRoomId(projectId, fileId),
         data,
         fileId,
