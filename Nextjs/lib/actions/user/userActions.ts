@@ -2,7 +2,7 @@
 
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/db/prisma";
-import { signUpSchema } from "@/schema/signUpSchema";
+import { signUpSchema } from "@/schema/auth/signUpSchema";
 
 
 

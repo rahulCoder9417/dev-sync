@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import Link from "next/link";
 import {  AlertCircle, Eye, EyeOff } from "lucide-react";
-import { signInSchema } from "@/schema/signInSchema";
+import { signInSchema } from "@/schema/auth/signInSchema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {

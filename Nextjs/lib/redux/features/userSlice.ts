@@ -13,23 +13,44 @@ const initialState: UserState = {
   avatar:"",
   isAuthenticated: false,
   notifications:[]
+}
+type SetUserPayload = Omit<
+  UserState,
+  'isAuthenticated' | 'notifications'
+>;
+
+type UpdateUserInfoPayload = {
+  fullName: string;
+  bio: string;
+  avatar: string | null;
 };
 
 const userSlice = createSlice({
-  name: "user",
+  name: 'user',
   initialState,
   reducers: {
-    setUser(state, action: PayloadAction<UserState>) {
-      return { ...action.payload, isAuthenticated: true };
+    setUser(state, action: PayloadAction<SetUserPayload>) {
+      Object.assign(state, action.payload);
+      state.isAuthenticated = true;
     },
+
     clearUser() {
-      return { fullName: "",avatar:"", email: "", username: "",githubUrl:null,id:"",bio:"", isAuthenticated: false,notifications:[] };
+      return initialState;
     },
+
     removeNotification(state, action: PayloadAction<string>) {
-      state.notifications = state.notifications.filter((notification) => notification.id !== action.payload);
+      state.notifications = state.notifications.filter(
+        (notification) => notification.id !== action.payload
+      );
     },
-    updateUserInfo(state, action: PayloadAction<{fullName:string,bio:string,avatar:string | null}>) {
-      return { ...state, ...action.payload,avatar:action.payload.avatar || state.avatar };
+
+    updateUserInfo(state, action: PayloadAction<UpdateUserInfoPayload>) {
+      state.fullName = action.payload.fullName;
+      state.bio = action.payload.bio;
+
+      if (action.payload.avatar !== null) {
+        state.avatar = action.payload.avatar;
+      }
     },
   },
 });

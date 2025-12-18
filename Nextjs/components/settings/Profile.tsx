@@ -1,158 +1,188 @@
-import React, { useState } from 'react'
-import Avatar from '../main/Avatar';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
-import { Button } from '../ui/button';
-import { Upload } from 'lucide-react';
-import Link from 'next/link';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { showToast } from '../main/Toast';
-import { useEffect } from 'react';
-import { updateProfile } from '@/lib/actions/user/userUpdation';
-import { updateUserInfo } from '@/lib/redux/features/userSlice';
+"use client";
 
-const Profile = () => {
+import { useEffect, useState, ChangeEvent } from "react";
+import Link from "next/link";
+import { Upload } from "lucide-react";
+
+import Avatar from "../main/Avatar";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
+import { Button } from "../ui/button";
+import { showToast } from "../main/Toast";
+
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { updateUserInfo } from "@/lib/redux/features/userSlice";
+import { updateProfile } from "@/lib/actions/user/userUpdation";
+
+type ProfileFormState = {
+  fullName: string;
+  username: string;
+  bio: string;
+  avatar: string | null;
+};
+
+export default function Profile() {
   const user = useAppSelector((state) => state.user);
-  const [fullName, setFullName] = useState(user.fullName);
-  const [username, setUsername] = useState(user.username);
-  const [bio, setBio] = useState(user.bio);
   const dispatch = useAppDispatch();
-  const [avatar, setAvatar] = useState<string | null>(user.avatar);
+
+  const [form, setForm] = useState<ProfileFormState>({
+    fullName: "",
+    username: "",
+    bio: "",
+    avatar: null,
+  });
+
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-  
-      const previewUrl = URL.createObjectURL(file);
-  setAvatar(previewUrl);
-    }
-  };
+  /* ---------------- Sync Redux → Local Form ---------------- */
   useEffect(() => {
-    setFullName(user.fullName || "");
-    setUsername(user.username || "");
-    setBio(user.bio || "");
-    setAvatar(user.avatar || null);
+    setForm({
+      fullName: user.fullName || "",
+      username: user.username || "",
+      bio: user.bio || "",
+      avatar: user.avatar || null,
+    });
   }, [user]);
+
+  /* ---------------- Handlers ---------------- */
+  const handleChange =
+    (key: keyof ProfileFormState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    };
+
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAvatarFile(file);
+    setForm((prev) => ({
+      ...prev,
+      avatar: URL.createObjectURL(file),
+    }));
+  };
+
+  /* ---------------- Submit ---------------- */
+  async function handleSubmit() {
+    const res = await updateProfile({
+      username: form.username,
+      fullName: form.fullName,
+      bio: form.bio,
+      avatar: avatarFile,
+    });
+
+    if (!res.success) {
+      showToast(false, "Something went wrong.", res.error as string);
+      return;
+    }
+
+    showToast(true, "Profile updated!");
+    dispatch(
+      updateUserInfo({
+        fullName: form.fullName,
+        bio: form.bio,
+        avatar: res.avatarUrl || form.avatar,
+      })
+    );
+  }
+
   return (
-    <div className="p-6 rounded-xl border bg-[#413e4b] border-primary">
-      <h2 className="text-lg font-semibold mb-6 text-primary">
-        Edit Profile
-      </h2>
+    <section className="rounded-xl border border-primary bg-[#413e4b] p-6">
+      <h2 className="mb-6 text-lg font-semibold text-primary">Edit Profile</h2>
 
       <div className="space-y-6">
-        {/* Avatar Upload */}
+        {/* Avatar */}
         <div className="flex items-center gap-6">
           <Avatar
-            fullName={fullName}
-            username={username}
-            avatar={avatar}
-            className="w-20 h-20 !text-2xl"
+            fullName={form.fullName}
+            username={form.username}
+            avatar={form.avatar}
+            className="h-20 w-20 !text-2xl"
           />
-          <div className="flex-1">
+
+          <div>
             <Label htmlFor="avatar" className="cursor-pointer">
-              <div className="flex items-center gap-2 text-primary border-secondary bg-hover px-4 py-2 rounded-lg border transition-colors hover:bg-opacity-80 w-fit"
-              >
-                <Upload className="w-4 h-4" />
+              <div className="flex w-fit items-center gap-2 rounded-lg border border-secondary bg-hover px-4 py-2 text-primary transition hover:bg-opacity-80">
+                <Upload className="h-4 w-4" />
                 Upload Avatar
               </div>
             </Label>
+
             <input
               id="avatar"
               type="file"
               accept="image/*"
               onChange={handleAvatarChange}
-              className="hidden"
+              hidden
             />
-            <p className="text-xs mt-2 text-muted">
+
+            <p className="mt-2 text-xs text-muted">
               JPG, PNG or GIF. Max size 2MB
             </p>
           </div>
         </div>
 
         {/* Full Name */}
-        <div>
-          <Label htmlFor="fullname" className="text-primary">
-            Full Name
-          </Label>
+        <Field label="Full Name">
           <Input
-            id="fullname"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="mt-2 bg-primary text-primary text-lg border-primary "
+            value={form.fullName}
+            onChange={handleChange("fullName")}
             placeholder="Enter your full name"
+            className="bg-primary text-lg text-primary border-primary"
           />
-        </div>
+        </Field>
 
-        {/* Username (Read-only) */}
-        <div>
-          <Label htmlFor="username" className="text-primary">
-            Username
-          </Label>
+        {/* Username */}
+        <Field label="Username">
           <Input
-            id="username"
-            value={username}
+            value={form.username}
             disabled
-            className="mt-2 bg-primary text-primary text-lg border-primary "
-            style={{ opacity: 0.6 }}
+            className="bg-primary text-lg text-primary border-primary opacity-60"
           />
-          <p className="text-xs mt-1 text-muted" >
-            Username cannot be changed
-          </p>
-        </div>
+          <p className="mt-1 text-xs text-muted">Username cannot be changed</p>
+        </Field>
 
         {/* Bio */}
-        <div>
-          <Label htmlFor="bio" className="text-primary">
-            Bio
-          </Label>
+        <Field label="Bio">
           <Textarea
-            id="bio"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            className="mt-2 min-h-[120px] bg-primary text-primary text-lg border-primary "
+            value={form.bio}
+            onChange={handleChange("bio")}
             placeholder="Tell us about yourself"
+            className="min-h-[120px] bg-primary text-lg text-primary border-primary"
           />
-          <p className="text-xs mt-1 text-muted">
-            {bio.length}/500 characters
+          <p className="mt-1 text-xs text-muted">
+            {form.bio.length}/500 characters
           </p>
-        </div>
+        </Field>
 
-        {/* Save Button */}
+        {/* Actions */}
         <div className="flex justify-end gap-3 pt-4">
-          <Link href={`/profile/${username}`}>
-            <Button variant="outline">
-              Cancel
-            </Button>
+          <Link href={`/profile/${form.username}`}>
+            <Button variant="outline">Cancel</Button>
           </Link>
-          <form
-            action={async () => {
-              const res = await updateProfile({
-                username,
-                fullName,
-                bio,
-                avatar:avatarFile,
-              });
 
-              if (res.success) {
-                showToast(true,"Profile updated!");
-                dispatch(updateUserInfo({fullName,bio,avatar : res.avatarUrl || avatar }));
-              } else {
-                showToast(false,"Something went wrong.",res.error as string);
-              }
-            }}
-          >
-            <Button type="submit">
-              Save Changes
-            </Button>
+          <form action={handleSubmit}>
+            <Button type="submit">Save Changes</Button>
           </form>
-
         </div>
       </div>
-    </div>
-  )
+    </section>
+  );
 }
 
-export default Profile
+/* ---------------- Small UI Helper ---------------- */
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <Label className="text-primary">{label}</Label>
+      <div className="mt-2">{children}</div>
+    </div>
+  );
+}
