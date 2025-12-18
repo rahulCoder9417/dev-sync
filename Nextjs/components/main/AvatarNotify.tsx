@@ -21,22 +21,12 @@ function AvatarNotify() {
   const dispatch = useAppDispatch();
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const { fullName, avatar, notifications } = useAppSelector(
+  const { fullName, avatar, notifications,username } = useAppSelector(
     (state) => state.user,
     shallowEqual
   );
 
   const [isOpen, setIsOpen] = useState(false);
-
-  /* -------------------------------- Utilities ------------------------------- */
-
-  const getInitials = useCallback((name: string) => {
-    const parts = name.trim().split(' ');
-    if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? '';
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }, []);
-
-  const initials = getInitials(fullName || 'User');
 
   /* ---------------------------- Event Handlers ------------------------------- */
 
@@ -183,17 +173,7 @@ function AvatarNotify() {
 
       {/* User Avatar */}
       <div className="flex items-center gap-2">
-        {avatar ? (
-          <img
-            src={avatar}
-            alt={fullName || 'User'}
-            className="w-8 h-8 rounded-full object-cover"
-          />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
-            {initials}
-          </div>
-        )}
+        <Avatar fullName={fullName} avatar={avatar} className="!w-9 !h-9 cursor-pointer" username={username} getInfo={true} />
       </div>
 
       {/* Name */}

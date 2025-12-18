@@ -6,11 +6,13 @@
 
 generator client {
   provider = "prisma-client-js"
+  
+  
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url = env("DATABASE_URL")
 }
 
 enum TeamType {
@@ -105,7 +107,8 @@ model Team {
   members         TeamMember[]
   bannedUsers     TeamBan[]
   pendingRequests TeamRequest[]
-  projects        Project[] @relation("OwnTeam")
+  projects        Project[]
+
     // Relations for chat
   messages        Message[]       @relation("TeamMessages")
 }
@@ -166,14 +169,13 @@ model Project {
   owner   User   @relation("OwnedProjects", fields: [ownerId], references: [id])
   ownerId String
 
-  team   Team?   @relation("OwnTeam",fields: [teamId], references: [id])
+  team   Team?   @relation(fields: [teamId], references: [id])
   teamId String?
 
   starredBy          User[]     @relation("StarredProjects")
-  archiveprojectBy    User?     @relation("archieveProjects",fields: [archeivedBy], references: [id])
+  archiveprojectBy    User[]     @relation("archieveProjects")
   genratedProjectsby User?       @relation("genratedProjects", fields: [generatedById], references: [id])
   generatedById      String?
-  archeivedBy      String?
   files              FileItem[]
   createdAt          DateTime   @default(now())
 }
@@ -226,7 +228,6 @@ model Notification {
 
   messageId   String?
   message     Message?    @relation(fields: [messageId], references: [id])
-
 
   isRead      Boolean     @default(false)
   createdAt   DateTime    @default(now())

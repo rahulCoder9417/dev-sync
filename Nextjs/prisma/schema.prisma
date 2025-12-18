@@ -173,10 +173,9 @@ model Project {
   teamId String?
 
   starredBy          User[]     @relation("StarredProjects")
-  archiveprojectBy    User?     @relation("archieveProjects",fields: [archeivedBy], references: [id])
+  archiveprojectBy    User[]     @relation("archieveProjects")
   genratedProjectsby User?       @relation("genratedProjects", fields: [generatedById], references: [id])
   generatedById      String?
-  archeivedBy      String?
   files              FileItem[]
   createdAt          DateTime   @default(now())
 }

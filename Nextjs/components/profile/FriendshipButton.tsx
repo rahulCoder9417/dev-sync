@@ -3,8 +3,12 @@ import React from 'react'
 import { Button } from '../ui/button'
 import { Clock, UserCheck, UserCircle, UserPlus } from 'lucide-react';
 import { showToast } from '../main/Toast';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 const FriendshipButton = ({status,userId}: {status: string,userId:string}) => {
+    const {id} = useAppSelector(
+      (state) => state.user,
+    );
     const [friendshipStatus, setFriendshipStatus] = React.useState(status);// accepted pending none acceptHim
      const handleFriendshipAction = async() => {
           if (friendshipStatus === "none") {
@@ -90,6 +94,9 @@ const FriendshipButton = ({status,userId}: {status: string,userId:string}) => {
         };
       
         const buttonConfig = getFriendshipButton();
+        if(id === userId){
+          return null
+        }
   return (
     <div className=''>
      <Button
