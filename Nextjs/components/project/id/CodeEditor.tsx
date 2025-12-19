@@ -257,8 +257,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         }
       } else {
         if (readOnly) setReadOnly(false);
-        setIsFirstSync(activeTab.id);
       }
+      
+      setIsFirstSync(activeTab.id);
     }
   }, [collaboratorsMap, activeTab?.id, isFirstSync]);
 
@@ -399,7 +400,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
 
       if (update.type === "sync") {
-
         const diffData = Y.encodeStateAsUpdate(docRef.current);
         sendMessage("syncedData", projectId, tab.id, {
           data: Array.from(diffData),
@@ -418,8 +418,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         dispatch(consumeUpdate({ fileId: tab.id }));
         return;
       }
-
       const updateArray = new Uint8Array(update.data);
+      console.log(updateArray)
 
       try {
         Y.applyUpdate(docRef.current, updateArray);
