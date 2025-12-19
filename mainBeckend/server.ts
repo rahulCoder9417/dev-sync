@@ -1,16 +1,14 @@
-// server-ws-split.ts
-// This is a temporary file for testing the WebSocket server split
 
 import express from "express";
 import http from "http";
 import { parse } from 'url';
-import config from "./src/config";
-import router from "./src/routes";
+import config from "./src/config/index.js";
+import router from "./src/routes/index.js";
 import cors from "cors";
-import { UserMeta } from "./types";
-import { getAuthData } from "./src/auth";
-import { FileWsHandler } from "./src/websocket/fileWsHandler";
-import { ChatWsHandler } from "./src/websocket/chatWsHandler";
+import { UserMeta } from "./src/types/user.js";
+import { getAuthData } from "./src/auth/index.js";
+import { FileWsHandler } from "./src/websocket/fileWsHandler.js";
+import { ChatWsHandler } from "./src/websocket/chatWsHandler.js";
 
 const app = express();
 const server = http.createServer(app);

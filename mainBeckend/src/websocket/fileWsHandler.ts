@@ -1,10 +1,11 @@
 import { RawData } from "ws";
-import { ExtWebSocket, BaseWsHandler } from "./baseWsHandler";
-import { ClientMessage } from "../../types";
-import { deleteFileOrFolder } from "../lib/action/fileitem/deleteFile";
-import RoomManager from "../utils/roomManagerFile";
-import makeRoomId from "../utils/makeRoomId";
-import { sendFileCreated, sendFileDeleted, sendFileRenamed, sendFileUpdated } from "../services/renderSyncClient";
+import {  BaseWsHandler } from "./baseWsHandler.js";
+import { ClientMessage } from "../../types.js";
+import { deleteFileOrFolder } from "../lib/action/fileitem/deleteFile.js";
+import RoomManager from "../utils/roomManagerFile.js";
+import makeRoomId from "../utils/makeRoomId.js";
+import { sendFileCreated, sendFileDeleted, sendFileRenamed, sendFileUpdated } from "../services/renderSyncClient.js";
+import { ExtWebSocket } from "../types/ws.js";
 
 export class FileWsHandler extends BaseWsHandler {
   private fileVotes: Map<string, Set<string>> = new Map();
@@ -252,7 +253,9 @@ export class FileWsHandler extends BaseWsHandler {
       },
       ws
     );
-
+    if(!parsed.newNode){
+      return;
+    }
     if(type==="create"){
       sendFileCreated({
         projectId,
@@ -411,7 +414,7 @@ export class FileWsHandler extends BaseWsHandler {
       ws.send(JSON.stringify({ error: "invalid_message" }));
       return;
     }
-    const { projectId, fileId ,data} = parsed;
+    const { projectId, fileId } = parsed;
 
     let owner = this.room.getRoomUsers(makeRoomId(projectId, fileId))[0];
     if (owner && owner.userId !== ws.userId) {
@@ -421,7 +424,6 @@ export class FileWsHandler extends BaseWsHandler {
           room: makeRoomId(projectId, fileId),
           fileId,
           to: ws.userId,
-          data,
         })
       );
     }
@@ -546,5 +548,5 @@ public handleRename(projectId:string,fileId:string,fileName:string){
   }
 
 //ignore
-  protected GlobalUserList(ws: ExtWebSocket){}
+  protected sendGlobalUserList(ws: ExtWebSocket){}
 }

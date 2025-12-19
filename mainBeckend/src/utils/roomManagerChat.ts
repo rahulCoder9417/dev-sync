@@ -1,65 +1,113 @@
-import { extWebSocket } from "../../types";
+import { RoomId, ChatEvent, ChatHistoryMessage } from '../types/chatRoomManager.js';
+import { ExtWebSocket } from '../types/ws.js';
+
+/* -------------------------------------------------------------------------- */
+/*                               Room Manager                                 */
+/* -------------------------------------------------------------------------- */
 
 export default class RoomManager {
-  public chatRooms: Map<string, Map<string,extWebSocket>>;
-  private messageHistory: Map<string, any[]>;
-  private typingUsers: Map<string, Set<extWebSocket>>;
-  public users: Map<string, extWebSocket>;
+  public readonly chatRooms: Map<RoomId, Map<string, ExtWebSocket>>;
+  private readonly messageHistory: Map<RoomId, ChatHistoryMessage[]>;
+  private readonly typingUsers: Map<RoomId, Map<string, ExtWebSocket>>;//roomId ->{userId ->ws}
+  public readonly users: Map<string, ExtWebSocket>;
+
   constructor() {
     this.chatRooms = new Map();
     this.messageHistory = new Map();
     this.typingUsers = new Map();
     this.users = new Map();
   }
-  
-  public addToTypingStatus(roomId: string, ws: extWebSocket) {
-    if(!this.typingUsers.has(roomId)){this.typingUsers.set(roomId, new Set())}
-    let room = this.typingUsers.get(roomId);
-    if(room!.has(ws)){return}
-    room!.add(ws);
-    this.broadcastToRoom(roomId,{type:"typingStart", chatId:roomId, userId:ws.userId,fullName:ws.fullName,avatar:ws.avatar},ws);
+
+  /* ---------------- Typing Status ---------------- */
+
+  public addToTypingStatus(roomId: RoomId, ws: ExtWebSocket): void {
+    if (!this.typingUsers.has(roomId)) {
+      this.typingUsers.set(roomId, new Map());
+    }
+
+    const roomTyping = this.typingUsers.get(roomId)!;
+
+    if (roomTyping.has(ws.userId!)) return;
+
+    roomTyping.set(ws.userId!, ws);
+
+    this.broadcastToRoom(
+      roomId,
+      {
+        type: 'typingStart',
+        chatId: roomId,
+        userId: ws.userId!,
+        fullName: ws.fullName,
+        avatar: ws.avatar,
+      },
+      ws
+    );
   }
 
-  public removeFromTypingStatus(roomId: string, ws: extWebSocket) {
-    this.typingUsers.get(roomId)?.delete(ws);
-    if(this.typingUsers.get(roomId)?.size === 0){
+  public removeFromTypingStatus(roomId: RoomId, ws: ExtWebSocket): void {
+    const roomTyping = this.typingUsers.get(roomId);
+    if (!roomTyping) return;
+
+    roomTyping.delete(ws.userId!);
+
+    if (roomTyping.size === 0) {
       this.typingUsers.delete(roomId);
     }
-    this.broadcastToRoom(roomId,{type:"typingEnd", chatId:roomId, userId:ws.userId},ws);
+
+    this.broadcastToRoom(
+      roomId,
+      {
+        type: 'typingEnd',
+        chatId: roomId,
+        userId: ws.userId!,
+      },
+      ws
+    );
   }
 
-  public addToGlobalUserList(ws: extWebSocket) {
+  /* ---------------- Global User Tracking ---------------- */
+
+  public addToGlobalUserList(ws: ExtWebSocket): void {
     this.users.set(ws.userId!, ws);
   }
 
-  public removeFromGlobalUserList(ws: extWebSocket) {
+  public removeFromGlobalUserList(ws: ExtWebSocket): void {
     this.users.delete(ws.userId!);
   }
 
-  public addToRoom(roomId: string, ws: extWebSocket,notBroad ?:boolean) {
+  /* ---------------- Room Membership ---------------- */
+
+  public addToRoom(
+    roomId: RoomId,
+    ws: ExtWebSocket,
+    skipBroadcast = false
+  ): void {
     let room = this.chatRooms.get(roomId);
+
     if (!room) {
       room = new Map();
       this.chatRooms.set(roomId, room);
       this.messageHistory.set(roomId, []);
-      this.typingUsers.set(roomId, new Set());
+      this.typingUsers.set(roomId, new Map());
     }
 
-    room.set(ws.userId!,ws);
-    ws.chatRooms = ws.chatRooms || new Set();
+    room.set(ws.userId!, ws);
+
+    ws.chatRooms ??= new Set();
     ws.chatRooms.add(roomId);
-    if(notBroad)return
-    // Notify others in the room
+
+    if (skipBroadcast) return;
+
     this.broadcastToRoom(
       roomId,
       {
-        type: "user_joined",
+        type: 'user_joined',
         room: roomId,
         user: {
-          userId: ws.userId,
-          avatar: ws.avatar,
+          userId: ws.userId!,
           username: ws.username,
           fullName: ws.fullName,
+          avatar: ws.avatar,
         },
         timestamp: new Date().toISOString(),
       },
@@ -67,97 +115,118 @@ export default class RoomManager {
     );
   }
 
-  public removeFromRoom(roomId: string, ws: extWebSocket,notBroad?:boolean) {
+  public removeFromRoom(
+    roomId: RoomId,
+    ws: ExtWebSocket,
+    skipBroadcast = false
+  ): void {
     const room = this.chatRooms.get(roomId);
     if (!room) return;
 
-    // Remove user from typing status
-    this.clearTypingStatus(roomId,ws);
+    this.clearTypingStatus(roomId, ws);
 
-    // Remove from room
     room.delete(ws.userId!);
     ws.chatRooms?.delete(roomId);
 
-    // Clean up empty rooms
     if (room.size === 0) {
       this.chatRooms.delete(roomId);
       this.typingUsers.delete(roomId);
+      this.messageHistory.delete(roomId);
     }
-    if (notBroad) {
-      return
-    }
-    // Notify others in the room
+
+    if (skipBroadcast) return;
+
     this.broadcastToRoom(
       roomId,
       {
-        type: "user_left",
+        type: 'user_left',
         room: roomId,
-        userId: ws.userId,
+        userId: ws.userId!,
         timestamp: new Date().toISOString(),
       },
       ws
     );
   }
 
-  public broadcastToRoom(roomId: string, message: any, except?: extWebSocket) {
+  /* ---------------- Messaging ---------------- */
+
+  public broadcastToRoom(
+    roomId: RoomId,
+    message: ChatEvent | Record<string, unknown>,
+    except?: ExtWebSocket
+  ): void {
     const room = this.chatRooms.get(roomId);
     if (!room) return;
 
-    const messageString = JSON.stringify(message);
-    for (const client of room.values()  ) {
+    const payload = JSON.stringify(message);
+
+    for (const client of room.values()) {
       if (except && client.userId === except.userId) continue;
-      if (client.readyState === 1) {
-        // 1 = OPEN
-        client.send(messageString);
+      if (client.readyState === WS_OPEN) {
+        client.send(payload);
       }
     }
   }
 
-  public addMessage(roomId: string, message: any) {
-    const history = this.messageHistory.get(roomId) || [];
+  public addMessage(
+    roomId: RoomId,
+    message: ChatHistoryMessage
+  ): void {
+    const history = this.messageHistory.get(roomId) ?? [];
+
     history.push(message);
-    // Keep only the last 100 messages
+
     if (history.length > 100) {
       history.shift();
     }
+
     this.messageHistory.set(roomId, history);
   }
 
-  public setTypingStatus(roomId: string, ws: extWebSocket, status: boolean) {
-    const roomTypingUsers = this.typingUsers.get(roomId);
-    if (!roomTypingUsers){
-        this.typingUsers.set(roomId, new Set());
-    }
-    this.typingUsers.get(roomId)?.add(ws);
-  }
+  /* ---------------- Typing Helpers ---------------- */
 
-  private clearTypingStatus(roomId: string, ws: extWebSocket) {
-    const roomTypingUsers = this.typingUsers.get(roomId);
-    if (!roomTypingUsers || !roomTypingUsers.has(ws)) return;
+  private clearTypingStatus(roomId: RoomId, ws: ExtWebSocket): void {
+    const roomTyping = this.typingUsers.get(roomId);
+    if (!roomTyping || !roomTyping.has(ws.userId!)) return;
 
-    this.broadcastToRoom(roomId,{type:"typingEnd",userId:ws.userId},ws);
-    this.typingUsers.get(roomId)?.delete(ws);
-    if(this.typingUsers.get(roomId)?.size === 0){
+    roomTyping.delete(ws.userId!);
+
+    if (roomTyping.size === 0) {
       this.typingUsers.delete(roomId);
     }
+
+    this.broadcastToRoom(
+      roomId,
+      {
+        type: 'typingEnd',
+        chatId: roomId,
+        userId: ws.userId!,
+      },
+      ws
+    );
   }
 
-  public isUserTyping(roomId: string, ws: extWebSocket): boolean {
-    const roomTypingUsers = this.typingUsers.get(roomId);
-    return roomTypingUsers ? roomTypingUsers.has(ws) : false;
+  public isUserTyping(roomId: RoomId, ws: ExtWebSocket): boolean {
+    return this.typingUsers.get(roomId)?.has(ws.userId!) ?? false;
   }
 
-  public getRoomUsers(roomId: string): extWebSocket[] {
-    const room = this.chatRooms.get(roomId);
-    return room ? Array.from(room.values()) : [];
+  /* ---------------- Queries ---------------- */
+
+  public getRoomUsers(roomId: RoomId): ExtWebSocket[] {
+    return Array.from(this.chatRooms.get(roomId)?.values() ?? []);
   }
 
-  public getRoomSize(roomId: string): number {
-    const room = this.chatRooms.get(roomId);
-    return room ? room.size : 0;
+  public getRoomSize(roomId: RoomId): number {
+    return this.chatRooms.get(roomId)?.size ?? 0;
   }
 
-  public getMessageHistory(roomId: string): any[] {
-    return this.messageHistory.get(roomId) || [];
+  public getMessageHistory(roomId: RoomId): ChatHistoryMessage[] {
+    return this.messageHistory.get(roomId) ?? [];
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/*                                   Consts                                   */
+/* -------------------------------------------------------------------------- */
+
+const WS_OPEN = 1;

@@ -12,16 +12,6 @@ export interface extWebSocket extends WebSocket {
   rooms?: Set<string>;
 }
 
-
-export type UserMeta = {
-    userId: string;
-    projectId?: string;
-    fileId?: string;
-    username: string;
-    fullName: string;
-    avatar?: string | null;
-  };
-
 // Base message type with common fields
 type BaseMessage = {
   roomId?: string;
@@ -35,15 +25,14 @@ type BaseMessage = {
 
 // File operation message types
 type FileOperationMessage = BaseMessage & ( | { action: 'changeAdmin'; projectId: string; fileId: string; userId: string }
-  | { action: 'chat'; chatType: 'global' | 'team' | 'direct'; id: string; message?: string; type: "join" | "leave" | "message" | "deleteMessage"; messageId?: string }
-  | { action: 'syncUserPresence'; projectId: string; }
+  |  { action: 'syncUserPresence'; projectId: string; }
   | { action: 'join'; projectId?: string; fileId?: string; }
   | { action: 'YjsCodeChanges'; projectId: string; fileId: string; updateType:  "text"; data: Uint8Array }
-  | { action: 'sync'; projectId: string; fileId: string; data: any }
-  | { action: 'syncedData'; projectId: string; fileId: string; data: any; updateType: "awareness" | "text"; include: string }
+  | { action: 'sync'; projectId: string; fileId: string;  }
+  | { action: 'syncedData'; projectId: string; fileId: string; data: Uint8Array; updateType: "awareness" | "text"; include: string }
   | { action: 'leave'; projectId?: string; fileId?: string; }
-  | { action: 'fileOp'; projectId?: string; fileId?: string; content?: string; type?: string; fileName: string; newNode?: any; fullName?: string; avatar?: string }
-  | { action: 'message'; projectId?: string; fileId?: string; data?: any }
+  | { action: 'fileOp'; projectId?: string; fileId?: string; content?: string; type?: "create" |  "rename"; fileName: string; newNode?: {id:string,name:string,type:string,parentId:string,children:string[]}; fullName?: string; avatar?: string }
+  | { action: 'message'; projectId?: string; fileId?: string; data?: any } //a optional message field not used 
   | { action: 'vote_delete'; projectId: string; fileId: string; fullName: string; fileName: string; }
   | { action: 'cancel_voting'; projectId: string; fileId: string; fullName: string; fileName: string; }
   | { action: 'fileSave'; projectId: string; fileId: string; content: string; }

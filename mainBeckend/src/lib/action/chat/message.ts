@@ -39,3 +39,23 @@ export const createMessage = async(message: any) => {
         throw error;
     }
 }
+
+export const updateRead = async(messageId:string) => {
+    try {
+        const res  = await db.message.update({
+            where:{
+                id:messageId
+            },
+            data:{
+                isRead:true
+            }
+        })
+        if (!res) {
+            throw new Error("Failed to update message");
+        }
+        return ("message readUpdated")
+        return res;
+    } catch (error) {
+        throw error;
+    }
+}

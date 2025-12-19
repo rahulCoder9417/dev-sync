@@ -1,10 +1,12 @@
 import { RawData } from "ws";
-import { ExtWebSocket, BaseWsHandler } from "./baseWsHandler";
-import { ClientMessage } from "../../types";
-import RoomManager from "../utils/roomManagerChat";
-import getFriends from "../lib/action/user/getFriends";
-import { createMessage } from "../lib/action/chat/message";
-import { createNotification } from "../lib/action/chat/notification";
+import {  BaseWsHandler } from "./baseWsHandler.js";
+import RoomManager from "../utils/roomManagerChat.js";
+import getFriends from "../lib/action/user/getFriends.js";
+import { createMessage, updateRead } from "../lib/action/chat/message.js";
+import { createNotification } from "../lib/action/chat/notification.js";
+import { ExtWebSocket } from "../types/ws.js";
+import { ChatClientMessage } from "../types/chatRoomManager.js";
+
 
 export class ChatWsHandler extends BaseWsHandler {
   private messageHistory: Map<string, any[]> = new Map();
@@ -35,7 +37,7 @@ export class ChatWsHandler extends BaseWsHandler {
     })
   }
 
-  protected  async GlobalUserList(ws: ExtWebSocket){
+  protected  async sendGlobalUserList(ws: ExtWebSocket){
     this.room.addToGlobalUserList(ws);
     const friends = await getFriends(ws.userId)
     friends.forEach((friend)=>{
@@ -53,7 +55,7 @@ export class ChatWsHandler extends BaseWsHandler {
   }
 
   protected async handleMessage(ws: ExtWebSocket, data: RawData) {
-    let parsed: ClientMessage;
+    let parsed: ChatClientMessage;
     try {
       parsed = JSON.parse(data.toString());
     } catch (err) {
@@ -148,7 +150,7 @@ export class ChatWsHandler extends BaseWsHandler {
     this.room.removeFromRoom(chatId, ws,true);
   }
 
-  private async handleReadMessage(ws: ExtWebSocket, message: ClientMessage) {
+  private async handleReadMessage(ws: ExtWebSocket, message: ChatClientMessage) {
     if(message.action !== "read") return
     const { chatId, reciverId } = message;
     if (!chatId || !reciverId) {
@@ -163,7 +165,7 @@ export class ChatWsHandler extends BaseWsHandler {
       }))
     }
   }
-  private async handleSendMessage(ws: ExtWebSocket, message: ClientMessage) {
+  private async handleSendMessage(ws: ExtWebSocket, message: ChatClientMessage) {
     if(message.action !== "send_message") return
     const { chatType, chatId, id, content, createdAt, updatedAt,reciverId } = message;
     if (!chatId || !content || !id || !chatType) {
@@ -205,6 +207,7 @@ export class ChatWsHandler extends BaseWsHandler {
             avatar:ws.avatar,
           }
         },ws)
+        await updateRead(id)
       }else if(this.room.users.has(reciverId)){
         this.room.users.get(reciverId)?.send(JSON.stringify({
           type:"chatToast",

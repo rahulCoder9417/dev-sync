@@ -1,5 +1,5 @@
 import { verifyToken } from "@clerk/backend";
-import { UserMeta } from "../../types";
+import { UserMeta } from "../types/user";
 import { getUserByEmail } from "../lib/action/user/getUser";
 
 export async function getAuthData(token: string):Promise<UserMeta | null> {
