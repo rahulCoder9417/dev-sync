@@ -6,6 +6,8 @@ import {WebSocket as WS,} from "ws"
 export interface ExtWebSocket extends WS {
   isAlive: boolean;
   userId: string;
+  projectId?: string | null;
+  fileId?: string | null;
   username: string;
   fullName: string;
   avatar: string | null;

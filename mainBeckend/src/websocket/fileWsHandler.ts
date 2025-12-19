@@ -1,11 +1,11 @@
 import { RawData } from "ws";
 import {  BaseWsHandler } from "./baseWsHandler.js";
-import { ClientMessage } from "../../types.js";
 import { deleteFileOrFolder } from "../lib/action/fileitem/deleteFile.js";
 import RoomManager from "../utils/roomManagerFile.js";
 import makeRoomId from "../utils/makeRoomId.js";
 import { sendFileCreated, sendFileDeleted, sendFileRenamed, sendFileUpdated } from "../services/renderSyncClient.js";
 import { ExtWebSocket } from "../types/ws.js";
+import { ClientMessage } from "../types/fileWs.js";
 
 export class FileWsHandler extends BaseWsHandler {
   private fileVotes: Map<string, Set<string>> = new Map();
@@ -59,41 +59,52 @@ export class FileWsHandler extends BaseWsHandler {
           this.handleJoinRoom(ws, parsed);
           break;
         case "leave":
-          this.handleLeaveRoom(ws, parsed as any);
+          this.handleLeaveRoom(ws, parsed );
           break;
         case "fileOp":
-          this.handleFileUpdate(ws, parsed as any);
+          //file op mainly create and rename
+          this.handleFileUpdate(ws, parsed );
           
           break;
         case "cancel_voting":
-          this.handleCancelVoting(ws, parsed as any);
+          //cancel vote
+          this.handleCancelVoting(ws, parsed );
           break;
         case "vote_delete":
-          await this.handleVoteDelete(ws, parsed as any);
+          //for a file delete voting
+          await this.handleVoteDelete(ws, parsed );
           break;
         case "YjsCodeChanges":
-          this.handleYjsCodeChanges(ws, parsed as any);
+          //give yjs code chagnes
+          this.handleYjsCodeChanges(ws, parsed );
           break;
+
         case "syncUserPresence":
-          this.handleSyncUserPresence(ws, parsed as any);
+          //when a user joins a file he can know the prev joined members and where are they
+          this.handleSyncUserPresence(ws, parsed );
           break;
         case "changeAdmin":
-          this.handleChangeAdmin(ws, parsed as any);
+          //for a file change admin
+          this.handleChangeAdmin(ws, parsed );
           break;
         case "sync":
-          this.handleSync(ws, parsed as any);
+          //user ask for code sync
+          this.handleSync(ws, parsed );
           break;
         case "syncedData":
-          this.handleSyncedData(ws, parsed as any);
+          //when a user joins a file then it can ask for sync ,this is the synced datat given
+          this.handleSyncedData(ws, parsed );
           break;
         case "message":
-          this.handleMessageIncoming(ws, parsed as any);
+          this.handleMessageIncoming(ws, parsed );
           break;
         case "fileSave":
-          this.handleFileSave(ws, parsed as any);
+          // for file save
+          this.handleFileSave(ws, parsed );
           break;
         case "awareness":
-          this.handleAwareness(ws, parsed as any);
+          //give awareness updates
+          this.handleAwareness(ws, parsed );
           break;
         default:
           ws.send(JSON.stringify({ error: "unknown_action" }));
@@ -109,7 +120,6 @@ export class FileWsHandler extends BaseWsHandler {
       );
     }
   }
-
   private handleAwareness(ws : ExtWebSocket,parsed : ClientMessage){
     if(!parsed || typeof parsed !== "object" || parsed.action!=="awareness") {
       ws.send(JSON.stringify({ error: "invalid_message" }));

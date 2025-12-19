@@ -242,10 +242,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   /** 📦 Collaborators / readOnly logic */
   useEffect(() => {
     if (!activeTab?.id) return;
-
+   console.log("ask for sync")
     if (collaboratorsMap.length > 0 && userId) {
       const isOwner = collaboratorsMap[0].userId === userId;
-
       if (!isOwner) {
         if (!readOnly) setReadOnly(true);
         if (isFirstSync !== activeTab.id) {
