@@ -1,19 +1,48 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Home, Search, Users, Send, SendHorizonal } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Home, Search, Users, Send, SendHorizonal, X, ChevronLeft, Menu } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { updateChatPopUp } from "@/lib/redux/features/chatPopUpSlice";
-import { dmAndTeam } from "@/app/team/page";
 import UserListItem from "./UserListItem";
 import Link from "next/link";
 import { showToast } from "../main/Toast";
 import Avatar from "../main/Avatar";
 
+/* -------------------------------------------------------------------------- */
+/*                                    Types                                   */
+/* -------------------------------------------------------------------------- */
+
+type TeamChatItem = {
+  type: "team";
+  id: string;
+  name: string;
+  projectId: string;
+  memberCount: number;
+  lastMessageRead: boolean;
+  lastMessageAt: Date;
+};
+
+type DMChatItem = {
+  type: "dm";
+  id: string;
+  userId: string;
+  fullName: string;
+  username: string;
+  avatar: string | null;
+  lastMessageRead: boolean;
+  lastMessageAt: Date;
+};
+
+type DMAndTeamResult = {
+  teams: TeamChatItem[];
+  friends: DMChatItem[];
+};
+
 interface SidebarProps {
-  dmAndTeam: dmAndTeam;
+  dmAndTeam: DMAndTeamResult;
   selectedChat: {
     type: "team" | "direct";
     id: string;
@@ -26,237 +55,313 @@ interface SidebarProps {
   }) => void;
 }
 
+/* -------------------------------------------------------------------------- */
+/*                                  Component                                 */
+/* -------------------------------------------------------------------------- */
+
 const Sidebar = ({ dmAndTeam, selectedChat, setSelectedChat }: SidebarProps) => {
   const dispatch = useAppDispatch();
   const [searchTerm, setSearchTerm] = useState("");
-
+  const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
+  const [searchMode, setSearchMode] = useState<"local" | "global">("local");
   const [showFetched, setShowFetched] = useState({ team: false, user: false });
-
   const [fetchedData, setFetchedData] = useState<null | {
     teams: any[];
     users: any[];
   }>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // FILTERED RESULTS from original data
+  // Filter by search and unread status
   const filteredTeams = useMemo(() => {
-    if (!searchTerm) return dmAndTeam.teams;
-    const term = searchTerm.toLowerCase();
-    return dmAndTeam.teams.filter((team) =>
-      team.name.toLowerCase().includes(term)
-    );
-  }, [dmAndTeam.teams, searchTerm]);
+    let teams = dmAndTeam.teams;
+    
+    if (activeTab === "unread") {
+      teams = teams.filter((t) => !t.lastMessageRead);
+    }
+    
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      teams = teams.filter((t) => t.name.toLowerCase().includes(term));
+    }
+    
+    return teams;
+  }, [dmAndTeam.teams, searchTerm, activeTab]);
 
   const filteredUsers = useMemo(() => {
-    if (!searchTerm) return dmAndTeam.friends;
-    const term = searchTerm.toLowerCase();
-    return dmAndTeam.friends.filter((user) =>
-      user.fullName.toLowerCase().includes(term)
-    );
-  }, [dmAndTeam.friends, searchTerm]);
+    let users = dmAndTeam.friends;
+    
+    if (activeTab === "unread") {
+      users = users.filter((u) => !u.lastMessageRead);
+    }
+    
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      users = users.filter((u) =>
+        u.fullName.toLowerCase().includes(term) ||
+        u.username.toLowerCase().includes(term)
+      );
+    }
+    
+    return users;
+  }, [dmAndTeam.friends, searchTerm, activeTab]);
 
-  // Clear remote results when search input is cleared
+  // Clear remote results when search is cleared or mode changes
   useEffect(() => {
-    if (!searchTerm.trim()) {
+    if (!searchTerm.trim() || searchMode === "local") {
       setShowFetched({ team: false, user: false });
       setFetchedData(null);
     }
-  }, [searchTerm]);
+  }, [searchTerm, searchMode]);
 
-  const clearSearch = () => setSearchTerm("");
+  const clearSearch = () => {
+    setSearchTerm("");
+    setSearchMode("local");
+  };
 
-  // ===========================
-  // Fetch TEAM Search
-  // ===========================
+  // Fetch teams from API
   async function fetchTeams() {
     if (!searchTerm.trim()) return;
-    const res = await fetch(`/api/teamSidebar/teamAndUser?type=team&search=${searchTerm}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    const data = await res.json();
-    showToast(true,String(data?.teams) + " teams found");
-    setFetchedData((prev) => ({
-      teams: data?.teams ?? [],
-      users: prev?.users ?? [],
-    }));
-    setShowFetched({ team: true, user: false });
+    
+    try {
+      const res = await fetch(
+        `/api/teamSidebar/teamAndUser?type=team&search=${encodeURIComponent(searchTerm)}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      const data = await res.json();
+      
+      showToast(true, `${data?.teams?.length || 0} teams found`);
+      setFetchedData((prev) => ({
+        teams: data?.teams ?? [],
+        users: prev?.users ?? [],
+      }));
+      setShowFetched({ team: true, user: false });
+    } catch (error) {
+      showToast(false, "Failed to fetch teams");
+    }
   }
 
-  // ===========================
-  // Fetch USER Search
-  // ===========================
+  // Fetch users from API
   async function fetchUsers() {
     if (!searchTerm.trim()) return;
-    const res = await fetch(`/api/teamSidebar/teamAndUser?type=user&search=${searchTerm}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    const data = await res.json();
-    setFetchedData((prev) => ({
-      teams: prev?.teams ?? [],
-      users: data?.users ?? [],
-    }));
-    setShowFetched({ team: false, user: true });
+    
+    try {
+      const res = await fetch(
+        `/api/teamSidebar/teamAndUser?type=user&search=${encodeURIComponent(searchTerm)}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      const data = await res.json();
+      
+      setFetchedData((prev) => ({
+        teams: prev?.teams ?? [],
+        users: data?.users ?? [],
+      }));
+      setShowFetched({ team: false, user: true });
+    } catch (error) {
+      showToast(false, "Failed to fetch users");
+    }
   }
 
-  // Select correct list source
-  const teamsToShow = showFetched.team
-    ? fetchedData?.teams ?? []
-    : filteredTeams;
+  const teamsToShow = showFetched.team ? fetchedData?.teams ?? [] : filteredTeams;
+  const usersToShow = showFetched.user ? fetchedData?.users ?? [] : filteredUsers;
 
-  const usersToShow = showFetched.user
-    ? fetchedData?.users ?? []
-    : filteredUsers;
+  // Show toggle button when sidebar is closed
+  if (!isSidebarOpen) {
+    return (
+      <Button
+        onClick={() => setIsSidebarOpen(true)}
+        variant="outline"
+        size="icon"
+        className="fixed left-4 top-4 z-50 h-10 w-10 rounded-lg shadow-lg hover:bg-hover"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+    );
+  }
 
   return (
-    <div className="w-80 bg-card border-r border-primary overflow-y-auto flex flex-col">
+    <div className="w-[20%] max-md:w-[30%] bg-card border-r border-primary flex flex-col min-h-full relative">
+      {/* Close Button */}
+      <Button
+        onClick={() => setIsSidebarOpen(false)}
+        variant="ghost"
+        size="icon"
+        className="absolute right-2 top-2 z-10 h-8 w-8 hover:bg-hover hidden max-md:block"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </Button>
+
       {/* Search Header */}
-      <div className="p-4 border-b border-primary">
-        <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="icon" className="hover:bg-hover">
-            <Search className="h-5 w-5" />
-          </Button>
-
-          <Input
-            placeholder="Search users and teams..."
-            className="flex-1 mx-3 text-primary"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            autoFocus
-          />
-
-          <Button variant="ghost" size="icon" className="hover:bg-hover">
+      <div className="p-3 sm:p-4 border-b border-primary space-y-3 pt-12 sm:pt-4">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-5 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search users and teams..."
+              className="pl-12 pr-9 h-10 mb-2 text-primary"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                onClick={clearSearch}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
+          <Button variant="ghost" size="icon" className="hover:bg-hover shrink-0">
             <Home className="h-5 w-5" />
           </Button>
         </div>
 
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="w-full bg-secondary">
-            <TabsTrigger
-              value="all"
-              className="flex-1 cursor-pointer data-[state=inactive]:text-white"
+        {/* Search Mode Toggle - Shows when there's a search term */}
+        {searchTerm && (
+          <div className="flex gap-2">
+            <Button
+              variant={searchMode === "local" ? "default" : "outline"}
+              size="sm"
+              className="flex-1 text-xs"
+              onClick={() => setSearchMode("local")}
             >
+              Local
+            </Button>
+            <Button
+              variant={searchMode === "global" ? "default" : "outline"}
+              size="sm"
+              className="flex-1 text-xs"
+              onClick={() => setSearchMode("global")}
+            >
+              Global
+            </Button>
+          </div>
+        )}
+
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "all" | "unread")} className="w-full">
+          <TabsList className="w-full bg-secondary">
+            <TabsTrigger value="all" className="flex-1 data-[state=inactive]:text-white text-xs sm:text-sm">
               All
             </TabsTrigger>
-            <TabsTrigger
-              value="unread"
-              className="flex-1 cursor-pointer data-[state=inactive]:text-white"
-            >
+            <TabsTrigger value="unread" className="flex-1 data-[state=inactive]:text-white text-xs sm:text-sm">
               Unread
             </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      {/* ===== TEAMS SECTION ===== */}
-      <ScrollArea className="flex-1 max-h-[35vh] border-b-4 border-primary">
-        {teamsToShow.length > 0 ? (
-          <div className="p-2 mt-2">
-            <div className="flex justify-between items-center px-3 py-2">
-              <span className="text-xs font-semibold text-secondary uppercase">
-                Teams
-              </span>
-              {searchTerm && (
-                <span className="text-xs text-muted-foreground">
-                  {teamsToShow.length} found
+      {/* Teams Section */}
+      <div className="border-b border-primary">
+        <ScrollArea className="h-[30vh] sm:h-[35vh] md:h-[40vh]">
+          {teamsToShow.length > 0 ? (
+            <div className="p-2">
+              <div className="flex justify-between items-center px-3 py-2">
+                <span className="text-xs font-semibold text-secondary uppercase">
+                  Teams
                 </span>
-              )}
-            </div>
-
-            {teamsToShow.map((team: any) => (
-              <div
-                key={team.id}
-                className="w-auto h-auto relative cursor-pointer hover:bg-hover"
-              >
-                <button
-                  disabled={showFetched.team}
-                  onClick={() => {
-                    setSelectedChat({
-                      type: "team",
-                      id: team.id,
-                      name: team.name,
-                    });
-                    clearSearch();
-                  }}
-                  className={`w-full flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg hover:bg-primary transition-colors ${
-                    selectedChat?.type === "team" &&
-                    selectedChat.id === team.id
-                      ? "bg-hover"
-                      : ""
-                  }`}
-                >
-                  <div
-                    className="w-10 h-10 rounded-lg"
-                    style={{ backgroundColor: "rgba(139,92,246,0.2)" }}
-                  >
-                    <Users
-                      className="h-5 w-5 m-auto mt-2.5"
-                      style={{ color: "#8b5cf6" }}
-                    />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-medium text-primary">{team.name}</p>
-                    <p className="text-xs text-secondary">
-                      {team.memberCount ?? 0} members
-                    </p>
-                  </div>
-                </button>
-
-                <Link href={`/projects/get/${team.projectId}`}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:bg-hover absolute right-10 top-2 cursor-pointer"
-                  >
-                    <SendHorizonal className="h-5 w-5" />
-                  </Button>
-                </Link>
-{!showFetched.team &&
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover:bg-hover absolute right-2 top-2 cursor-pointer"
-                  onClick={() =>
-                    dispatch(
-                      updateChatPopUp({
-                        isOpen: true,
-                        selectedChat: { type: "team", id: team.id, name: team.name },
-                      })
-                    )
-                  }
-                >
-                  <Send className="h-5 w-5" />
-                </Button>}
+                {searchTerm && (
+                  <span className="text-xs text-muted-foreground">
+                    {teamsToShow.length} found
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
-        ) : searchTerm ? (
-          <div className="p-2 mt-4 mx-auto flex items-center justify-center flex-col py-2 text-primary">
-            Type Team Name to find a team
-            <Button
-              onClick={fetchTeams}
-              variant="default"
-              size="icon"
-              className="hover:bg-hover text-pretty mt-3 w-auto px-2"
-            >
-              Hit me to Find Team
-            </Button>
-          </div>
-        ) : null}
-      </ScrollArea>
 
-      {/* ===== USERS SECTION ===== */}
+              {teamsToShow.map((team: any) => (
+                <div key={team.id} className="relative group">
+                  <button
+                    disabled={showFetched.team}
+                    onClick={() => {
+                      setSelectedChat({
+                        type: "team",
+                        id: team.id,
+                        name: team.name,
+                      });
+                      clearSearch();
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                      selectedChat?.type === "team" && selectedChat.id === team.id
+                        ? "bg-hover"
+                        : "hover:bg-hover"
+                    }`}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: "rgba(139,92,246,0.2)" }}
+                    >
+                      <Users className="h-5 w-5" style={{ color: "#8b5cf6" }} />
+                    </div>
+                    
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="font-medium text-primary truncate text-sm">{team.name}</p>
+                      <p className="text-xs text-secondary">
+                        {team.memberCount ?? 0} members
+                      </p>
+                    </div>
+
+                    {!team.lastMessageRead && (
+                      <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                    )}
+                  </button>
+
+                  {!showFetched.team  && (
+                    <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Link href={`/projects/get/${team.projectId}`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-hover">
+                          <SendHorizonal className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-hover max-md:hidden"
+                        onClick={() =>
+                          dispatch(
+                            updateChatPopUp({
+                              isOpen: true,
+                              selectedChat: { type: "team", id: team.id, name: team.name },
+                            })
+                          )
+                        }
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : searchTerm && searchMode === "global" ? (
+            <div className="p-6 text-center space-y-3">
+              <p className="text-sm text-primary">Search for teams globally</p>
+              <Button
+                onClick={fetchTeams}
+                variant="default"
+                className="hover:bg-hover"
+              >
+                Search Teams
+              </Button>
+            </div>
+          ) : searchTerm && searchMode === "local" ? (
+            <div className="p-6 text-center">
+              <p className="text-sm text-muted-foreground">No teams found locally</p>
+            </div>
+          ) : null}
+        </ScrollArea>
+      </div>
+
+      {/* Users Section */}
       <ScrollArea className="flex-1">
         {usersToShow.length > 0 ? (
-          <div className="p-2 mt-4">
+          <div className="p-2">
             <div className="flex justify-between items-center px-3 py-2">
               <span className="text-xs font-semibold text-secondary uppercase">
                 Direct Messages
@@ -269,62 +374,60 @@ const Sidebar = ({ dmAndTeam, selectedChat, setSelectedChat }: SidebarProps) => 
             </div>
 
             {usersToShow.map((user: any) =>
-  showFetched.user ? (
-    <div
-      key={user.id}
-      className="flex items-center justify-between px-3 py-2 hover:bg-hover rounded-lg"
-    >
-      <div className="flex items-center gap-3">
-        <Avatar
-          fullName={user.fullName}
-          username={user.username}
-          avatar={user.avatar}
-          getInfo={true}
-          className="w-10 h-10"
-        />
-        <div className="flex flex-col">
-          <span className="font-medium text-primary">
-            {user.fullName}
-          </span>
-          <span className="text-xs text-secondary">
-            @{user.username}
-          </span>
-        </div>
-      </div>
-      <Link href={`/profile/${user.username}`}>
-      <Button
-        size="sm"
-        variant="outline"
-        className="cursor-pointer"
-      >
-       Go to
-      </Button>
-      </Link>
-    </div>
-  ) : (
-    <UserListItem
-      key={user.id}
-      // @ts-ignore
-      user={user}
-      selectedChat={selectedChat}
-      setSelectedChat={setSelectedChat}
-      clearSearch={searchTerm ? clearSearch : undefined}
-    />
-  )
-)}
-
+              showFetched.user ? (
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-hover rounded-lg"
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <Avatar
+                      fullName={user.fullName}
+                      username={user.username}
+                      avatar={user.avatar}
+                      getInfo={true}
+                      className="w-10 h-10 shrink-0"
+                    />
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-medium text-primary truncate text-sm">
+                        {user.fullName}
+                      </span>
+                      <span className="text-xs text-secondary truncate">
+                        @{user.username}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <Link href={`/profile/${user.username}`}>
+                    <Button size="sm" variant="outline" className="shrink-0 text-xs">
+                      View
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <UserListItem
+                  key={user.id}
+                  user={user}
+                  selectedChat={selectedChat}
+                  setSelectedChat={setSelectedChat}
+                  clearSearch={searchTerm ? clearSearch : undefined}
+                />
+              )
+            )}
           </div>
-        ) : searchTerm ? (
-          <div className="p-2 mt-4 mx-auto flex items-center justify-center flex-col py-2 text-primary">
-            Type fullName / username
+        ) : searchTerm && searchMode === "global" ? (
+          <div className="p-6 text-center space-y-3">
+            <p className="text-sm text-primary">Search for users globally</p>
             <Button
               onClick={fetchUsers}
               variant="default"
-              size="icon"
-              className="hover:bg-hover text-pretty mt-3 w-auto px-2"
+              className="hover:bg-hover"
             >
-              Hit me to Find Friend
+              Search Users
             </Button>
+          </div>
+        ) : searchTerm && searchMode === "local" ? (
+          <div className="p-6 text-center">
+            <p className="text-sm text-muted-foreground">No users found locally</p>
           </div>
         ) : null}
       </ScrollArea>

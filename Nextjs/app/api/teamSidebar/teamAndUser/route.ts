@@ -2,67 +2,88 @@ import db from "@/lib/db/prisma";
 import { middleWare } from "@/lib/mainUtils/beckendMiddleWare";
 
 export async function GET(req: Request) {
-  const { search, type } = Object.fromEntries(new URL(req.url).searchParams);
-  const user = await middleWare();
+  const url = new URL(req.url);
+  const search = url.searchParams.get("search")?.trim();
+  const type = url.searchParams.get("type");
 
+  const user = await middleWare();
   if (!user?.id) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!search || search.trim().length === 0) {
+  if (!search) {
     return Response.json({ teams: [], users: [] });
   }
 
-  const prefix = search.toLowerCase();
+  /* -------------------------------------------------------------------------- */
+  /*                                   TEAMS                                    */
+  /* -------------------------------------------------------------------------- */
 
   if (type === "team") {
     const teams = await db.team.findMany({
       where: {
-        name: { startsWith: prefix, mode: "insensitive" },
+        name: {
+          contains: search,
+          mode: "insensitive",
+        },
         members: {
-          none: { userId: user.id } // not member
-        }
+          none: { userId: user.id }, // user not already a member
+        },
       },
       select: {
         id: true,
         name: true,
       },
-      take: 10
+      take: 10,
     });
 
     return Response.json({ teams, users: [] });
   }
 
+  /* -------------------------------------------------------------------------- */
+  /*                                   USERS                                    */
+  /* -------------------------------------------------------------------------- */
+
   const users = await db.user.findMany({
     where: {
-      OR: [
-        { fullName: { contains: prefix, mode: "insensitive" } },
-        { username: { startsWith: prefix, mode: "insensitive" } }
-      ],
       AND: [
-        { id: { not: user.id } },
-  
+        {
+          OR: [
+            {
+              fullName: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              username: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+          ],
+        },
+        { id: { not: user.id } }, // exclude self
         {
           friendshipsInitiated: {
-            none: { receiverId: user.id }
-          }
+            none: { receiverId: user.id },
+          },
         },
         {
           friendshipsReceived: {
-            none: { initiatorId: user.id }
-          }
-        }
-      ]
+            none: { initiatorId: user.id },
+          },
+        },
+      ],
     },
     select: {
       id: true,
       username: true,
       fullName: true,
-      avatar: true
+      avatar: true,
     },
-    take: 10
+    take: 10,
   });
-  
 
   return Response.json({ teams: [], users });
 }

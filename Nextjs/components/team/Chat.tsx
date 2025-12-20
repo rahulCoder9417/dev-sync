@@ -2,13 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import Sidebar from '@/components/team/sidebar';
 import ChatComponent from '@/components/team/chatComponent';
-import { Button } from '@/components/ui/button';
-import { useAppDispatch } from '@/lib/redux/hooks';
-import { updateChatPopUp } from '@/lib/redux/features/chatPopUpSlice';
-import { dmAndTeam } from '@/app/team/page';
+import { DMAndTeamResult } from '@/lib/types/chat';
 
 
-const Chat = ({dmAndTeam}: {dmAndTeam: dmAndTeam}) => {
+const Chat = ({dmAndTeam}: {dmAndTeam: DMAndTeamResult}) => {
       
       const [selectedChat, setSelectedChat] = useState<{
         type:  | 'team' | 'direct';
