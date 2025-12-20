@@ -271,3 +271,6 @@ This allows **context-aware WebSocket routing** (projects, files, rooms).
 
 - Chat Handler: [ChatWsHandler README](../ChatWsHandler/README.MD)
 - Room Manager (Chat): [RoomManager Chat README](../../RoomManager/Chat/README.MD)
+- Room Manager (File): [RoomManager File README](../../RoomManager/File/README.MD)
+- File Handler: [FileWsHandler README](../FileWsHandler/README.MD)
+
