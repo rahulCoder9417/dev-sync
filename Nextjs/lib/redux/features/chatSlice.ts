@@ -272,7 +272,6 @@ const processPayload = (payload: ServerChatPayload, dispatch: AppDispatch) => {
             message: c,
           })
         );
-        // Optionally store toast messages too if user is not in the chat
         break;
 
       case "chatRead":

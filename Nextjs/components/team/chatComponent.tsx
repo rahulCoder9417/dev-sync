@@ -1,17 +1,28 @@
-import { Hash, Send, Users, Loader2, TicketCheckIcon, MessageCircleReply, Trash, Trash2 } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react'
+import { Hash, Send, Users, Loader2, Trash, Trash2 } from 'lucide-react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Avatar from '../main/Avatar';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { shallowEqual } from 'react-redux';
 import cuid from 'cuid';
-import ShowTypers from "./ShowTypers"
-import { sendChatMessage, addMessageToCache, setChatMessages, selectChatCache, Message, joinChat, leaveChat, sendMessage, updateMessageReadStatus, deleteMessageFromCache, updateIsFetched } from '@/lib/redux/features/chatSlice';
-import { useMemo } from 'react';
+import ShowTypers from "./ShowTypers";
+import {
+  sendChatMessage,
+  addMessageToCache,
+  setChatMessages,
+  selectChatCache,
+  Message,
+  joinChat,
+  leaveChat,
+  sendMessage,
+  updateMessageReadStatus,
+  deleteMessageFromCache,
+  updateIsFetched
+} from '@/lib/redux/features/chatSlice';
 import { showToast } from '../main/Toast';
-import { fa } from 'zod/v4/locales';
 import { DMAndTeamResult } from '@/lib/types/chat';
+
 interface User {
   id: string;
   fullName: string;
@@ -20,125 +31,257 @@ interface User {
   status: string;
 }
 
-const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'team' | 'direct'; id: string; name: string } | null, dmAndTeam: DMAndTeamResult }) => {
+interface SelectedChat {
+  type: 'team' | 'direct';
+  id: string;
+  name: string;
+}
+
+interface ChatComponentProps {
+  selectedChat: SelectedChat | null;
+  dmAndTeam: DMAndTeamResult;
+}
+
+const DEFAULT_CHAT_CACHE = {
+  messages: [],
+  pagination: null,
+  currentPage: 1,
+  isFetched: false
+};
+
+const MESSAGES_PER_PAGE = 30;
+
+const ChatComponent: React.FC<ChatComponentProps> = ({ selectedChat, dmAndTeam }) => {
   const dispatch = useAppDispatch();
-  const u = useAppSelector((state) => state.user, shallowEqual);
-  let userTying = useRef(false)
-  const [fetchingMessages, setFetchingMessages] = useState(false) // for not letting messageend ref to get scrolled
-  const [showChatOptions, setShowChatOptions] = useState<string | null>(null)
-  const currentUser: User = { id: u.id, fullName: u.fullName, avatar: u.avatar, username: u.username, status: "online" };
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
-  const isOnline = useAppSelector(
-    (state) =>
-      selectedChat?.type === 'direct' &&
-      state.onlineUser.onlineUsers.includes(
-        dmAndTeam.friends.find((u) => u.id === selectedChat?.id)?.userId!
-      ),
-    shallowEqual
-  );
-  const defaultChatCache = useMemo(
-    () => ({ messages: [], pagination: null, currentPage: 1, isFetched: false }),
-    []
-  );
-
-  // Get current chat's cached data from Redux
-  const currentChatCache = useAppSelector(
-    (state) => selectedChat ? selectChatCache(state, selectedChat.type, selectedChat.id) : defaultChatCache,
-
-  );
-
-  const handleDelete = async (msgId: string, forEveryone?: boolean) => {
-    if (!selectedChat) return
-    dispatch(deleteMessageFromCache({
-      chatType: selectedChat?.type,
-      chatId: selectedChat?.id,
-      messageId: msgId,
-    }));
-    setShowChatOptions(null)
-    const res = await fetch(`/api/chat/messages/delete`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        messageId: msgId,
-        forEveryone,
-        chatId: selectedChat?.id,
-        chatType: selectedChat?.type
-      })
-    })
-    const data = await res.json()
-    if (data.message == undefined) {
-      showToast(false, "Failed to delete message", data.error)
-      return
-    }
-    if (data.message === "Message deleted" && forEveryone) {
-      dispatch(sendChatMessage({
-        action: "deleteMessage",
-        chatType: selectedChat.type,
-        chatId: selectedChat.id,
-        messageId: msgId,
-      }));
-    }
-
-  };
+  const currentUserData = useAppSelector((state) => state.user, shallowEqual);
+  
+  // Refs
+  const userTypingRef = useRef(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // State
+  const [fetchingMessages, setFetchingMessages] = useState(false);
+  const [showChatOptions, setShowChatOptions] = useState<string | null>(null);
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { messages, pagination, currentPage } = currentChatCache;
-
-  // Update chat cache helper - now uses Redux
-  const updateChatCache = (chatType: 'team' | 'direct', chatId: string, updates: { messages: Message[]; pagination: any; currentPage: number }) => {
-    dispatch(setChatMessages({
-      chatType,
-      chatId,
-      messages: updates.messages,
-      pagination: updates.pagination !== undefined ? updates.pagination : currentChatCache.pagination,
-    }));
+  // Derived data
+  const currentUser: User = {
+    id: currentUserData.id,
+    fullName: currentUserData.fullName,
+    avatar: currentUserData.avatar,
+    username: currentUserData.username,
+    status: "online"
   };
 
+  const isOnline = useAppSelector(
+    (state) => {
+      if (selectedChat?.type !== 'direct') return false;
+      const friend = dmAndTeam.friends.find((u) => u.id === selectedChat.id);
+      return friend ? state.onlineUser.onlineUsers.includes(friend.userId) : false;
+    },
+    shallowEqual
+  );
+
+  const currentChatCache = useAppSelector(
+    (state) => selectedChat 
+      ? selectChatCache(state, selectedChat.type, selectedChat.id) 
+      : DEFAULT_CHAT_CACHE
+  );
+
+  const { messages, pagination, currentPage } = currentChatCache;
+
+  // Helper to get receiver user ID for direct messages
+  const getReceiverUserId = useCallback(() => {
+    if (selectedChat?.type !== 'direct') return undefined;
+    return dmAndTeam.friends.find((u) => u.id === selectedChat.id)?.userId;
+  }, [selectedChat, dmAndTeam.friends]);
+
   // Fetch messages from API
-  const fetchMessages = async (page: number = 1) => {
+  const fetchMessages = useCallback(async (page: number = 1) => {
     if (!selectedChat) return;
 
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/chat/messages/get?chatType=${selectedChat.type}&chatId=${selectedChat.id}&page=${page}&limit=30`
+        `/api/chat/messages/get?chatType=${selectedChat.type}&chatId=${selectedChat.id}&page=${page}&limit=${MESSAGES_PER_PAGE}`
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch messages');
-      }
+      if (!response.ok) throw new Error('Failed to fetch messages');
 
       const data = await response.json();
-
-
-      // Update cache
       const updatedMessages = page === 1
         ? data.messages
-        : [...data.messages, ...(currentChatCache.messages || [])];
+        : [...data.messages, ...currentChatCache.messages];
 
-      updateChatCache(selectedChat.type, selectedChat.id, {
+      dispatch(setChatMessages({
+        chatType: selectedChat.type,
+        chatId: selectedChat.id,
         messages: updatedMessages,
         pagination: data.pagination,
-        currentPage: page,
-      });
+      }));
+
       if (page === 1) {
         dispatch(sendChatMessage({
           action: "read",
           chatId: selectedChat.id,
-          reciverId: dmAndTeam.friends.find((u) => u.id === selectedChat.id)?.userId,
-        }))
-
+          reciverId: getReceiverUserId(),
+        }));
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedChat, currentChatCache.messages, dispatch, getReceiverUserId]);
 
+  // Mark unread messages as read
+  const markUnreadMessagesAsRead = useCallback(async () => {
+    if (!selectedChat || currentChatCache.isFetched) return;
+
+    dispatch(updateIsFetched({
+      chatType: selectedChat.type,
+      chatId: selectedChat.id,
+    }));
+
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].isRead !== false) break;
+      
+      await fetch(`/api/chat/messages/read`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messageId: messages[i].id })
+      });
+    }
+  }, [selectedChat, currentChatCache.isFetched, messages, dispatch]);
+
+  // Handle message deletion
+  const handleDelete = useCallback(async (msgId: string, forEveryone: boolean = false) => {
+    if (!selectedChat) return;
+
+    dispatch(deleteMessageFromCache({
+      chatType: selectedChat.type,
+      chatId: selectedChat.id,
+      messageId: msgId,
+    }));
+    setShowChatOptions(null);
+
+    try {
+      const res = await fetch(`/api/chat/messages/delete`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messageId: msgId,
+          forEveryone,
+          chatId: selectedChat.id,
+          chatType: selectedChat.type
+        })
+      });
+
+      const data = await res.json();
+      
+      if (data.message === undefined) {
+        showToast(false, "Failed to delete message", data.error);
+        return;
+      }
+
+      if (data.message === "Message deleted" && forEveryone) {
+        dispatch(sendChatMessage({
+          action: "deleteMessage",
+          chatType: selectedChat.type,
+          chatId: selectedChat.id,
+          messageId: msgId,
+        }));
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      showToast(false, "Failed to delete message", "An error occurred");
+    }
+  }, [selectedChat, dispatch]);
+
+  // Handle sending messages
+  const handleSend = useCallback(() => {
+    if (!messageText.trim() || !selectedChat) return;
+
+    if (userTypingRef.current) {
+      userTypingRef.current = false;
+      dispatch(sendChatMessage({
+        action: 'typingEnd',
+        chatId: selectedChat.id,
+      }));
+    }
+
+    const id = cuid();
+    const timestamp = new Date().toString();
+    const receiverUserId = getReceiverUserId();
+
+    dispatch(sendMessage(
+      selectedChat.type,
+      selectedChat.id,
+      id,
+      messageText,
+      timestamp,
+      timestamp,
+      receiverUserId!
+    ));
+
+    const newMessage: Message = {
+      id,
+      sender: currentUser,
+      content: messageText,
+      isRead: false,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    dispatch(addMessageToCache({
+      chatType: selectedChat.type,
+      chatId: selectedChat.id,
+      message: newMessage,
+    }));
+
+    setMessageText('');
+  }, [messageText, selectedChat, currentUser, dispatch, getReceiverUserId]);
+
+  // Handle typing indicators
+  const handleTypingStart = useCallback(() => {
+    if (userTypingRef.current || !selectedChat) return;
+    
+    userTypingRef.current = true;
+    dispatch(sendChatMessage({
+      action: 'typingStart',
+      chatId: selectedChat.id,
+    }));
+  }, [selectedChat, dispatch]);
+
+  const handleTypingEnd = useCallback(() => {
+    if (!userTypingRef.current || !selectedChat) return;
+    
+    userTypingRef.current = false;
+    dispatch(sendChatMessage({
+      action: "typingEnd",
+      chatId: selectedChat.id,
+    }));
+  }, [selectedChat, dispatch]);
+
+  // Load more messages
+  const loadMoreMessages = useCallback(() => {
+    if (pagination?.hasMore && !loading) {
+      setFetchingMessages(true);
+      fetchMessages(currentPage + 1);
+    }
+  }, [pagination, loading, currentPage, fetchMessages]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (fetchingMessages) {
+      setFetchingMessages(false);
+      return;
+    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, fetchingMessages]);
+
+  // Handle clicks outside chat options
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -146,150 +289,99 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
         setShowChatOptions(null);
       }
     };
+
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  // Load messages when chat changes
+  // Handle chat selection and lifecycle
   useEffect(() => {
-    async function op(selectedChat: { type: 'team' | 'direct'; id: string; name: string }) {
-      //a case where there are messages and fetched is false ,this case happen when a chat toast comes and user have not opened the chat ,so we give a update to read in db
-      if (currentChatCache.messages.length > 0 && !currentChatCache.isFetched) {
-        dispatch(updateIsFetched({
-          chatType: selectedChat.type,
-          chatId: selectedChat.id,
-        }))
-        for (let i = messages.length-1; i >= 0; i--) {
-          if (messages[i].isRead !== false) break
-          console.log(messages[i])
-          await fetch(`/api/chat/messages/read`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              messageId: messages[i].id,
-            })
-          })
+    if (!selectedChat) return;
 
-        }
-      }
-    }
-    if (!selectedChat) return
-    // Only fetch if not cached in Redux
     dispatch(joinChat(selectedChat.type, selectedChat.id));
+
+    // Fetch messages if not cached
     if (currentChatCache.messages.length === 0 && !currentChatCache.isFetched) {
       fetchMessages(1);
     }
-    op(selectedChat)
-    if (selectedChat.type === "direct" && currentChatCache.messages.length > 0 && currentChatCache.messages[currentChatCache.messages.length - 1].sender.id !== u.id) {
-      dispatch(sendChatMessage({
-        action: "read",
-        chatId: selectedChat.id,
-        reciverId: dmAndTeam.friends.find((u) => u.id === selectedChat.id)?.userId,
-      }))
-      if (currentChatCache.messages[currentChatCache.messages.length - 1].isRead === false) {
-        dispatch(updateMessageReadStatus({ chatId: selectedChat.id, userId: dmAndTeam.friends.find((u) => u.id === selectedChat.id)?.userId! }))
+
+    // Mark messages as read if needed
+    if (currentChatCache.messages.length > 0 && !currentChatCache.isFetched) {
+      markUnreadMessagesAsRead();
+    }
+
+    // Send read receipt for direct messages
+    if (selectedChat.type === "direct" && currentChatCache.messages.length > 0) {
+      const lastMessage = currentChatCache.messages[currentChatCache.messages.length - 1];
+      
+      if (lastMessage.sender.id !== currentUserData.id) {
+        dispatch(sendChatMessage({
+          action: "read",
+          chatId: selectedChat.id,
+          reciverId: getReceiverUserId(),
+        }));
+
+        if (lastMessage.isRead === false) {
+          dispatch(updateMessageReadStatus({
+            chatId: selectedChat.id,
+            userId: getReceiverUserId()!
+          }));
+        }
       }
     }
+
+    // Cleanup on unmount
     const handleBeforeUnload = () => {
-      if (!selectedChat) return
       dispatch(leaveChat(selectedChat.type, selectedChat.id));
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      if (selectedChat) {
-        dispatch(leaveChat(selectedChat.type, selectedChat.id));
-        dispatch(sendChatMessage({
-          action: 'typingEnd',
-          chatId: selectedChat.id,
-
-        }))
-      }
+      dispatch(leaveChat(selectedChat.type, selectedChat.id));
+      dispatch(sendChatMessage({
+        action: 'typingEnd',
+        chatId: selectedChat.id,
+      }));
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [selectedChat?.id, selectedChat?.type]);
-  useEffect(() => {
-    if (fetchingMessages) {
-      setFetchingMessages(false)
-      return
-    }
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
-  // Load more messages
-  const loadMoreMessages = () => {
-    if (pagination && pagination.hasMore && !loading) {
-      setFetchingMessages(true)
-      fetchMessages(currentPage + 1);
-    }
-  };
-
-  const handleSend = () => {
-
-    if (messageText.trim() && selectedChat) {
-      if (userTying.current) {
-        userTying.current = false;
-        dispatch(sendChatMessage({
-          action: 'typingEnd',
-          chatId: selectedChat.id,
-
-        }))
-      }
-      let id = cuid();
-      let createdAt = new Date().toString();
-      let updatedAt = new Date().toString();
-      dispatch(sendMessage(selectedChat.type, selectedChat.id, id, messageText, createdAt, updatedAt, dmAndTeam.friends.find((u) => u.id === selectedChat.id)?.userId!));
-      const newMessage: Message = {
-        id: id,
-        sender: currentUser,
-        content: messageText,
-        isRead: false,
-        createdAt: createdAt,
-        updatedAt: updatedAt,
-      };
-      // Add message to Redux cache
-      dispatch(addMessageToCache({
-        chatType: selectedChat.type,
-        chatId: selectedChat.id,
-        message: newMessage,
-      }));
-
-      setMessageText('');
-    }
-  };
-
-  if (!selectedChat) return (
-    <div className="flex-1 flex flex-col h-screen">
-      {/* Chat Header */}
-      <div className="h-16 bg-card border-b border-primary px-6 flex items-center gap-4 flex-shrink-0">
+  // Empty state
+  if (!selectedChat) {
+    return (
+      <div className="flex-1 flex flex-col h-screen">
+        <div className="h-16 bg-card border-b border-primary px-6 flex items-center gap-4 flex-shrink-0" />
+        <p className="text-primary mx-auto mt-[15%] text-2xl font-semibold">
+          Select a chat
+        </p>
       </div>
+    );
+  }
 
-      <p className="text-primary mx-auto mt-[15%] text-2xl font-semibold">Select a chat</p>
-    </div>
-  );
+  const selectedTeam = selectedChat.type === 'team' 
+    ? dmAndTeam.teams.find((t) => t.id === selectedChat.id) 
+    : null;
+
+  const selectedFriend = selectedChat.type === 'direct'
+    ? dmAndTeam.friends.find((u) => u.id === selectedChat.id)
+    : null;
 
   return (
     <div className="flex-1 flex flex-col h-screen">
       {/* Chat Header */}
-      <div className="h-16 bg-card border-b border-primary px-6 flex items-center justify-between gap-4 ">
+      <header className="h-16 bg-card border-b border-primary px-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          {selectedChat.type === 'team' && (
-            <div className="w-10 h-10 rounded-lg bg-brand/20 flex items-center justify-center">
-              <Hash className="h-5 w-5 text-brand" />
+          {selectedChat.type === 'team' ? (
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" 
+                 style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)' }}>
+              <Users className="h-5 w-5" style={{ color: '#8b5cf6' }} />
             </div>
-          )}
-          {selectedChat.type === 'team' && (
-            <div className="w-10 h-10 rounded-lg" style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)' }}>
-              <Users className="h-5 w-5 m-auto mt-2.5" style={{ color: '#8b5cf6' }} />
-            </div>
-          )}
-          {selectedChat.type === 'direct' && (
+          ) : (
             <Avatar
               className='!w-10 !h-10'
               fullName={selectedChat.name}
-              avatar={dmAndTeam.friends.find((u) => u.id === selectedChat.id)?.avatar}
+              avatar={selectedFriend?.avatar}
               getStatus={true}
               status={isOnline ? 'online' : 'offline'}
             />
@@ -298,26 +390,26 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
             <h2 className="font-semibold text-primary">{selectedChat.name}</h2>
             {selectedChat.type === 'team' && (
               <p className="text-xs text-secondary">
-                {dmAndTeam.teams.find((t) => t.id === selectedChat.id)?.memberCount} members
+                {selectedTeam?.memberCount} members
               </p>
             )}
           </div>
         </div>
         <ShowTypers selectedChat={selectedChat} />
-      </div>
+      </header>
 
       {/* Messages */}
-      <div className="flex-1 h-auto bg-primary overflow-y-auto p-6">
+      <main className="flex-1 h-auto bg-primary overflow-y-auto p-6">
         <div className="space-y-6 w-full relative">
           {/* Load More Button */}
-          {pagination && pagination.hasMore && (
+          {pagination?.hasMore && (
             <div className="flex justify-center mb-4">
               <Button
                 onClick={loadMoreMessages}
                 disabled={loading}
                 variant="outline"
                 size="sm"
-                className=" border-primary"
+                className="border-primary"
               >
                 {loading ? (
                   <>
@@ -331,7 +423,7 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
             </div>
           )}
 
-          {/* Loading state for initial load */}
+          {/* Loading state */}
           {loading && messages.length === 0 && (
             <div className="flex justify-center items-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-brand" />
@@ -339,76 +431,78 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
           )}
 
           {/* Messages List */}
-          {messages.map((msg) => (
-            <div key={msg.id} className="flex gap-4 max-w-xl ">
-              <div className=''>
-                <Avatar
-                  className="!w-10 !h-10"
-                  fullName={msg.sender.fullName}
-                  avatar={msg.sender.avatar}
-                />
-                {selectedChat.type === 'direct' && <div className={` size-3  mt-2 ml-3 rounded-full  ${msg.isRead ? 'bg-blue-800' : 'bg-secondary'}`} />}
-              </div>
-              <div>
-                <div className="flex items-baseline gap-3">
-                  <span
-                    className={`font-semibold text-primary ${msg.sender.id === currentUser.id ? '!text-[#cdc6c6]' : ''
-                      }`}
-                  >
-                    {msg.sender.fullName}
-                  </span>
-                  <span className="text-xs text-secondary">
-                    {new Date(msg.createdAt).toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                </div>
-
-                <div
-                  className="relative chat-message"
-                  onClick={(e) => {
-                    e.stopPropagation(); // prevent outside click handler from triggering
-                    setShowChatOptions((prev) => (prev === msg.id ? null : msg.id));
-                  }}
-                >
-                  <p
-                    className={`text-primary mt-1 break-words whitespace-pre-wrap overflow-hidden max-w-xl rounded-lg p-2 cursor-pointer ${msg.sender.id === currentUser.id ? 'bg-[#1f1d1d]' : 'bg-secondary'
-                      }`}
-                  >
-                    {msg.content}
-                  </p>
-
-
-                  {showChatOptions === msg.id && (
-                    <div
-                      className="absolute left-20 top-full mt-1 w-40 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md shadow-lg z-10 flex flex-col overflow-hidden"
-                    >
-
-                      {/* Delete for me */}
-                      <button
-                        onClick={() => handleDelete(msg.id)}
-                        className="flex items-center gap-2 px-3 py-2 hover:bg-[#2a2a2a] text-sm text-primary transition-colors"
-                      >
-                        <Trash className="h-4 w-4 text-yellow-500" />
-                        For me
-                      </button>
-
-                      {/* Delete for everyone */}
-                      {msg.sender.id === currentUser.id && <button
-                        onClick={() => handleDelete(msg.id, true)} // same function for now
-                        className="flex items-center gap-2 px-3 py-2 hover:bg-[#2a2a2a] text-sm text-primary transition-colors border-t border-[#2a2a2a]"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                        For everyone
-                      </button>}
-                    </div>
+          {messages.map((msg) => {
+            const isCurrentUser = msg.sender.id === currentUser.id;
+            
+            return (
+              <div key={msg.id} className="flex gap-4 max-w-xl">
+                <div>
+                  <Avatar
+                    className="!w-10 !h-10"
+                    fullName={msg.sender.fullName}
+                    avatar={msg.sender.avatar}
+                  />
+                  {selectedChat.type === 'direct' && (
+                    <div className={`size-3 mt-2 ml-3 rounded-full ${
+                      msg.isRead ? 'bg-blue-800' : 'bg-secondary'
+                    }`} />
                   )}
                 </div>
+                
+                <div>
+                  <div className="flex items-baseline gap-3">
+                    <span className={`font-semibold text-primary ${
+                      isCurrentUser ? '!text-[#cdc6c6]' : ''
+                    }`}>
+                      {msg.sender.fullName}
+                    </span>
+                    <span className="text-xs text-secondary">
+                      {new Date(msg.createdAt).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
 
+                  <div
+                    className="relative chat-message"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowChatOptions((prev) => (prev === msg.id ? null : msg.id));
+                    }}
+                  >
+                    <p className={`text-primary mt-1 break-words whitespace-pre-wrap overflow-hidden max-w-xl rounded-lg p-2 cursor-pointer ${
+                      isCurrentUser ? 'bg-[#1f1d1d]' : 'bg-secondary'
+                    }`}>
+                      {msg.content}
+                    </p>
+
+                    {showChatOptions === msg.id && (
+                      <div className="absolute left-20 top-full mt-1 w-40 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md shadow-lg z-10 flex flex-col overflow-hidden">
+                        <button
+                          onClick={() => handleDelete(msg.id)}
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-[#2a2a2a] text-sm text-primary transition-colors"
+                        >
+                          <Trash className="h-4 w-4 text-yellow-500" />
+                          For me
+                        </button>
+
+                        {isCurrentUser && (
+                          <button
+                            onClick={() => handleDelete(msg.id, true)}
+                            className="flex items-center gap-2 px-3 py-2 hover:bg-[#2a2a2a] text-sm text-primary transition-colors border-t border-[#2a2a2a]"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                            For everyone
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Empty state */}
           {!loading && messages.length === 0 && (
@@ -419,50 +513,32 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
 
           <div ref={messagesEndRef} />
         </div>
-      </div>
+      </main>
 
       {/* Message Input */}
-      <div className="p-6 bg-card border-t border-primary flex-shrink-0">
+      <footer className="p-6 bg-card border-t border-primary flex-shrink-0">
         <div className="max-w-screen flex gap-3">
           <Input
-
             value={messageText}
             onChange={(e) => {
-              setMessageText(e.target.value)
-              if (userTying.current) return;
-              userTying.current = true;
-              dispatch(sendChatMessage({
-                action: 'typingStart',
-                chatId: selectedChat.id,
-
-              }))
+              setMessageText(e.target.value);
+              handleTypingStart();
             }}
-
-            onBlur={() => {
-              if (userTying.current && selectedChat) {
-                userTying.current = false;
-                dispatch(sendChatMessage({
-                  action: "typingEnd",
-                  chatId: selectedChat.id,
-                }));
-              }
-            }}
+            onBlur={handleTypingEnd}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={`Message ${selectedChat.name}...`}
-            className="flex-1  bg-secondary text-primary border-primary"
+            className="flex-1 bg-secondary text-primary border-primary"
           />
           <Button onClick={handleSend} size="icon" className="bg-brand hover:opacity-90">
             <Send className="h-5 w-5" />
           </Button>
         </div>
-      </div>
+      </footer>
     </div>
-  )
-}
+  );
+};
 
-export default React.memo(ChatComponent,
-  (prevProps, nextProps) => {
-    return prevProps.selectedChat?.id === nextProps.selectedChat?.id &&
-      prevProps.selectedChat?.type === nextProps.selectedChat?.type;
-  }
-)
+export default React.memo(ChatComponent, (prevProps, nextProps) => {
+  return prevProps.selectedChat?.id === nextProps.selectedChat?.id &&
+    prevProps.selectedChat?.type === nextProps.selectedChat?.type;
+});
