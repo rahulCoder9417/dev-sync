@@ -125,7 +125,7 @@ const [lastMessageRead, setlastMessageRead] = useState<boolean>(user.lastMessage
 
       {/* Unread Indicator */}
       {!lastMessageRead && (
-        <span className="absolute right-16 top-5 size-3 rounded-full bg-blue-600" />
+        <span className="absolute right-16 max-md:right-2 max-md:top-3 top-5 size-3 rounded-full bg-blue-600" />
       )}
 
       {/* Quick Send */}

@@ -1,5 +1,9 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
-import { ChatToastType, showChatNotify, showToast } from "@/components/main/Toast";
+import {
+  ChatToastType,
+  showChatNotify,
+  showToast,
+} from "@/components/main/Toast";
 import { addOnlineUser, removeOnlineUser } from "./onlineUserSlice";
 import { AppDispatch, RootState } from "../store";
 // Chat message types
@@ -16,7 +20,7 @@ export type ChatMessage = {
 export interface Message {
   id: string;
   isRead: boolean;
-  
+
   sender: {
     id: string;
     fullName: string;
@@ -59,29 +63,88 @@ export interface MessagesCache {
 // Client message types for WebSocket
 // Note: createdAt and updatedAt are strings when sent over WebSocket
 export type ClientChatMessage =
-  | {action: "read"; chatId: string; reciverId: string}
+  | { action: "read"; chatId: string; reciverId: string }
   | { action: "join"; chatType: "team" | "direct"; chatId: string }
   | { action: "leave"; chatType: "team" | "direct"; chatId: string }
-  | { action: "send_message"; chatType: "team" | "direct"; chatId: string; content: string; id: string; createdAt: string; updatedAt: string; reciverId: string }
-  | { action: "typing"; chatType: "team" | "direct"; chatId: string; isTyping: boolean }
+  | {
+      action: "send_message";
+      chatType: "team" | "direct";
+      chatId: string;
+      content: string;
+      id: string;
+      createdAt: string;
+      updatedAt: string;
+      reciverId: string;
+    }
+  | {
+      action: "typing";
+      chatType: "team" | "direct";
+      chatId: string;
+      isTyping: boolean;
+    }
   | { action: string; [k: string]: any };
 
 // Server payload types
 // Note: createdAt and updatedAt are strings when received from WebSocket
 export type ServerChatPayload =
-  | {type: "chatMessage";id: string;content: string;createdAt: string;chatType: "team" | "direct";chatId: string;updatedAt: string;user: {userId: string;username: string;fullName: string;avatar: string;};}
-| {type: "chatToast";content: string;createdAt: string;chatType: "team" | "direct";id: string;updatedAt: string;chatId: string; user: {userId: string;username: string;fullName: string;avatar: string;};}
+  | {
+      type: "chatMessage";
+      id: string;
+      content: string;
+      createdAt: string;
+      chatType: "team" | "direct";
+      chatId: string;
+      updatedAt: string;
+      user: {
+        userId: string;
+        username: string;
+        fullName: string;
+        avatar: string;
+      };
+    }
+  | {
+      type: "chatToast";
+      content: string;
+      createdAt: string;
+      chatType: "team" | "direct";
+      id: string;
+      updatedAt: string;
+      chatId: string;
+      user: {
+        userId: string;
+        username: string;
+        fullName: string;
+        avatar: string;
+      };
+    }
   | { type: "user_online"; userId: string }
   | { type: "user_offline"; userId: string }
-  | { type: "deleteMessage"; chatId: string; messageId: string;chatType: "team" | "direct" }
+  | {
+      type: "deleteMessage";
+      chatId: string;
+      messageId: string;
+      chatType: "team" | "direct";
+    }
   | { type: "chatRead"; chatId: string; userId: string }
-  | { type: "typingStart"; chatId: string; userId: string ;fullName: string;avatar: string;}
+  | {
+      type: "typingStart";
+      chatId: string;
+      userId: string;
+      fullName: string;
+      avatar: string;
+    }
   | { type: "typingEnd"; chatId: string; userId: string }
   | { type: string; [k: string]: any };
 
 interface ChatState {
   ws: boolean;
-  status: "idle" | "connecting" | "connected" | "closed" | "error" | "reconnecting";
+  status:
+    | "idle"
+    | "connecting"
+    | "connected"
+    | "closed"
+    | "error"
+    | "reconnecting";
   messages: ChatMessage[];
   readyState: boolean;
   typingUsers: TypingUsersMap;
@@ -122,47 +185,49 @@ export const connectChat = createAsyncThunk<
   string,
   { token: string },
   { dispatch: AppDispatch; state: RootState }
->("chat/connect", async ({ token }, { getState, dispatch, rejectWithValue }) => {
-  const state = getState();
-  const wsUrl = state.chat.wsUrl;
+>(
+  "chat/connect",
+  async ({ token }, { getState, dispatch, rejectWithValue }) => {
+    const state = getState();
+    const wsUrl = state.chat.wsUrl;
 
-  if (!wsUrl) {
-    showToast(false, "WebSocket URL not configured (NEXT_PUBLIC_WS_URL).");
-    return rejectWithValue("WebSocket URL not configured");
+    if (!wsUrl) {
+      showToast(false, "WebSocket URL not configured (NEXT_PUBLIC_WS_URL).");
+      return rejectWithValue("WebSocket URL not configured");
+    }
+
+    if (!token) {
+      showToast(true, "No token provided for WebSocket auth.");
+      return rejectWithValue("No token provided");
+    }
+
+    const url = wsUrl + "/ws/chat" + `?token=${token}`;
+    return url;
   }
-
-  if (!token) {
-    showToast(true, "No token provided for WebSocket auth.");
-    return rejectWithValue("No token provided");
-  }
-
-  const url = wsUrl + "/ws/chat" + `?token=${token}`;
-  return url;
-});
-
+);
 
 // Process incoming server payloads
 const processPayload = (payload: ServerChatPayload, dispatch: AppDispatch) => {
   try {
     switch (payload.type) {
- 
       case "user_online":
         dispatch(addOnlineUser(payload.userId));
         break;
 
       case "deleteMessage":
-        dispatch(deleteMessageFromCache({
-          chatType:payload.chatType,
-          chatId: payload.chatId,
-          messageId: payload.messageId,
-        }));
+        dispatch(
+          deleteMessageFromCache({
+            chatType: payload.chatType,
+            chatId: payload.chatId,
+            messageId: payload.messageId,
+          })
+        );
         break;
       case "user_offline":
         dispatch(removeOnlineUser(payload.userId));
         break;
 
       case "chatMessage":
-
         const incomingMessage: Message = {
           id: payload.id,
           sender: {
@@ -176,15 +241,17 @@ const processPayload = (payload: ServerChatPayload, dispatch: AppDispatch) => {
           createdAt: payload.createdAt,
           updatedAt: payload.updatedAt,
         };
-        dispatch(addMessageToCache({
-          chatType: payload.chatType,
-          chatId: payload.chatId,
-          message: incomingMessage,
-        }));
+        dispatch(
+          addMessageToCache({
+            chatType: payload.chatType,
+            chatId: payload.chatId,
+            message: incomingMessage,
+          })
+        );
         break;
 
       case "chatToast":
-        showChatNotify(payload as any); 
+        showChatNotify(payload as any);
         const c: Message = {
           id: payload.id,
           sender: {
@@ -198,22 +265,38 @@ const processPayload = (payload: ServerChatPayload, dispatch: AppDispatch) => {
           isRead: false,
           updatedAt: payload.updatedAt,
         };
-        dispatch(addMessageToCache({
-          chatType: payload.chatType,
-          chatId: payload.chatId,
-          message: c,
-        }));
+        dispatch(
+          addMessageToCacheAsync({
+            chatType: payload.chatType,
+            chatId: payload.chatId,
+            message: c,
+          })
+        );
         // Optionally store toast messages too if user is not in the chat
         break;
 
       case "chatRead":
-        dispatch(updateMessageReadStatus({chatId:payload.chatId, userId:payload.userId}));
+        dispatch(
+          updateMessageReadStatus({
+            chatId: payload.chatId,
+            userId: payload.userId,
+          })
+        );
         break;
       case "typingStart":
-        dispatch(addTypingUser({chatId:payload.chatId, userId:payload.userId,fullName:payload.fullName,avatar:payload.avatar}));
+        dispatch(
+          addTypingUser({
+            chatId: payload.chatId,
+            userId: payload.userId,
+            fullName: payload.fullName,
+            avatar: payload.avatar,
+          })
+        );
         break;
       case "typingEnd":
-        dispatch(removeTypingUser({chatId:payload.chatId, userId:payload.userId}));
+        dispatch(
+          removeTypingUser({ chatId: payload.chatId, userId: payload.userId })
+        );
         break;
       default:
         console.log("[chatSlice] Unknown payload type:", payload.type);
@@ -233,7 +316,7 @@ const flushPayloads = (dispatch: AppDispatch, getState: () => RootState) => {
 
   const state = getState();
   const payloads = [...state.chat.pendingPayloads];
-  
+
   // Clear pending payloads
   dispatch(clearPendingPayloads());
 
@@ -248,7 +331,11 @@ const flushPayloads = (dispatch: AppDispatch, getState: () => RootState) => {
 };
 
 // Handle incoming WebSocket message
-const handleServerMessage = (raw: MessageEvent, dispatch: AppDispatch, getState: () => RootState) => {
+const handleServerMessage = (
+  raw: MessageEvent,
+  dispatch: AppDispatch,
+  getState: () => RootState
+) => {
   let payload: ServerChatPayload;
   try {
     payload = JSON.parse(raw.data);
@@ -269,7 +356,11 @@ const handleServerMessage = (raw: MessageEvent, dispatch: AppDispatch, getState:
 };
 
 // Setup WebSocket connection
-const setupWebSocket = (url: string, dispatch: AppDispatch, getState: () => RootState) => {
+const setupWebSocket = (
+  url: string,
+  dispatch: AppDispatch,
+  getState: () => RootState
+) => {
   try {
     dispatch(setStatus("connecting"));
     dispatch(setManualClose(false));
@@ -310,12 +401,15 @@ const setupWebSocket = (url: string, dispatch: AppDispatch, getState: () => Root
       // Attempt reconnect
       if (state.chat.reconnectAttempts >= state.chat.maxReconnectAttempts) {
         dispatch(setStatus("closed"));
-        showToast(false, "Chat disconnected. Max reconnect attempts reached.", ev.reason);
+        showToast(
+          false,
+          "Chat disconnected. Max reconnect attempts reached.",
+          ev.reason
+        );
         console.warn("[chatSlice] max reconnect attempts reached");
         return;
       }
 
-      
       // Exponential backoff + jitter
       const backoff = Math.min(
         30000,
@@ -330,7 +424,11 @@ const setupWebSocket = (url: string, dispatch: AppDispatch, getState: () => Root
       reconnectTimeoutId = setTimeout(() => {
         const currentState = getState();
         if (!currentState.chat.manualClose) {
-          console.log(`[chatSlice] Reconnecting... Attempt ${currentState.chat.reconnectAttempts + 1}`);
+          console.log(
+            `[chatSlice] Reconnecting... Attempt ${
+              currentState.chat.reconnectAttempts + 1
+            }`
+          );
           dispatch(incrementReconnectAttempts());
           //how reconnet happens it will setStatus reconnecting then in Client App it will once agin call useChatInitializer
           dispatch(setStatus("reconnecting"));
@@ -348,10 +446,10 @@ const setupWebSocket = (url: string, dispatch: AppDispatch, getState: () => Root
 export const sendChatMessage = (msg: ClientChatMessage) => {
   return (_dispatch: AppDispatch, getState: () => RootState) => {
     const state = getState();
-    
+
     if (!wsInstance || wsInstance.readyState !== WebSocket.OPEN) {
       console.warn("[chatSlice] trying to send but socket not open");
-      
+
       // Optionally retry after a delay
       setTimeout(() => {
         if (wsInstance && wsInstance.readyState === WebSocket.OPEN) {
@@ -384,7 +482,10 @@ const chatSlice = createSlice({
       // This is just for tracking
       state.ws = action.payload;
     },
-    updateMessageReadStatus(state, action: PayloadAction<{ chatId: string; userId: string }>) {
+    updateMessageReadStatus(
+      state,
+      action: PayloadAction<{ chatId: string; userId: string }>
+    ) {
       const { chatId, userId } = action.payload;
       const chat = state.messagesCache["direct"][chatId];
       if (!chat) return;
@@ -434,7 +535,9 @@ const chatSlice = createSlice({
       }
     },
     removeActiveChat(state, action: PayloadAction<string>) {
-      state.activeChats = state.activeChats.filter((chat) => chat !== action.payload);
+      state.activeChats = state.activeChats.filter(
+        (chat) => chat !== action.payload
+      );
     },
     enqueuePendingPayload(state, action: PayloadAction<ServerChatPayload>) {
       state.pendingPayloads.push(action.payload);
@@ -444,42 +547,77 @@ const chatSlice = createSlice({
     },
 
     //typing
-    addTypingUser(state, action: PayloadAction<{ chatId: string; userId: string; fullName: string; avatar: string }>) {
+    addTypingUser(
+      state,
+      action: PayloadAction<{
+        chatId: string;
+        userId: string;
+        fullName: string;
+        avatar: string;
+      }>
+    ) {
       const { chatId, userId, fullName, avatar } = action.payload;
       if (!state.typingUsers[chatId]) {
         state.typingUsers[chatId] = [];
       }
       state.typingUsers[chatId].push({ userId, fullName, avatar });
     },
-    removeTypingUser(state, action: PayloadAction<{ chatId: string; userId: string }>) {
+    removeTypingUser(
+      state,
+      action: PayloadAction<{ chatId: string; userId: string }>
+    ) {
       const { chatId, userId } = action.payload;
       if (state.typingUsers[chatId]) {
-        state.typingUsers[chatId] = state.typingUsers[chatId].filter((user) => user.userId !== userId);
+        state.typingUsers[chatId] = state.typingUsers[chatId].filter(
+          (user) => user.userId !== userId
+        );
       }
     },
 
     // Message cache actions
 
-    addMessageToCache(state, action: PayloadAction<{ chatType: "team" | "direct"; chatId: string; message: Message }>) {
+    addMessageToCache(
+      state,
+      action: PayloadAction<{
+        chatType: "team" | "direct";
+        chatId: string;
+        message: Message;
+      }>
+    ) {
       const { chatType, chatId, message } = action.payload;
-      
-      if (!state.messagesCache[chatType][chatId]) return
-      
-      // Mesage not pushed because if a toastNotify comes of message it will try to add to cache but if the chat was not fetched before it would not be fetched after cause only this toastNotify be saved 
-    state.messagesCache[chatType][chatId].messages.push(message);
+      if (!state.messagesCache[chatType][chatId]) {
+        // use async thunk to add message to cache
+        return
+      }
+      state.messagesCache[chatType][chatId].messages.push(message);
     },
 
-    deleteMessageFromCache(state, action: PayloadAction<{ chatType: "team" | "direct"; chatId: string; messageId: string }>) {
+    deleteMessageFromCache(
+      state,
+      action: PayloadAction<{
+        chatType: "team" | "direct";
+        chatId: string;
+        messageId: string;
+      }>
+    ) {
       const { chatType, chatId, messageId } = action.payload;
-      if (!state.messagesCache[chatType][chatId]) return
-      
-      state.messagesCache[chatType][chatId].messages = state.messagesCache[chatType][chatId].messages.filter((msg) => msg.id !== messageId);
+      if (!state.messagesCache[chatType][chatId]) return;
+
+      state.messagesCache[chatType][chatId].messages = state.messagesCache[
+        chatType
+      ][chatId].messages.filter((msg) => msg.id !== messageId);
     },
 
-
-    updateChatCache(state, action: PayloadAction<{ chatType: "team" | "direct"; chatId: string; updates: Partial<ChatCache> }>) {
+    updateChatCache(
+      state,
+      action: PayloadAction<{
+        chatType: "team" | "direct";
+        chatId: string;
+        updates: Partial<ChatCache>;
+      }>
+    ) {
       const { chatType, chatId, updates } = action.payload;
-      
+
       if (!state.messagesCache[chatType][chatId]) {
         state.messagesCache[chatType][chatId] = {
           messages: [],
@@ -488,15 +626,31 @@ const chatSlice = createSlice({
           isFetched: true,
         };
       }
-      
+
       state.messagesCache[chatType][chatId] = {
         ...state.messagesCache[chatType][chatId],
         ...updates,
       };
     },
-    setChatMessages(state, action: PayloadAction<{ chatType: "team" | "direct"; chatId: string; messages: Message[]; pagination?: PaginationInfo | null }>) {
+    updateIsFetched(
+      state,
+      action: PayloadAction<{ chatType: "team" | "direct"; chatId: string; }>
+    ) {
+      const { chatType, chatId } = action.payload;
+      if (!state.messagesCache[chatType][chatId]) return;
+      state.messagesCache[chatType][chatId].isFetched = true;
+    },
+    setChatMessages(
+      state,
+      action: PayloadAction<{
+        chatType: "team" | "direct";
+        chatId: string;
+        messages: Message[];
+        pagination?: PaginationInfo | null;
+      }>
+    ) {
       const { chatType, chatId, messages, pagination } = action.payload;
-      
+
       state.messagesCache[chatType][chatId] = {
         messages,
         pagination: pagination || null,
@@ -504,7 +658,10 @@ const chatSlice = createSlice({
         isFetched: true,
       };
     },
-    clearChatCache(state, action: PayloadAction<{ chatType: "team" | "direct"; chatId: string }>) {
+    clearChatCache(
+      state,
+      action: PayloadAction<{ chatType: "team" | "direct"; chatId: string }>
+    ) {
       const { chatType, chatId } = action.payload;
       delete state.messagesCache[chatType][chatId];
     },
@@ -519,7 +676,7 @@ const chatSlice = createSlice({
       state.status = "closed";
       state.readyState = false;
       state.activeChats = [];
-      
+
       // Close WebSocket if open
       if (wsInstance) {
         try {
@@ -529,7 +686,7 @@ const chatSlice = createSlice({
         }
         wsInstance = null;
       }
-      
+
       // Clear timeouts
       if (reconnectTimeoutId) {
         clearTimeout(reconnectTimeoutId);
@@ -573,10 +730,56 @@ export const {
   disconnectChat,
   addMessageToCache,
   updateChatCache,
+  updateIsFetched,
   setChatMessages,
   clearChatCache,
   clearAllChatCaches,
 } = chatSlice.actions;
+
+export const addMessageToCacheAsync = createAsyncThunk<
+  void,
+  { chatType: "team" | "direct"; chatId: string; message: Message },
+  { state: RootState; dispatch: AppDispatch }
+>(
+  "chat/addMessageToCacheAsync",
+  async (payload, { getState, dispatch }) => {
+    const { chatType, chatId, message } = payload;
+    const state = getState();
+    const existing = state.chat.messagesCache[chatType]?.[chatId];
+
+    // If the cache for this chat is missing or not fetched, fetch initial page
+    if (!existing || !existing.isFetched) {
+      try {
+        const response = await fetch(
+          //1 is skipped because async add message only used when there is a chat toast ,so to let the user know about read functonality we dont fetch the last message message
+          `/api/chat/messages/get?chatType=${chatType}&chatId=${chatId}&page=1&limit=30&skip=${1}`
+        );
+        //isFetched is false because when user open the chat comp and see there are message and the isFetched is false so it wil send a update to db to update read status
+        if (response.ok) {
+          const data = await response.json();
+          dispatch(
+            updateChatCache({
+              chatType,
+              chatId,
+              updates: {
+                messages: data.messages,
+                pagination: data.pagination,
+                currentPage: data.currentPage ?? 1,
+                isFetched: false,
+              },
+            })
+          );
+        }
+      } catch (err) {
+        // Swallow fetch errors for now; we still add the message locally
+        console.warn("[chatSlice] addMessageToCacheAsync fetch failed", err);
+      }
+    }
+
+    // Finally push the new message into cache
+    dispatch(addMessageToCache({ chatType, chatId, message }));
+  }
+);
 
 // Helper action creators for common operations
 export const joinChat = (chatType: "team" | "direct", chatId: string) => {
@@ -597,7 +800,16 @@ export const sendMessage = (
   updatedAt: string,
   reciverId: string
 ) => {
-  return sendChatMessage({ action: "send_message", chatType, chatId, content, id, createdAt, updatedAt,reciverId });
+  return sendChatMessage({
+    action: "send_message",
+    chatType,
+    chatId,
+    content,
+    id,
+    createdAt,
+    updatedAt,
+    reciverId,
+  });
 };
 
 export const sendTyping = (
@@ -615,19 +827,30 @@ export default chatSlice.reducer;
 // Selectors
 export const selectChatStatus = (state: RootState) => state.chat.status;
 export const selectChatReadyState = (state: RootState) => state.chat.readyState;
-export const selectIsConnected = (state: RootState) => state.chat.status === "connected";
+export const selectIsConnected = (state: RootState) =>
+  state.chat.status === "connected";
 export const selectActiveChats = (state: RootState) => state.chat.activeChats;
-export const selectMessagesCache = (state: RootState) => state.chat.messagesCache;
-export const selectChatMessagesForChat = (state: RootState, chatType: "team" | "direct", chatId: string) => 
-  state.chat.messagesCache[chatType]?.[chatId]?.messages || [];
-export const selectChatCache = (state: RootState, chatType: "team" | "direct", chatId: string) => {
-  return state.chat.messagesCache[chatType]?.[chatId] || {
-    messages: [],
-    pagination: null,
-    currentPage: 1,
-    isFetched: false,
-  };
-}
+export const selectMessagesCache = (state: RootState) =>
+  state.chat.messagesCache;
+export const selectChatMessagesForChat = (
+  state: RootState,
+  chatType: "team" | "direct",
+  chatId: string
+) => state.chat.messagesCache[chatType]?.[chatId]?.messages || [];
+export const selectChatCache = (
+  state: RootState,
+  chatType: "team" | "direct",
+  chatId: string
+) => {
+  return (
+    state.chat.messagesCache[chatType]?.[chatId] || {
+      messages: [],
+      pagination: null,
+      currentPage: 1,
+      isFetched: false,
+    }
+  );
+};
 
 // Export setup function for use in client app
 export { setupWebSocket };

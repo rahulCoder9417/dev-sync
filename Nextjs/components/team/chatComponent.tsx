@@ -3,15 +3,15 @@ import React, { useEffect, useRef, useState } from 'react'
 import Avatar from '../main/Avatar';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { dmAndTeam } from '@/app/team/page';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { shallowEqual } from 'react-redux';
 import cuid from 'cuid';
 import ShowTypers from "./ShowTypers"
-import { sendChatMessage, addMessageToCache, setChatMessages, selectChatCache, Message, joinChat, leaveChat, sendMessage, updateMessageReadStatus, deleteMessageFromCache } from '@/lib/redux/features/chatSlice';
+import { sendChatMessage, addMessageToCache, setChatMessages, selectChatCache, Message, joinChat, leaveChat, sendMessage, updateMessageReadStatus, deleteMessageFromCache, updateIsFetched } from '@/lib/redux/features/chatSlice';
 import { useMemo } from 'react';
 import { showToast } from '../main/Toast';
 import { fa } from 'zod/v4/locales';
+import { DMAndTeamResult } from '@/lib/types/chat';
 interface User {
   id: string;
   fullName: string;
@@ -20,7 +20,7 @@ interface User {
   status: string;
 }
 
-const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'team' | 'direct'; id: string; name: string } | null, dmAndTeam: dmAndTeam }) => {
+const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'team' | 'direct'; id: string; name: string } | null, dmAndTeam: DMAndTeamResult }) => {
   const dispatch = useAppDispatch();
   const u = useAppSelector((state) => state.user, shallowEqual);
   let userTying = useRef(false)
@@ -152,12 +152,36 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
 
   // Load messages when chat changes
   useEffect(() => {
+    async function op(selectedChat: { type: 'team' | 'direct'; id: string; name: string }) {
+      //a case where there are messages and fetched is false ,this case happen when a chat toast comes and user have not opened the chat ,so we give a update to read in db
+      if (currentChatCache.messages.length > 0 && !currentChatCache.isFetched) {
+        dispatch(updateIsFetched({
+          chatType: selectedChat.type,
+          chatId: selectedChat.id,
+        }))
+        for (let i = messages.length-1; i >= 0; i--) {
+          if (messages[i].isRead !== false) break
+          console.log(messages[i])
+          await fetch(`/api/chat/messages/read`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              messageId: messages[i].id,
+            })
+          })
+
+        }
+      }
+    }
     if (!selectedChat) return
     // Only fetch if not cached in Redux
     dispatch(joinChat(selectedChat.type, selectedChat.id));
     if (currentChatCache.messages.length === 0 && !currentChatCache.isFetched) {
       fetchMessages(1);
     }
+    op(selectedChat)
     if (selectedChat.type === "direct" && currentChatCache.messages.length > 0 && currentChatCache.messages[currentChatCache.messages.length - 1].sender.id !== u.id) {
       dispatch(sendChatMessage({
         action: "read",
@@ -179,15 +203,15 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
       if (selectedChat) {
         dispatch(leaveChat(selectedChat.type, selectedChat.id));
         dispatch(sendChatMessage({
-          action:'typingEnd',
-          chatId:selectedChat.id,
-          
+          action: 'typingEnd',
+          chatId: selectedChat.id,
+
         }))
       }
     };
   }, [selectedChat?.id, selectedChat?.type]);
   useEffect(() => {
-    if(fetchingMessages){
+    if (fetchingMessages) {
       setFetchingMessages(false)
       return
     }
@@ -203,14 +227,14 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
   };
 
   const handleSend = () => {
-    
+
     if (messageText.trim() && selectedChat) {
-      if(userTying.current){
+      if (userTying.current) {
         userTying.current = false;
         dispatch(sendChatMessage({
-          action:'typingEnd',
-          chatId:selectedChat.id,
-          
+          action: 'typingEnd',
+          chatId: selectedChat.id,
+
         }))
       }
       let id = cuid();
@@ -279,7 +303,7 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
             )}
           </div>
         </div>
-       <ShowTypers selectedChat={selectedChat} />
+        <ShowTypers selectedChat={selectedChat} />
       </div>
 
       {/* Messages */}
@@ -301,7 +325,7 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
                     Loading...
                   </>
                 ) : (
-                  `Load More Messages (${pagination.totalMessages - messages.length } remaining)`
+                  `Load More Messages (${pagination.totalMessages - messages.length} remaining)`
                 )}
               </Button>
             </div>
@@ -401,16 +425,16 @@ const ChatComponent = ({ selectedChat, dmAndTeam }: { selectedChat: { type: 'tea
       <div className="p-6 bg-card border-t border-primary flex-shrink-0">
         <div className="max-w-screen flex gap-3">
           <Input
-          
+
             value={messageText}
-            onChange={(e) =>{
+            onChange={(e) => {
               setMessageText(e.target.value)
-              if(userTying.current)return;
+              if (userTying.current) return;
               userTying.current = true;
               dispatch(sendChatMessage({
-               action:'typingStart',
-               chatId:selectedChat.id,
-               
+                action: 'typingStart',
+                chatId: selectedChat.id,
+
               }))
             }}
 

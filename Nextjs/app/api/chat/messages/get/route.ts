@@ -14,6 +14,8 @@ export async function GET(req: NextRequest) {
     const chatId = searchParams.get("chatId");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "30");
+    
+    const additionalSkip = parseInt(searchParams.get("skip") || "0");
 
     if (!chatType || !chatId) {
       return NextResponse.json(
@@ -22,7 +24,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const skip = (page - 1) * limit;
+    const skip = ((page - 1) * limit)+additionalSkip;
     let messages, totalCount;
 
     if (chatType === "team") {
