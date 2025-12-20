@@ -89,7 +89,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       docs.set(tabId, new Y.Doc());
     }
     return docs.get(tabId)!;
-  }, []);
+  }, [docsRef.current]);
 
   const getOrCreateAwareness = useCallback((tabId: string) => {
     if (!awarenessMap.current.has(tabId)) {
@@ -99,7 +99,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       awarenessMap.current.set(tabId, awareness);
     }
     return awarenessMap.current.get(tabId);
-  }, []);
+  }, [awarenessMap.current]);
 
 
   const handleCodeChange = useCallback((tabId: string, content: string) => {
@@ -250,7 +250,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         if (isFirstSync !== activeTab.id) {
 
           setTimeout(() => {
-            docRef.current.getText("monaco").delete(0, docRef.current.getText("monaco").length)
+            docRef.current.destroy()
+            docsRef.current.set(activeTab.id, new Y.Doc())
+            
+            docRef.current = docsRef.current.get(activeTab.id)!
+            console.log("new doc set")
             sendMessage("sync", projectId, activeTab.id);
             setIsFirstSync(activeTab.id);
           }, 0);
@@ -419,7 +423,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         return;
       }
       const updateArray = new Uint8Array(update.data);
-      console.log(updateArray)
 
       try {
         Y.applyUpdate(docRef.current, updateArray);
@@ -435,7 +438,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   /** 🧩 Editor mount handler */
   const handleEditorMount: OnMount = (editor, monaco) => {
     if (!activeTab || typeof window === "undefined") return;
-
+    console.log("mounting doc")
     // ⭐ Always get the doc for this specific tab
     const ydoc = getOrCreateDoc(activeTab.id);
     docRef.current = ydoc;
@@ -460,8 +463,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
     const binding = new MonacoBinding(ydoc.getText("monaco"), model, new Set([editor]), null);
     bindingRef.current = binding;
-
-    const awareness = getOrCreateAwareness(activeTab.id);
+    const awareness = new awarenessProtocol.Awareness(ydoc);
+    awareness.setLocalState({});
+    awarenessMap.current.set(activeTab.id, awareness)
 
     binding.awareness = awareness; // REQUIRED for MonacoBinding awareness handling
 //scroll

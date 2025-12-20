@@ -125,7 +125,9 @@ function AvatarNotify() {
                             
                   <div
                     className={`relative cursor-pointer my-2 flex flex-col rounded-md border border-secondary/20 p-3  ${n.type === "FRIENDSHIP" ? "bg-[#060220]/20" : "bg-primary/20"}`}
-                    onClick={()=>{
+                    onClick={(e)=>{
+                      e.stopPropagation();
+                      e.preventDefault()
                       dispatch(updateChatPopUp({
                         isOpen:true,
                         selectedChat:{
@@ -152,6 +154,7 @@ function AvatarNotify() {
                         variant="ghost"
                         size="icon"
                         onClick={(e) => {
+                          e.preventDefault()
                           e.stopPropagation();
                           deleteNotification(n.id);
                         }}
