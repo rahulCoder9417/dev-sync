@@ -69,7 +69,7 @@ Link (/projects/:id)
    ↓
 ProjectCard
 ```
-
+[ProjectCard](../../project/root/ProjectCard/README.MD)
 This ensures:
 
 * Prefetching via Next.js
