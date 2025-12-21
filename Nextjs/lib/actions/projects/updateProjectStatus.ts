@@ -22,7 +22,18 @@ export const updateProjectStatus = async ({
 
     const project = await db.project.findUnique({
       where: { id: projectId },
-      include: { starredBy: true,archiveprojectBy: true },
+      include: { starredBy: true,
+        archiveprojectBy: true ,
+        team:{
+          select:{
+            members:{
+              select:{
+                userId:true,
+              }
+            }
+          }
+        }
+      },
     });
 
     if (!project) {
@@ -30,6 +41,7 @@ export const updateProjectStatus = async ({
     }
 
     const isOwner = project.ownerId === dbUser.id;
+    const isMember = project.team?.members.some((m) => m.userId === dbUser.id);
 
     switch (action) {
       case "star": {
@@ -53,8 +65,9 @@ export const updateProjectStatus = async ({
       }
 
       case "archive": {
-        if (!isOwner) {
-          throw new Error("Only owner can archive/unarchive");
+        console.log(isOwner,isMember)
+        if (!(isOwner || isMember)) {
+          throw new Error("Only team member can archive/unarchive");
         }
 
         const isArchived = project.archiveprojectBy.some((u) => u.id === dbUser.id);

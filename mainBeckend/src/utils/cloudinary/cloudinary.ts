@@ -25,7 +25,7 @@ export function getPublicIdFromUrl(url: string) {
     // remove query params if any
     const cleanUrl = url.split("?")[0];
 
-    const parts = cleanUrl.split("/");
+    const parts = cleanUrl!.split("/");
     const filename = parts.pop()!;           // rahul_avatar.jpg
     const folderPath = parts.slice(parts.indexOf("upload") + 1).join("/"); 
     const publicId = folderPath + "/" + filename.replace(/\.[^/.]+$/, ""); // remove extension
@@ -45,11 +45,9 @@ export async function uploadToCloudinary({
 }: UploadOptions & { deleteBeforeUpload?: string | null }): 
 Promise<{ success: boolean; secure_url?: string; public_id?: string; error?: string }> {
     
-  if (buffer.length > 10 * 1024 * 1024) {
-    throw new Error(`File size limit exceeded (max 10MB): ${filename}`);
-  }
   return new Promise(async (resolve) => {
     try {
+        
       // delete previous file if provided
       if (deleteBeforeUpload) {
         try {

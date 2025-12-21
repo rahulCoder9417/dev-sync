@@ -22,9 +22,10 @@ const Index = async() => {
             Manage and organize your development projects
           </p>
           </span>
+          <span className="max-md:hidden">
           <Suspense fallback={<div>Loading...</div>}>
           <LaptopNotify/>
-          </Suspense>
+          </Suspense></span>
         </div>
 
         {/* Create Project Section */}

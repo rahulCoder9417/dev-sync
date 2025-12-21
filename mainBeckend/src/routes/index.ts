@@ -1,4 +1,6 @@
 import express, { Request, Response } from 'express';
+import { gitCloneController } from './gitCloneController';
+import { formParser } from '../utils/multer';
 const router = express.Router();
 
 // Health check route
@@ -18,5 +20,7 @@ router.get('/status', (req: Request, res: Response) => {
     timestamp: new Date().toISOString()
   });
 });
+
+router.post('/git/clonePublicRepo',formParser.none(), gitCloneController);
 
 export default router;
