@@ -14,6 +14,7 @@ import { shallowEqual } from 'react-redux';
 type Props = {
   node: FileNode;
   depth: number;
+  canMakeChanges:boolean;
   expandedFolders: Set<string>;
   adminMenu:any;
   setAdminMenu:any;
@@ -28,7 +29,7 @@ type Props = {
   projectId: string;
 };
 
-const TreeNodeInner: React.FC<Props> = ({ node,errorMarkers,  sendMessage, depth, expandedFolders, adminMenu,setAdminMenu,onToggle,actionHandler, onSelect, setIsFileAction, isFileAction, onContextMenu, projectId }) => {
+const TreeNodeInner: React.FC<Props> = ({ node,errorMarkers,  sendMessage, depth, expandedFolders, adminMenu,setAdminMenu,onToggle,actionHandler, onSelect, setIsFileAction, isFileAction, onContextMenu, projectId,canMakeChanges }) => {
   const [action, setAction] = useState<null | string>(null)
   const [isUserAdmin, setIsUserAdmin] = useState<boolean>(false)
   const paddingLeft = depth * 16 + 8;
@@ -55,7 +56,7 @@ const TreeNodeInner: React.FC<Props> = ({ node,errorMarkers,  sendMessage, depth
 
   const handleContext = useCallback((e: React.MouseEvent) => {
     
-    if (action) return
+    if (action || !canMakeChanges) return
     onContextMenu(e, node.type, node.parentId ?? null, node.id, node.name,isUserAdmin);
   }, [onContextMenu,isUserAdmin, node]);
 
@@ -88,34 +89,34 @@ const TreeNodeInner: React.FC<Props> = ({ node,errorMarkers,  sendMessage, depth
               <div className="flex items-center space-x-2 flex-1 min-w-0">
                 {node.type === 'folder' ? (
                   <>
-                    {isExpanded ? <ChevronDown className="w-4 h-4 text-secondary" /> : <ChevronRight className="w-4 h-4 text-secondary" />}
-                    <Folder className="w-4 h-4 text-brand" />
+                    {isExpanded ? <ChevronDown className="w-4 h-4 text-secondary flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-secondary flex-shrink-0" />}
+                    <Folder className="w-4 h-4 text-brand flex-shrink-0" />
                   </>
                 ) : (
                   <>
-                    <div className="w-4" />
-                    {getFileIcon(node.name)}
+                    <div className="w-4 flex-shrink-0" />
+                    <span className="flex-shrink-0">{getFileIcon(node.name)}</span>
                   </>
                 )}
 
-                <span className="text-primary truncate max-w-[120px]">{node.type === 'folder' ? node.name.slice(0, -1) : node.name}</span>
+                <span className="text-primary truncate flex-1 min-w-0">{node.type === 'folder' ? node.name.slice(0, -1) : node.name}</span>
 
                 {(adminMenu && adminMenu === node.id)?
-                <div className="ml-auto">
+                <div className="ml-auto flex-shrink-0">
                   <ChnageAdmin projectId={projectId} fileId={node.id} setAction={setAction} sendMessage={sendMessage} setAdminMenu={setAdminMenu} />
                 </div>
                 :
-                <div className="ml-auto">
+                <div className="ml-auto flex-shrink-0">
                   <Collaborators setBg={setbg} projectId={projectId} fileId={node.id} child={!isExpanded ? node.children : undefined} />
                 </div>}
               </div>
                 
-              <button
-                className="opacity-0 group-hover:opacity-100 p-1 cursor-pointer hover:bg-hover rounded transition-opacity"
+           { canMakeChanges &&  <button
+                className="opacity-0 group-hover:opacity-100 p-1 cursor-pointer hover:bg-hover rounded transition-opacity flex-shrink-0"
                 onClick={(e) => { e.stopPropagation(); handleContext(e as any); }}
               >
                 <MoreHorizontal className="w-3 h-3 text-secondary" />
-              </button>
+              </button>}
             </>
             )
         }
@@ -130,6 +131,7 @@ const TreeNodeInner: React.FC<Props> = ({ node,errorMarkers,  sendMessage, depth
           }
           {node.children.map(child => (
             <TreeNodeMemo
+            canMakeChanges={canMakeChanges}
               key={child.id+child.name}
               sendMessage={sendMessage}
               node={child}

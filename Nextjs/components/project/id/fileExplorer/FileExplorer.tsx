@@ -12,27 +12,26 @@ import { FaUserAstronaut } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
 import cuid from "cuid";
 import { saveNode } from '@/lib/mainUtils/fileOp';
-import { UserSummary } from '@/lib/types/types';
 interface FileExplorerProps {
   files: FileNode[];
+  canMakeChanges: boolean;
   setFiles: React.Dispatch<React.SetStateAction<FileNode[]>>;
   errorMarkers: Record<string, boolean> | null;
   tabs: Tab[];
   onFileSelect: (file: any) => void;
   onTabClose: (fileId: string) => void;
   projectId: string;
-  particapantsRef: Map<string, UserSummary>;
   setTabs:  React.Dispatch<React.SetStateAction<Tab[]>>;
   sendMessage: (message: string, projectId: string, fileId: string | undefined, data: any) => void;
   setdeletionMenu: (menu: any) => void;
 }
 
 const FileExplorer: React.FC<FileExplorerProps> = ({
+  canMakeChanges,
   files,
   setFiles,
   errorMarkers,
   tabs,
-  particapantsRef,
   onFileSelect,
   setdeletionMenu,
   sendMessage,
@@ -199,7 +198,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
   const handleCreate = async (type: string, nodeId: string, name: string) => {
     let id = cuid()
-    let newNode = {id,name,type : type as "file" | "folder",projectId,parentId:nodeId,createdAt:"",updatedAt:"", children: type === "folder" ? [] : undefined}
+    let newNode = {id,name,type : type as "file" | "folder",projectId,parentId:nodeId,createdAt:"",updatedAt:"", children: []}
   
     if (nodeId === null) {
       if (type === "file") {
@@ -241,6 +240,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   };
 
   const actionHandler = useCallback(async (action: string, nodeId?: string | null, name?: string, oldName?: string) => {
+    if(!canMakeChanges)return
     switch (action) {
       case "rename":
         await handleRename(nodeId!, name!, oldName!);
@@ -312,11 +312,11 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     <div className="bg-secondary border-r border-primary h-full flex flex-col">
       <div className="flex items-center justify-between p-3 border-b border-primary">
         <h2 className="text-primary font-medium">Explorer</h2>
-        <Button
+        {canMakeChanges && <Button
           onClick={(e) => { e.stopPropagation(); handleContextMenu(e, "folder", null, null, "--root--") }}
           className='cursor-pointer hover:bg-[#6a5d89] rounded-full p-1 hover:text-primary'>
           <Plus className="w-4 h-4" />
-        </Button>
+        </Button>}
       </div>
 
       <div className="flex-1 overflow-auto">
@@ -329,6 +329,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             key={node.id}
             node={node}
             expandedFolders={expandedFolders}
+            canMakeChanges={canMakeChanges}
             depth={0}
             errorMarkers={errorMarkers}
             onToggle={toggleFolder}

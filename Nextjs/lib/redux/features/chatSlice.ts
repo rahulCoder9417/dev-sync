@@ -390,6 +390,7 @@ const setupWebSocket = (
       wsInstance = null;
       dispatch(setWebSocket(false));
       dispatch(setReadyState(false));
+      dispatch(incrementReconnectAttempts());
 
       const state = getState();
       if (state.chat.manualClose) {

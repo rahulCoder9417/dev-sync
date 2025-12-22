@@ -2,12 +2,13 @@
 import { showToast } from "@/components/main/Toast";
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { ServerPayload, UserSummary } from "@/lib/types/types";
+
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { changeAdmin, updatePresence } from "@/lib/redux/features/collabCodeUserState";
 import { addFileOp, addSaveFileOp } from "@/lib/redux/features/collabCodeFileOp";
 import { updateCode } from "@/lib/redux/features/collabCodeEditorUpdate";
 import { parseRoomKey ,makeRoomKey} from "@/lib/mainUtils/roomParser";
+import { ServerPayload, UserInfo } from "@/lib/types/usCollabPayload";
 
 export type ClientMessage =
   | { action: "join"; projectId: string; fileId?: string | null }
@@ -36,9 +37,6 @@ export default function useCollab(opts: UseCollabOptions = {}) {
   >("idle");
   const [messages, setMessages] = useState<ServerPayload[]>([]);
   const [readyState, setReadyState] = useState<boolean>(false);
-  const [participants, setParticipants] = useState<Record<string, UserSummary>>(
-    {}
-  );
   const [deletionMenu, setdeletionMenu] = useState<{
     id: string;
     fileId: string;
@@ -47,12 +45,12 @@ export default function useCollab(opts: UseCollabOptions = {}) {
     required: number;
     done: string[];
   } | null>(null);
-  const participantsRef = useRef<Map<string, UserSummary>>(new Map());
+  const participantsRef = useRef<Map<string, UserInfo>>(new Map());
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectAttempts = useRef(0);
   const manualClose = useRef(false);
-
-  const { getToken } = useAuth(); //clerk setup
+ //clerk setup in jwt template
+  const { getToken } = useAuth();
 
   // ---------- utils + setup ----------
   const buildWsUrl = useCallback(async () => {
@@ -82,6 +80,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
 
   // ----------------- Incoming payload buffering -----------------
   // Queue incoming payloads and process them in a macrotask so dispatches occur after render
+  //why is this used ,when a payload come from server and we implement it it do read tre render,but if another payload comes at some time for that specific component then it do a re render ,but react then through a error because it was already re rendering ,so by using settimeout we can do re render in macro task
   const pendingPayloadsRef = useRef<ServerPayload[]>([]);
   const payloadFlushScheduledRef = useRef<number | null>(null);
   const deletionRef = useRef<number>(-1);
@@ -91,6 +90,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
       const performUpdates = () => {
         try {
           switch (payload.type) {
+            //when listening to yjs code chagnes
             case "YjsCodeChanges":
               dispatch(
                 updateCode({
@@ -100,6 +100,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                 })
               );
               break;
+              //cursor ,scroll and selection
             case "awareness":
               dispatch(
                 updateCode({
@@ -110,7 +111,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               );
               break;
             case "fileSave":
-              showToast(true,"File saved by ii" )
+              // file saving
               dispatch(
                 addSaveFileOp({
                   projectId: payload.projectId,
@@ -120,12 +121,12 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               );
               break;
             case "sync":
+              //when a user recive this ,then it send its yjs doc to =>to 
               dispatch(
                 updateCode({
                   fileId: payload.fileId,
                   type: "sync",
                   data: payload.to,
-                  stateDiff: payload.data,
                 })
               );
               break;
@@ -135,9 +136,9 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               }, 50)
               showToast(
                 true,
-                "File deleted by" +
+                " File deleted by " +
                   payload.deletedBy +
-                  "on file" +
+                  " on file" +
                   payload.fileName
               );
               dispatch(
@@ -150,6 +151,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               );
               break;
             case "voting":
+              //for voting of file deletion
               setdeletionMenu({
                 id: payload.fileId,
                 fileId: payload.fileId,
@@ -160,11 +162,12 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               });
               break;
             case "fileOp":
+              //file op for creation and rename
               showToast(
                 true,
-                "File Operation " +
+                " File Operation " +
                   payload.action +
-                  " done by" +
+                  " done by " +
                   payload.from.fullName +
                   "on file" +
                   payload.fileName
@@ -181,18 +184,13 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               );
               break;
             case "user_joined":
-              // showToast(true,"User joined " + payload.user.fullName)
-              // setParticipants((prev) => ({
-              //   ...prev,
-              //   [payload.user.userId]: payload.user,
-
-              // }));
+              // tell user joined
               dispatch(
                 updatePresence({
-                  projectId: payload.user.projectId,
-                  fileId: payload.user.fileId || null,
+                  projectId: payload.user.projectId!,
+                  fileId: payload.user.fileId!,
                   userId: payload.user.userId,
-                  avatar: payload.user.avatar,
+                  avatar: payload.user.avatar || "",
                   fullName: payload.user.fullName,
                   action: "join",
                 })
@@ -201,18 +199,13 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               break;
 
             case "user_left":
-         //     showToast(true,"User left " + payload.user.fullName)
-              // setParticipants((prev) => {
-              //   const copy = { ...prev };
-              //   delete copy[payload.user.userId];
-              //   return copy;
-              // });
+         //     tell user keft
               dispatch(
                 updatePresence({
-                  projectId: payload.user.projectId,
-                  fileId: payload.user.fileId || null,
+                  projectId: payload.user.projectId!,
+                  fileId: payload.user.fileId!,
                   userId: payload.user.userId,
-                  avatar: payload.user.avatar,
+                  avatar: payload.user.avatar || "",
                   fullName: payload.user.fullName,
                   action: "leave",
                 })
@@ -221,18 +214,14 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               break;
 
             case "joined":
-              // showToast(true,"You joined " + payload.you.fullName)
-              // setParticipants((prev) => ({
-              //   ...prev,
-              //   [payload.you.userId]: payload.you,
-              // }));
+              // tell you joined
               dispatch(
                 updatePresence({
-                  projectId: payload.you.projectId,
-                  fileId: payload.you.fileId || null,
+                  projectId: payload.you.projectId!,
+                  fileId: payload.you.fileId!,
                   userId: payload.you.userId,
-                  avatar: payload.you.avatar,
-                  fullName: payload.you.fullName,
+                  avatar: payload.you.avatar || "",
+                  fullName: payload.you.fullName || "",
                   action: "join",
                 })
               );
@@ -241,18 +230,13 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               break;
 
             case "left":
-              // showToast(true,"You left " + payload.you.fullName)
-              // setParticipants((prev) => {
-              //   const copy = { ...prev };
-              //   delete copy[payload.you.userId];
-              //   return copy;
-              // });
+              // tell you left
               dispatch(
                 updatePresence({
-                  projectId: payload.you.projectId,
-                  fileId: payload.you.fileId || null,
+                  projectId: payload.you.projectId!,
+                  fileId: payload.you.fileId!,
                   userId: payload.you.userId,
-                  avatar: payload.you.avatar,
+                  avatar: payload.you.avatar || "",
                   fullName: payload.you.fullName,
                   action: "leave",
                 })
@@ -262,6 +246,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                 : null;
               break;
             case "changeAdmin":
+              // change admin for a file
               dispatch(
                 changeAdmin({
                   projectId: payload.projectId,
@@ -279,8 +264,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               break;
           }
 
-          // push to local message log and call optional external handler
-      //    pushMsg(payload);
+          //extenral function
           onEvent?.(payload);
         } catch (err) {
           console.error("[useCollab] performUpdates error", err);
@@ -350,7 +334,6 @@ export default function useCollab(opts: UseCollabOptions = {}) {
         console.log("WebSocket connection opened");
         setReadyState(true)
         setStatus("connected");
-        // optionally you can send an initial ping or subscribe messages
       };
 
       ws.onmessage = (ev) => handleServer(ev);
@@ -438,15 +421,22 @@ export default function useCollab(opts: UseCollabOptions = {}) {
   }, [autoConnect, buildWsUrl, connect]);
 
   // helpers for app-level messages
+  const reSend = useRef(0) //max 5 if ws is not open it will only send 5 times
   const send = useCallback((msg: ClientMessage) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      reSend.current++
+      console.log(reSend.current)
+      if(reSend.current>5){
+        showToast(false,"[collab] trying to send but socket not open");
+        return false;
+      }
       console.warn("[collab] trying to send but socket not open");
       setTimeout(() => {
         send(msg);
-      }, 20);
+      }, 2000);
       return false;
     }
-
+     
     try {
       wsRef.current.send(JSON.stringify(msg));
       return true;
@@ -559,7 +549,6 @@ export default function useCollab(opts: UseCollabOptions = {}) {
     // state
     status,
     messages,
-    participants,
 
     // control
     connect,

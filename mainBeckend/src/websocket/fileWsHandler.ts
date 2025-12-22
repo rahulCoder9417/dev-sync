@@ -330,7 +330,7 @@ export class FileWsHandler extends BaseWsHandler {
         votingBy: key.split(":")[2],
         fileName,
         required: roomSize,
-        done: votes.size,
+        done: Array.from(votes),
       });
       this.room.broadcastToRoom(projectId, {
         type: "file_deleted",
