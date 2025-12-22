@@ -5,14 +5,13 @@ import FileExplorer from '@/components/project/id/fileExplorer/FileExplorer';
 import CodeEditor from '@/components/project/id/CodeEditor';
 import Preview from '@/components/project/id/preview/Preview';
 import ChatBot from '@/components/project/id/ChatBot';
+import { useRouter } from "next/navigation";
 
 import { ChatMessage, FileNode, ProjectById, Tab, User } from '@/lib/types/types';
 import Loader from '@/components/main/Loader';
 import useCollab from '@/customHooks/useCollab';
 import { DeleteToast } from './fileExplorer/DeleteToast';
 import ChatComponent from '@/components/team/chatComponent';
-import router from 'next/router';
-
 
 export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
   const [errorMarkers,setErrorMarkers] = useState<Record<string, boolean> | null>(null)
@@ -33,7 +32,7 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
   const [codeWidth, setCodeWidth] = useState(35); // percentage
   const [chatWidth, setChatWidth] = useState(25); // percentage
   const [previewWidth] = useState(25); // fixed percentage
-  
+  const router = useRouter()
   const isResizing = useRef<'file' | 'code' | 'chat' | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -261,9 +260,9 @@ handleFileSelect(t)
                 className="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
               />
             )}
-            <div style={{ width: visibleSection.preview ? `${chatWidth}%` : `${chatWidth}%`, minWidth: '300px' }} className="max-md:w-1/2 overflow-y-auto">
+            <div style={{ width: visibleSection.preview ? `${chatWidth}%` : `${chatWidth}%`, minWidth: '300px' }} className="max-md:w-1/2 ">
               {/* no use of last message */}
-              <ChatComponent selectedChat={{type:"team",id:data.team.id!,name:data.name}} dmAndTeam={{teams:[{id:data.team.id!,type:"team",lastMessageRead:false,name:data.name,memberCount:data.team.members.length,projectId:data.id,lastMessageAt:new Date(),}],friends:[]}} />
+              <ChatComponent useInProjectPage={true} selectedChat={{type:"team",id:data.team.id!,name:data.name}} dmAndTeam={{teams:[{id:data.team.id!,type:"team",lastMessageRead:false,name:data.name,memberCount:data.team.members.length,projectId:data.id,lastMessageAt:new Date(),}],friends:[]}} />
             </div>
           </>
         )}

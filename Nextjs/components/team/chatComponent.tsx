@@ -40,6 +40,7 @@ interface SelectedChat {
 interface ChatComponentProps {
   selectedChat: SelectedChat | null;
   dmAndTeam: DMAndTeamResult;
+  useInProjectPage?: boolean;
 }
 
 const DEFAULT_CHAT_CACHE = {
@@ -51,7 +52,7 @@ const DEFAULT_CHAT_CACHE = {
 
 const MESSAGES_PER_PAGE = 30;
 
-const ChatComponent: React.FC<ChatComponentProps> = ({ selectedChat, dmAndTeam }) => {
+const ChatComponent: React.FC<ChatComponentProps> = ({ selectedChat, dmAndTeam,useInProjectPage=false }) => {
   const dispatch = useAppDispatch();
   const currentUserData = useAppSelector((state) => state.user, shallowEqual);
   
@@ -367,10 +368,13 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ selectedChat, dmAndTeam }
     ? dmAndTeam.friends.find((u) => u.id === selectedChat.id)
     : null;
 
-  return (
-    <div className="flex-1 flex flex-col h-screen">
-      {/* Chat Header */}
-      <header className="h-16 bg-card border-b border-primary px-6 flex items-center justify-between gap-4">
+  return (<div
+    className={`flex-1 flex flex-col ${
+      useInProjectPage ? "max-h-[calc(100vh-64px)] min-h-[calc(100vh-64px)]" : "max-h-screen min-h-screen"
+    }`}
+  >
+       {/* Chat Header */}
+      <header className="min-h-16 bg-card border-b border-primary px-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           {selectedChat.type === 'team' ? (
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" 

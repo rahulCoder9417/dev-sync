@@ -3,6 +3,7 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, X } from 'lucide-react';
 import { shallowEqual } from 'react-redux';
+import { useRouter } from "next/navigation";
 
 import { Button } from '../ui/button';
 import Avatar from './Avatar';
@@ -20,12 +21,11 @@ import { updateChatPopUp } from '@/lib/redux/features/chatPopUpSlice';
 function AvatarNotify() {
   const dispatch = useAppDispatch();
   const containerRef = useRef<HTMLDivElement | null>(null);
-
-  const { fullName, avatar, notifications,username } = useAppSelector(
+  const router = useRouter()
+  const { fullName, avatar, notifications, username } = useAppSelector(
     (state) => state.user,
     shallowEqual
   );
-
   const [isOpen, setIsOpen] = useState(false);
 
   /* ---------------------------- Event Handlers ------------------------------- */
@@ -110,65 +110,69 @@ function AvatarNotify() {
               </p>
             ) : (
               notifications.map((n: Notification) => (
-                <Link
-                href={n.type === "FRIENDSHIP" ? "/settings" : "#"}
-                onClick={(e) => {
-                  
-                  deleteNotification(n.id);
-                  if (n.type === "FRIENDSHIP") {
-                    e.preventDefault();
-                  }
-                }}
-                prefetch={false}
-                key={n.id}
-              >
-                            
-                  <div
-                    className={`relative cursor-pointer my-2 flex flex-col rounded-md border border-secondary/20 p-3  ${n.type === "FRIENDSHIP" ? "bg-[#060220]/20" : "bg-primary/20"}`}
-                    onClick={(e)=>{
-                      e.stopPropagation();
-                      e.preventDefault()
-                      dispatch(updateChatPopUp({
-                        isOpen:true,
-                        selectedChat:{
-                          type:"direct",
-                          id:n.message?.dmChatRoomId || "",
-                          name: n.sender.fullName
-                        }
-                      }))
-                    }}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-2">
-                        <Avatar
-                          className="!w-9 !h-9"
-                          fullName={n.sender.fullName}
-                          avatar={n.sender.avatar}
-                        />
-                        <span className="text-sm text-primary font-medium">
-                          {n.sender.fullName}
-                        </span>
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation();
-                          deleteNotification(n.id);
-                        }}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-
-                    <p className={`mt-2 truncate ${n.type === "FRIENDSHIP" ? "text-white text-md" : "text-sm text-secondary "}`}>
+                <div
+                  key={n.id}
+                  className={`relative cursor-pointer flex gap-3 rounded-md border border-secondary/20 p-3 ${
+                    n.type === "FRIENDSHIP" ? "bg-[#060220]/20" : "bg-primary/20"
+                  }`}
+                  onClick={() => {
+                    deleteNotification(n.id);
+              
+                    if (n.type === "FRIENDSHIP") {
+                      router.push("/settings");
+                      return;
+                    }
+              
+                    dispatch(
+                      updateChatPopUp({
+                        isOpen: true,
+                        selectedChat: {
+                          type: "direct",
+                          id: n.message?.dmChatRoomId || "",
+                          name: n.sender.fullName,
+                        },
+                      })
+                    );
+                  }}
+                >
+                  {/* Avatar */}
+                  <Avatar
+                    className="!w-9 !h-9 flex-shrink-0"
+                    fullName={n.sender.fullName}
+                    avatar={n.sender.avatar}
+                  />
+              
+                  {/* Name + Message */}
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="text-sm font-medium text-primary">
+                      {n.sender.fullName}
+                    </span>
+              
+                    <p
+                      className={`mt-1 truncate ${
+                        n.type === "FRIENDSHIP"
+                          ? "text-white text-sm"
+                          : "text-secondary text-sm"
+                      }`}
+                    >
                       {n.content}
                     </p>
                   </div>
-                </Link>
-              ))
+              
+                  {/* Close Button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteNotification(n.id);
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))              
             )}
           </div>
         </div>
