@@ -412,7 +412,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
         });
         // send first scroll awareness
-
+        if(!editorRef.current) return;
+        showToast(true,"fired code editor")
         const top = editorRef.current!.getScrollTop();
         const left = editorRef.current!.getScrollLeft();
         sendMessage("awareness", projectId, tab.id, {
