@@ -188,13 +188,13 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     oldName?: string
   ) => {
     if (!canMakeChanges) return;
-let id;
+    let id;
     switch (action) {
       case "rename":
         await handleRename(nodeId!, name!, oldName!);
         break;
       case "file":
-       id = await handleCreate("file", nodeId!, name!);
+        id = await handleCreate("file", nodeId!, name!);
         break;
       case "folder":
         id = await handleCreate("folder", nodeId!, name!);
@@ -202,7 +202,7 @@ let id;
       default:
         break;
     }
-   return id
+    return id
   }, [canMakeChanges]);
 
   const handleSelect = useCallback((node: FileNode) => {
@@ -231,23 +231,28 @@ let id;
   }, []);
 
   const handleResourseUpload = useCallback(async (file: File, filename: string, nodeId: string) => {
-    const resourceType = getResourceType(filename);
+
+    const resourceType = getResourceType(filename.split(".").pop()!);
     if (!resourceType) return
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = new Uint8Array(arrayBuffer);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("filename", file.name);
+    formData.append("resourceType", resourceType);
+    formData.append("projectId", projectId);
 
     const res = await fetch("/api/cloudinaryUpload", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ buffer, filename, resourceType, projectId })
-    })
+      body: formData,
+    });
+
     const uploadRes = await res.json()
     let obj;
+    console.log("uploadRes", uploadRes)
     if (uploadRes.success) {
       obj = {
         path: filename,
         type: "file",
-        content: uploadRes.secure_url!,
+        content: uploadRes.data!,
       };
     } else {
       obj = {
@@ -256,8 +261,11 @@ let id;
         content: `Upload failed: ${uploadRes.error}`,
       };
     }
-
     const id = await actionHandler("file", nodeId!, obj.path)
+    if(!id){
+      showToast(false, "Error making file  ", "Please do a refresh");
+      return
+    }
     const r: any = await fetch(`/api/projects/fileItem/updateContent`, {
       method: 'PUT',
       headers: {
@@ -269,10 +277,9 @@ let id;
       showToast(false, "Error saving content  -> " + r.error, "Please do a refresh");
       return
     }
-    
+    saveNode(files,id!,obj.content)
     sendMessage("fileSave", projectId, id, { content: obj.content });
     setResourceTargetId(null);
-    setContextMenu(null);
   }, [actionHandler])
   // File operations processor
   const fileOpSelector = useAppSelector(
@@ -344,7 +351,8 @@ let id;
           onChange={async (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
-            handleResourseUpload(file, file.name, resourceTargetId!)
+            setContextMenu(null);
+            await handleResourseUpload(file, file.name, resourceTargetId!)
             e.target.value = "";
           }}
         />

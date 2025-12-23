@@ -6,14 +6,14 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET!,
 });
 
-type UploadType = 'image' | 'video' | 'raw';
+export type UploadType = 'image' | 'video' | 'raw';
 
 export interface UploadedAsset {
     public_id: string;
     resource_type: 'image' | 'video' | 'raw';
   }
 
-interface UploadOptions {
+export interface UploadOptions {
   buffer: Uint8Array;
   filename: string;
   folder?: string;

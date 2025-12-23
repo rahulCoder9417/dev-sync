@@ -9,6 +9,7 @@ const FILE_EXTENSIONS = {
   export const getResourceType = (
     ext: any
   ): "image" | "video" | "raw" | null => {
+    console.log("ext", ext)
     if (FILE_EXTENSIONS.IMAGE.includes(ext)) return "image";
     if (FILE_EXTENSIONS.VIDEO.includes(ext) || FILE_EXTENSIONS.AUDIO.includes(ext))
       return "video";

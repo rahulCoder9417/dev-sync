@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const { id, content } = validation.data
-
+    console.log(id,content)
     // Check if file item exists and user has access
     const existingItem = await prisma.fileItem.findFirst({
       where: {
