@@ -5,6 +5,7 @@ import path from "path";
 import { getRealProjectDir } from "../utils/getProjectDir.js";
 import { deleteFilePath, getFilePath, renameFilePaths, setFilePath } from "../utils/filePathCrud.js";
 import { Sup } from "../utils/pathSuppressor.js";
+import { downloadFile, isSupportedMediaFile } from "../controller/diskFileSave.js";
 
 // Event schema parity with main backend
 
@@ -98,6 +99,7 @@ export class FileSyncWS {
         if (ev.isDir) {
           await fs.mkdir(newAbs, { recursive: true });
         } else {
+          
           await fs.writeFile(newAbs, "", "utf8");
         }
 
@@ -110,7 +112,16 @@ export class FileSyncWS {
         if (!abs) return;
   
         Sup.suppress(abs);
-        await fs.writeFile(abs, ev.content ?? "", "utf8");
+        let fileName = path.basename(abs);
+         if (isSupportedMediaFile(fileName) && ev.content?.startsWith("http") && ev.content.includes("res.cloudinary.com") ) {
+                      console.log(`⬇️  Downloading: ${fileName}`);
+                      const buffer = await downloadFile(ev.content);
+                      await fs.writeFile(abs, buffer);
+                      console.log(`✅ Downloaded file: ${abs}`);
+                    } else {
+                      await fs.writeFile(abs, ev.content || "", "utf8");
+                      console.log(`✅ Created file: ${abs}`);
+                    }
         break;
       }
   

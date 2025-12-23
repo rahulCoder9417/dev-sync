@@ -13,6 +13,8 @@ import cuid from "cuid";
 import { saveNode } from '@/lib/mainUtils/fileOp';
 import { renameNodeInTree, removeNodeFromTree, addNodeToTree } from '@/lib/mainUtils/treeOperations';
 import FileContextMenu from './FileContext';
+import { uploadToCloudinary } from '@/lib/mainUtils/cloudinary';
+import { getResourceType } from '@/lib/mainUtils/getResourseType';
 export const fileApiService = {
   async renameFile(nodeId: string, newName: string) {
     const res = await fetch(`/api/projects/fileItem/rename`, {
@@ -20,7 +22,7 @@ export const fileApiService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: nodeId, name: newName }),
     }).then(res => res.json());
-    
+
     if (res.status !== 200) {
       throw new Error(res.error);
     }
@@ -28,10 +30,10 @@ export const fileApiService = {
   },
 
   async createFile(
-    id: string, 
-    type: string, 
-    name: string, 
-    projectId: string, 
+    id: string,
+    type: string,
+    name: string,
+    projectId: string,
     parentId: string | null
   ) {
     const res = await fetch(`/api/projects/fileItem/create`, {
@@ -39,7 +41,7 @@ export const fileApiService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, type, name, projectId, parentId }),
     }).then(res => res.json());
-    
+
     if (res.status !== 201) {
       throw new Error(res.error);
     }
@@ -75,12 +77,15 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 }) => {
   const [rootAction, setrootAction] = useState<{ type: string } | null>(null);
   const userInfo = useAppSelector(state => state.user, shallowEqual);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<any>(null);
-  const [isFileAction, setIsFileAction] = useState<null | { 
-    id: string, 
-    type: string, 
-    name?: string | undefined 
+  const [resourceTargetId, setResourceTargetId] = useState<string | null>(null);
+
+  const [isFileAction, setIsFileAction] = useState<null | {
+    id: string,
+    type: string,
+    name?: string | undefined
   }>({ id: "1", type: "1" });
   const [adminMenu, setAdminMenu] = useState<any>(null);
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
@@ -97,9 +102,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   }, []);
 
   const handleDelete = (nodeId: string, name: string) => {
-    sendMessage("vote_delete", projectId, nodeId, { 
-      fullName: userInfo.fullName, 
-      fileName: name 
+    sendMessage("vote_delete", projectId, nodeId, {
+      fullName: userInfo.fullName,
+      fileName: name
     });
   };
 
@@ -160,10 +165,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
     try {
       const res = await fileApiService.createFile(id, type, name, projectId, nodeId);
-      sendMessage("fileOp", projectId, nodeId, { 
-        type: "create", 
-        fileName: name, 
-        newNode: res.data 
+      sendMessage("fileOp", projectId, nodeId, {
+        type: "create",
+        fileName: name,
+        newNode: res.data
       });
     } catch (error: any) {
       showToast(false, "Error creating node -> " + error.message, "Node removed");
@@ -173,29 +178,31 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         projectId: projectId
       }));
     }
+    return id
   };
 
   const actionHandler = useCallback(async (
-    action: string, 
-    nodeId?: string | null, 
-    name?: string, 
+    action: string,
+    nodeId?: string | null,
+    name?: string,
     oldName?: string
   ) => {
     if (!canMakeChanges) return;
-    
+let id;
     switch (action) {
       case "rename":
         await handleRename(nodeId!, name!, oldName!);
         break;
       case "file":
-        await handleCreate("file", nodeId!, name!);
+       id = await handleCreate("file", nodeId!, name!);
         break;
       case "folder":
-        await handleCreate("folder", nodeId!, name!);
+        id = await handleCreate("folder", nodeId!, name!);
         break;
       default:
         break;
     }
+   return id
   }, [canMakeChanges]);
 
   const handleSelect = useCallback((node: FileNode) => {
@@ -223,16 +230,60 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     });
   }, []);
 
+  const handleResourseUpload = useCallback(async (file: File, filename: string, nodeId: string) => {
+    const resourceType = getResourceType(filename);
+    if (!resourceType) return
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
+
+    const res = await fetch("/api/cloudinaryUpload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ buffer, filename, resourceType, projectId })
+    })
+    const uploadRes = await res.json()
+    let obj;
+    if (uploadRes.success) {
+      obj = {
+        path: filename,
+        type: "file",
+        content: uploadRes.secure_url!,
+      };
+    } else {
+      obj = {
+        path: filename.replace(/\.[^/.]+$/, "") + ".txt",
+        type: "file",
+        content: `Upload failed: ${uploadRes.error}`,
+      };
+    }
+
+    const id = await actionHandler("file", nodeId!, obj.path)
+    const r: any = await fetch(`/api/projects/fileItem/updateContent`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id, content: obj.content }),
+    })
+    if (r.status !== 200) {
+      showToast(false, "Error saving content  -> " + r.error, "Please do a refresh");
+      return
+    }
+    
+    sendMessage("fileSave", projectId, id, { content: obj.content });
+    setResourceTargetId(null);
+    setContextMenu(null);
+  }, [actionHandler])
   // File operations processor
   const fileOpSelector = useAppSelector(
-    (state) => state.collabCodeFileOp.projects, 
+    (state) => state.collabCodeFileOp.projects,
     shallowEqual
   );
   let fileOp = fileOpSelector[projectId];
 
   useEffect(() => {
     if (!fileOp || Object.keys(fileOp)?.length === 0) return;
-    
+
     let newTree = files;
     fileOp?.forEach((item: any) => {
       switch (item.type) {
@@ -266,7 +317,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     const handleClickOutside = (e: MouseEvent) => {
       if (
         contextMenuRef.current &&
-        !contextMenuRef.current.contains(e.target as Node) && 
+        !contextMenuRef.current.contains(e.target as Node) &&
         contextMenu?.nodeId
       ) {
         setContextMenu(null);
@@ -285,12 +336,25 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   return (
     <div className="bg-secondary border-r border-primary h-full flex flex-col">
       <div className="flex items-center justify-between p-3 border-b border-primary">
+        {/* to take input for resourse */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            handleResourseUpload(file, file.name, resourceTargetId!)
+            e.target.value = "";
+          }}
+        />
+
         <h2 className="text-primary font-medium">Explorer</h2>
         {canMakeChanges && (
           <Button
-            onClick={(e) => { 
-              e.stopPropagation(); 
-              handleContextMenu(e, "folder", null, null, "--root--"); 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleContextMenu(e, "folder", null, null, "--root--");
             }}
             className='cursor-pointer hover:bg-[#6a5d89] rounded-full p-1 hover:text-primary'
           >
@@ -301,12 +365,12 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
       <div className="flex-1 overflow-auto">
         {rootAction && rootAction.type && (
-          <InputBox 
-            id={null} 
-            type={rootAction.type} 
-            Name={""} 
-            setAction={setrootAction} 
-            handleNameConfirm={(name: string) => actionHandler(rootAction.type, null, name)} 
+          <InputBox
+            id={null}
+            type={rootAction.type}
+            Name={""}
+            setAction={setrootAction}
+            handleNameConfirm={(name: string) => actionHandler(rootAction.type, null, name)}
           />
         )}
         {files.map(node => (
@@ -333,25 +397,35 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
       <FileContextMenu
         contextMenu={contextMenu}
+        onNewResourse={() => {
+
+          setResourceTargetId(contextMenu?.nodeId ?? null);
+          contextMenu.nodeId && setExpandedFolders((prev) => {
+            prev.has(contextMenu.nodeId) ? prev : prev.add(contextMenu.nodeId);
+            return prev
+          })
+
+          fileInputRef.current?.click();
+        }}
         contextMenuRef={contextMenuRef as any}
         onClose={() => setContextMenu(null)}
         onNewFile={() => {
-          contextMenu.nodeId 
+          contextMenu.nodeId
             ? (setIsFileAction({ id: contextMenu.nodeId, type: "file" }),
-               setExpandedFolders((prev) => { 
-                 prev.has(contextMenu.nodeId) ? prev : prev.add(contextMenu.nodeId); 
-                 return prev 
-               }))
+              setExpandedFolders((prev) => {
+                prev.has(contextMenu.nodeId) ? prev : prev.add(contextMenu.nodeId);
+                return prev
+              }))
             : setrootAction({ type: "file" });
           setContextMenu(null);
         }}
         onNewFolder={() => {
-          contextMenu.nodeId 
+          contextMenu.nodeId
             ? (setIsFileAction({ id: contextMenu.nodeId, type: "folder" }),
-               setExpandedFolders((prev) => { 
-                 prev.has(contextMenu.nodeId) ? prev : prev.add(contextMenu.nodeId); 
-                 return prev 
-               }))
+              setExpandedFolders((prev) => {
+                prev.has(contextMenu.nodeId) ? prev : prev.add(contextMenu.nodeId);
+                return prev
+              }))
             : setrootAction({ type: "folder" });
           setContextMenu(null);
         }}
@@ -360,10 +434,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           setContextMenu(null);
         }}
         onDelete={() => {
-          setIsFileAction({ 
-            id: contextMenu.nodeId, 
-            type: "delete", 
-            name: contextMenu.nodeName 
+          setIsFileAction({
+            id: contextMenu.nodeId,
+            type: "delete",
+            name: contextMenu.nodeName
           });
           handleDelete(contextMenu.nodeId, contextMenu.nodeName);
           setContextMenu(null);

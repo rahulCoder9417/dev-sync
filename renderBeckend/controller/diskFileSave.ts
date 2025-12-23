@@ -20,7 +20,7 @@ const SUPPORTED_EXTS = {
 /**
  * Check if file is a media file that needs downloading
  */
-function isSupportedMediaFile(filename: string): boolean {
+export function isSupportedMediaFile(filename: string): boolean {
   const ext = filename.split(".").pop()?.toLowerCase() || "";
   return [
     ...SUPPORTED_EXTS.images,
@@ -33,7 +33,7 @@ function isSupportedMediaFile(filename: string): boolean {
 /**
  * Download file from Cloudinary
  */
-async function downloadFile(url: string): Promise<Buffer> {
+export async function downloadFile(url: string): Promise<Buffer> {
   const response = await axios.get(url, { responseType: "arraybuffer" });
   return Buffer.from(response.data);
 }

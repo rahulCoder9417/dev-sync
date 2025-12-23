@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit3, Folder, Plus, Trash2, X } from 'lucide-react';
+import { Boxes, Edit3, Folder, Plus, Trash2, X } from 'lucide-react';
 import { FaUserAstronaut } from 'react-icons/fa';
 
 interface FileContextMenuProps {
@@ -8,6 +8,7 @@ interface FileContextMenuProps {
   onClose: () => void;
   onNewFile: () => void;
   onNewFolder: () => void;
+  onNewResourse: () => void;
   onRename: () => void;
   onDelete: () => void;
   onChangeAdmin?: () => void;
@@ -19,6 +20,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onClose,
   onNewFile,
   onNewFolder,
+  onNewResourse,
   onRename,
   onDelete,
   onChangeAdmin
@@ -58,6 +60,13 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
           >
             <Folder className="w-4 h-4" />
             <span>New Folder</span>
+          </button>
+          <button
+            onClick={onNewResourse}
+            className="w-full cursor-pointer px-3 py-2 text-left text-sm text-primary hover:bg-hover flex items-center space-x-2"
+          >
+            <Boxes className="w-4 h-4" />
+            <span>New Resourse</span>
           </button>
         </>
       )}
