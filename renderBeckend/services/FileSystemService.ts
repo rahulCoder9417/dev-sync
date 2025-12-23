@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { ServiceResult } from "../types.js";
 import config from "../config/index.js";
+import { loadProjectIntoDisk } from "../controller/diskFileSave.js";
 
 /**
  * File metadata for tracking
@@ -33,7 +34,7 @@ export class FileSystemService {
   private saveQueue = new Map<string, NodeJS.Timeout>();
   
   // Debounce time for saving fileMap (avoid excessive writes)
-  private readonly SAVE_DEBOUNCE_MS = 1000;
+  private readonly SAVE_DEBOUNCE_MS = 10000;
 
   /**
    * Load project file map into cache
@@ -45,26 +46,9 @@ export class FileSystemService {
         return { success: true };
       }
 
+      await loadProjectIntoDisk(projectId, false);
       const mapPath = path.join(config.projectRoot, projectId, "fileMap.json");
       
-      // Check if file exists
-      try {
-        await fs.access(mapPath);
-      } catch {
-        // File doesn't exist - initialize empty map
-        console.log(`📝 Initializing new fileMap for project=${projectId}`);
-        const emptyMap: ProjectFileMap = {
-          projectId,
-          fileMap: {},
-          reverseMap: {},
-          lastLoaded: new Date(),
-          dirty: false,
-        };
-        this.cache.set(projectId, emptyMap);
-        await this.saveProjectMap(projectId);
-        return { success: true };
-      }
-
       // Load existing map
       const raw = await fs.readFile(mapPath, "utf8");
       const fileMap = JSON.parse(raw);
@@ -121,7 +105,6 @@ export class FileSystemService {
 
     const projectMap = this.cache.get(projectId);
     if (!projectMap) return null;
-
     // Normalize folder paths (ensure trailing separator)
     const hasExt = path.extname(absPath) !== "";
     if (!hasExt && !absPath.endsWith(path.sep)) {

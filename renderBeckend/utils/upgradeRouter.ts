@@ -23,9 +23,11 @@ export async function handleUpgrade(
       await handleTerminalUpgrade(request, socket, head);
     } else if (pathname === "/ws/file-sync") {
       await handleFileSyncUpgrade(request, socket, head);
+      //called by novnc automatically
     } else if (pathname?.startsWith("/websockify/")) {
       await handleVNCUpgrade(request, socket, head);
     } else if (pathname?.startsWith("/preview/")) {
+      // Preview WebSocket (for Express apps with WebSocket support).yeh likh diya hai ,ise kam krne ke liye project me specify krna hoga uska ws url preview/userid/port?token=token ,aur addiditional  info deni hogi 
       await handlePreviewWSUpgrade(request, socket, head, pathname);
     } else {
       console.error(`❌ Unknown WebSocket path: ${pathname}`);
@@ -131,9 +133,6 @@ async function handlePreviewWSUpgrade(
   const port = pathParts[2];
   const token = absUrl.searchParams.get("token");
 
-  console.log(`👤 UserId: ${userId}`);
-  console.log(`🔌 Port: ${port}`);
-  console.log(`🎫 Token: ${token ? token.substring(0, 20) + "..." : "❌ MISSING"}`);
 
   if (!token) {
     console.log("❌ No token provided for preview WebSocket");

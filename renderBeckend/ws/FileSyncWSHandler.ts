@@ -94,8 +94,6 @@ export class FileSyncWSHandler {
    */
   private setup() {
     this.wss.on("connection", (ws: WebSocket) => {
-      console.log("🔗 File sync WebSocket connected");
-
       ws.on("message", async (buf: Buffer) => {
         try {
           const event = JSON.parse(buf.toString()) as IncomingFileEvent;
@@ -176,12 +174,10 @@ export class FileSyncWSHandler {
     // Create file or directory
     if (isDir) {
       await fs.mkdir(newAbs, { recursive: true });
-      console.log(`✅ Created folder: ${newAbs}`);
     } else {
       // Ensure parent directory exists
       await fs.mkdir(path.dirname(newAbs), { recursive: true });
       await fs.writeFile(newAbs, "", "utf8");
-      console.log(`✅ Created file: ${newAbs}`);
     }
 
     // Update file mapping
@@ -212,14 +208,11 @@ export class FileSyncWSHandler {
       content?.startsWith("http") &&
       content.includes("res.cloudinary.com")
     ) {
-      console.log(`⬇️  Downloading media file: ${fileName}`);
       const buffer = await downloadFile(content);
       await fs.writeFile(absPath, buffer);
-      console.log(`✅ Downloaded: ${absPath}`);
     } else {
       // Regular text file
       await fs.writeFile(absPath, content || "", "utf8");
-      console.log(`✅ Updated file: ${absPath}`);
     }
   }
 
@@ -241,7 +234,6 @@ export class FileSyncWSHandler {
 
     // Delete file/folder
     await fs.rm(absPath, { recursive: true, force: true });
-    console.log(`🗑️  Deleted: ${absPath}`);
 
     // Remove from file mapping
     await fileSystemService.deleteFilePath(projectId, fileFolderId);
@@ -275,7 +267,6 @@ export class FileSyncWSHandler {
 
     // Rename file/folder
     await fs.rename(oldAbs, newAbs);
-    console.log(`📝 Renamed: ${path.basename(oldAbs)} → ${path.basename(newAbs)}`);
 
     // Update file mappings (handles folders recursively)
     await fileSystemService.renameFilePath(projectId, oldAbs, newAbs);
@@ -308,8 +299,6 @@ export class FileSyncWSHandler {
         ws.send(message);
       }
     });
-
-    console.log(`📤 Broadcast: ${event.type} for project=${event.projectId}`);
   }
 
   /**

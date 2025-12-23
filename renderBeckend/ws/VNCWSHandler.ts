@@ -56,7 +56,6 @@ export class VNCWSHandler {
     }
 
     const vncPort = gui.vncPort;
-    console.log(`🔌 Connecting to VNC server at localhost:${vncPort}...`);
 
     // Create TCP socket to x11vnc
     const tcpSocket = net.connect(vncPort, "127.0.0.1");

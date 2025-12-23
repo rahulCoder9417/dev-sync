@@ -168,5 +168,5 @@ export class TerminalService {
     return messages.map(msg => `${msg}\r\n`).join('');
   }
 }
-
+//checked for refator
 export default new TerminalService();

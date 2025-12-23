@@ -3,6 +3,7 @@ import { Express, Request, Response, NextFunction } from "express";
 /**
  * Middleware to fix asset loading in preview mode
  * Redirects assets to include preview prefix and token
+ * this is used because when vite is build and to go to image or any other asset it will fetch  renderUrl/usr/ptoject/name..../imag.jpg ,thats why this refrer is used to intercept it 
  */
 export function setupAssetRedirect(app: Express): void {
   app.use((req: Request, res: Response, next: NextFunction) => {

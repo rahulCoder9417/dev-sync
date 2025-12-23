@@ -125,7 +125,6 @@ async function shutdown() {
     // Cleanup file system services
     console.log("🧹 Cleaning up file system services...");
     await fileWatcherService.cleanup();
-    await fileSystemService.cleanup();
     console.log("✅ File system services cleaned up");
 
     // Cleanup all user sessions (kills PTY processes)

@@ -3,6 +3,8 @@ import path from "path";
 import fileSystemService from "../services/FileSystemService.js";
 import fileSyncWS from "../ws/FileSyncWSHandler.js";
 import { FileSystemEvent } from "../services/FileWatcherService.js";
+import cuid from "cuid";
+import { db } from "../lib/db/db.js";
 
 /**
  * File system event handler that broadcasts changes to main backend
@@ -11,6 +13,15 @@ export class FSEventHandler {
   /**
    * Handle file system event from watcher
    */
+
+  checkFileSeprator(absPath: string) {
+    //made because in db folder name stored as / at last but ,watcher does not add / at last
+    const hasExt = path.extname(absPath) !== "";
+    if (!hasExt && !absPath.endsWith(path.sep)) {
+      absPath = absPath + path.sep;
+    }
+    return absPath;
+  }
   async handleEvent(event: FileSystemEvent): Promise<void> {
     const { type, projectId, absPath } = event;
 
@@ -47,9 +58,10 @@ export class FSEventHandler {
   /**
    * Handle file creation
    */
-  private async handleFileCreate(projectId: string, absPath: string): Promise<void> {
-    console.log(`📄 File created: ${path.basename(absPath)}`);
-
+  private async handleFileCreate(
+    projectId: string,
+    absPath: string
+  ): Promise<void> {
     // Get file ID
     const fileId = await fileSystemService.getFileIdByPath(projectId, absPath);
     if (!fileId) {
@@ -59,9 +71,14 @@ export class FSEventHandler {
 
     // Get parent directory
     const parentPath = path.dirname(absPath);
-    const parentId = await fileSystemService.getFileIdByPath(projectId, parentPath + path.sep);
+    const parentId = await fileSystemService.getFileIdByPath(
+      projectId,
+      parentPath + path.sep
+    );
     const fileName = path.basename(absPath);
-
+    const id = cuid();
+    const content = await fs.readFile(absPath, "utf8");
+    fileSystemService.setFilePath(projectId, id, absPath);
     // Broadcast create event
     fileSyncWS.broadcast({
       type: "create",
@@ -70,14 +87,33 @@ export class FSEventHandler {
       parentId: parentId || "",
       fileName,
     });
+    fileSyncWS.broadcast({
+      type: "save",
+      projectId,
+      fileId: id,
+      content,
+    });
+    await db.fileItem.create({
+      data: {
+        id,
+        name: absPath.split("/")[absPath.split("/").length - 1],
+        type: "file",
+        content: content,
+        projectId,
+        parentId: parentId || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
   }
 
   /**
    * Handle file update
    */
-  private async handleFileUpdate(projectId: string, absPath: string): Promise<void> {
-    console.log(`📝 File updated: ${path.basename(absPath)}`);
-
+  private async handleFileUpdate(
+    projectId: string,
+    absPath: string
+  ): Promise<void> {
     // Get file ID
     const fileId = await fileSystemService.getFileIdByPath(projectId, absPath);
     if (!fileId) {
@@ -102,14 +138,24 @@ export class FSEventHandler {
       fileId,
       content,
     });
+    await db.fileItem.update({
+      where: {
+        id: fileId,
+      },
+      data: {
+        content,
+        updatedAt: new Date(),
+      },
+    });
   }
 
   /**
    * Handle file deletion
    */
-  private async handleFileDelete(projectId: string, absPath: string): Promise<void> {
-    console.log(`🗑️  File deleted: ${path.basename(absPath)}`);
-
+  private async handleFileDelete(
+    projectId: string,
+    absPath: string
+  ): Promise<void> {
     // Get file ID before it's removed from cache
     const fileId = await fileSystemService.getFileIdByPath(projectId, absPath);
     if (!fileId) {
@@ -117,59 +163,76 @@ export class FSEventHandler {
       return;
     }
 
-    const fileName = path.basename(absPath);
-
     // Broadcast delete event
     fileSyncWS.broadcast({
       type: "delete",
       projectId,
       fileId,
-      fileName,
+      fileName: this.checkFileSeprator(
+        absPath.split("/")[absPath.split("/").length - 1]
+      ),
     });
+    await db.fileItem.delete({
+      where: {
+        id: fileId,
+      },
+    });
+    fileSystemService.deleteFilePath(projectId, absPath);
   }
 
   /**
    * Handle folder creation
    */
-  private async handleFolderCreate(projectId: string, absPath: string): Promise<void> {
-    console.log(`📁 Folder created: ${path.basename(absPath)}`);
-
-    // Normalize folder path (ensure trailing separator)
-    const normalizedPath = absPath.endsWith(path.sep) ? absPath : absPath + path.sep;
-
-    // Get folder ID
-    const folderId = await fileSystemService.getFileIdByPath(projectId, normalizedPath);
-    if (!folderId) {
-      console.warn(`⚠️  No folder ID found for: ${normalizedPath}`);
-      return;
-    }
-
+  private async handleFolderCreate(
+    projectId: string,
+    absPath: string
+  ): Promise<void> {
     // Get parent directory
     const parentPath = path.dirname(absPath);
-    const parentId = await fileSystemService.getFileIdByPath(projectId, parentPath + path.sep);
-    const folderName = path.basename(absPath);
-
+    const parentId = await fileSystemService.getFileIdByPath(
+      projectId,
+      parentPath + path.sep
+    );
+    const id = cuid();
+    fileSystemService.setFilePath(projectId, id, absPath + path.sep);
     // Broadcast create event
     fileSyncWS.broadcast({
       type: "create",
       projectId,
-      fileFolderId: folderId,
-      parentId: parentId || "",
-      fileName: folderName,
+      fileFolderId: id,
+      parentId: parentId || null,
+      fileName: absPath.split("/")[absPath.split("/").length - 1] + "/",
+    });
+    await db.fileItem.create({
+      data: {
+        id,
+        name: absPath.split("/")[absPath.split("/").length - 1] + "/",
+        type: "folder",
+        content: "",
+        projectId,
+        parentId: parentId || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     });
   }
 
   /**
    * Handle folder deletion
    */
-  private async handleFolderDelete(projectId: string, absPath: string): Promise<void> {
-    console.log(`🗑️  Folder deleted: ${path.basename(absPath)}`);
-
-    // Normalize folder path
-    const normalizedPath = absPath.endsWith(path.sep) ? absPath : absPath + path.sep;
+  private async handleFolderDelete(
+    projectId: string,
+    absPath: string
+  ): Promise<void> {
+    const normalizedPath = absPath.endsWith(path.sep)
+      ? absPath
+      : absPath + path.sep;
 
     // Get folder ID
-    const folderId = await fileSystemService.getFileIdByPath(projectId, normalizedPath);
+    const folderId = await fileSystemService.getFileIdByPath(
+      projectId,
+      normalizedPath
+    );
     if (!folderId) {
       console.warn(`⚠️  No folder ID found for: ${normalizedPath}`);
       return;
@@ -182,8 +245,17 @@ export class FSEventHandler {
       type: "delete",
       projectId,
       fileId: folderId,
-      fileName: folderName,
+      fileName: this.checkFileSeprator(
+        absPath.split("/")[absPath.split("/").length - 1]
+      ),
     });
+
+    await db.fileItem.delete({
+      where: {
+        id: folderId,
+      },
+    });
+    fileSystemService.deleteFilePath(projectId, normalizedPath);
   }
 }
 

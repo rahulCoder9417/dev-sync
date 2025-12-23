@@ -19,7 +19,6 @@ export interface FileSystemEvent {
   type: FileSystemEventType;
   projectId: string;
   absPath: string;
-  timestamp: Date;
 }
 
 /**
@@ -35,8 +34,7 @@ interface WatcherConfig {
   projectDir: string;
   watcher: chokidar.FSWatcher;
   handlers: Set<FileSystemEventHandler>;
-  suppressedPaths: Set<string>;
-  suppressionTimeouts: Map<string, NodeJS.Timeout>;
+  suppressionTimeouts: Map<string, number>;
 }
 
 /**
@@ -96,7 +94,6 @@ export class FileWatcherService {
         projectDir,
         watcher,
         handlers: new Set([handler]),
-        suppressedPaths: new Set(),
         suppressionTimeouts: new Map(),
       };
 
@@ -146,8 +143,7 @@ export class FileWatcherService {
       await this.handleEvent(config, {
         type: "file:create",
         projectId,
-        absPath,
-        timestamp: new Date(),
+        absPath: this.normalize(absPath),
       });
     });
 
@@ -155,8 +151,7 @@ export class FileWatcherService {
       await this.handleEvent(config, {
         type: "folder:create",
         projectId,
-        absPath,
-        timestamp: new Date(),
+        absPath: this.normalize(absPath),
       });
     });
 
@@ -164,8 +159,7 @@ export class FileWatcherService {
       await this.handleEvent(config, {
         type: "file:update",
         projectId,
-        absPath,
-        timestamp: new Date(),
+        absPath: this.normalize(absPath),
       });
     });
 
@@ -173,8 +167,7 @@ export class FileWatcherService {
       await this.handleEvent(config, {
         type: "file:delete",
         projectId,
-        absPath,
-        timestamp: new Date(),
+        absPath: this.normalize(absPath),
       });
     });
 
@@ -182,8 +175,7 @@ export class FileWatcherService {
       await this.handleEvent(config, {
         type: "folder:delete",
         projectId,
-        absPath,
-        timestamp: new Date(),
+        absPath: this.normalize(absPath),
       });
     });
 
@@ -198,11 +190,9 @@ export class FileWatcherService {
   private async handleEvent(config: WatcherConfig, event: FileSystemEvent) {
     // Check if path is suppressed
     if (this.isPathSuppressed(config, event.absPath)) {
-      console.log(`🔇 Suppressed: ${event.type} ${event.absPath}`);
       return;
     }
 
-    console.log(`📡 FS Event: ${event.type} ${path.basename(event.absPath)}`);
 
     // Call all registered handlers
     const promises = Array.from(config.handlers).map(handler =>
@@ -213,6 +203,10 @@ export class FileWatcherService {
 
     await Promise.allSettled(promises);
   }
+  
+  private normalize(p: string) {
+    return path.resolve(p);
+  }
 
   /**
    * Suppress events for a path temporarily (used for programmatic changes)
@@ -220,41 +214,23 @@ export class FileWatcherService {
   suppressPath(projectId: string, absPath: string) {
     const config = this.watchers.get(projectId);
     if (!config) return;
-
-    // Add to suppressed set
-    config.suppressedPaths.add(absPath);
-
-    // Clear existing timeout
-    const existing = config.suppressionTimeouts.get(absPath);
-    if (existing) {
-      clearTimeout(existing);
-    }
-
-    // Auto-remove after timeout
-    const timeout = setTimeout(() => {
-      config.suppressedPaths.delete(absPath);
-      config.suppressionTimeouts.delete(absPath);
-    }, this.SUPPRESSION_TIME);
-
-    config.suppressionTimeouts.set(absPath, timeout);
-
-    console.log(`🔇 Suppressing events for: ${absPath}`);
+    config.suppressionTimeouts.set(this.normalize(absPath), Date.now());
   }
 
   /**
    * Check if path or any parent is suppressed
    */
   private isPathSuppressed(config: WatcherConfig, absPath: string): boolean {
-    // Check exact match
-    if (config.suppressedPaths.has(absPath)) {
-      return true;
-    }
 
-    // Check if any parent directory is suppressed
-    let current = absPath;
-    while (current !== path.dirname(current)) {
-      current = path.dirname(current);
-      if (config.suppressedPaths.has(current)) {
+
+    const key = this.normalize(absPath);
+    for (const [p, ts] of config.suppressionTimeouts.entries()) {
+      if (Date.now() - ts > this.SUPPRESSION_TIME) {
+        config.suppressionTimeouts.delete(p);
+        continue;
+      }
+
+      if (key === p || key.startsWith(p + path.sep)) {
         return true;
       }
     }
@@ -337,7 +313,7 @@ export class FileWatcherService {
     return {
       totalWatchers: configs.length,
       totalHandlers: configs.reduce((sum, c) => sum + c.handlers.size, 0),
-      suppressedPaths: configs.reduce((sum, c) => sum + c.suppressedPaths.size, 0),
+      suppressedPaths: configs.reduce((sum, c) => sum + c.suppressionTimeouts.size, 0),
     };
   }
 
