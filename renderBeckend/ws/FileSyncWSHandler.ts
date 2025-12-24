@@ -121,6 +121,8 @@ export class FileSyncWSHandler {
     const { projectId } = event;
 
     try {
+      
+      console.log(event)
       switch (event.type) {
         case "file:create":
           await this.handleCreate(event);
@@ -154,13 +156,10 @@ export class FileSyncWSHandler {
     const { projectId, fileFolderId, fileName, isDir, parentId } = event;
 
     // Get parent directory path
-    const parentAbs = await fileSystemService.getFilePath(projectId, parentId);
-    if (!parentAbs) {
-      console.error(`❌ Parent not found: ${parentId}`);
-      return;
-    }
+    const parentAbs = await fileSystemService.getFilePath(projectId, parentId) || null
 
-    const newAbs = path.join(parentAbs, fileName);
+
+    const newAbs = path.join(parentAbs || config.projectRoot, fileName);
 
     // Check if path should be ignored
     if (this.isIgnored(newAbs)) {

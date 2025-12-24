@@ -33,7 +33,7 @@ interface WatcherConfig {
   projectId: string;
   projectDir: string;
   watcher: chokidar.FSWatcher;
-  handlers: Set<FileSystemEventHandler>;
+  handlers: FileSystemEventHandler;
   suppressionTimeouts: Map<string, number>;
 }
 
@@ -70,7 +70,7 @@ export class FileWatcherService {
       // Return existing watcher if already watching
       if (this.watchers.has(projectId)) {
         const config = this.watchers.get(projectId)!;
-        config.handlers.add(handler);
+        config.handlers = handler;
         console.log(`♻️  Reusing existing watcher for project=${projectId}`);
         return { success: true };
       }
@@ -93,7 +93,7 @@ export class FileWatcherService {
         projectId,
         projectDir,
         watcher,
-        handlers: new Set([handler]),
+        handlers: handler,
         suppressionTimeouts: new Map(),
       };
 
@@ -193,15 +193,9 @@ export class FileWatcherService {
       return;
     }
 
-
-    // Call all registered handlers
-    const promises = Array.from(config.handlers).map(handler =>
-      handler(event).catch(error => {
-        console.error(`❌ Handler error for ${event.type}:`, error);
-      })
-    );
-
-    await Promise.allSettled(promises);
+await config.handlers(event).catch(error => {
+  console.error(`❌ Handler error for ${event.type}:`, error);
+})
   }
   
   private normalize(p: string) {
@@ -238,27 +232,6 @@ export class FileWatcherService {
     return false;
   }
 
-  /**
-   * Add additional handler to existing watcher
-   */
-  addHandler(projectId: string, handler: FileSystemEventHandler): boolean {
-    const config = this.watchers.get(projectId);
-    if (!config) return false;
-
-    config.handlers.add(handler);
-    return true;
-  }
-
-  /**
-   * Remove handler from watcher
-   */
-  removeHandler(projectId: string, handler: FileSystemEventHandler): boolean {
-    const config = this.watchers.get(projectId);
-    if (!config) return false;
-
-    config.handlers.delete(handler);
-    return true;
-  }
 
   /**
    * Stop watcher for a project
@@ -312,7 +285,6 @@ export class FileWatcherService {
     const configs = Array.from(this.watchers.values());
     return {
       totalWatchers: configs.length,
-      totalHandlers: configs.reduce((sum, c) => sum + c.handlers.size, 0),
       suppressedPaths: configs.reduce((sum, c) => sum + c.suppressionTimeouts.size, 0),
     };
   }

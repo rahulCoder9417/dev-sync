@@ -73,6 +73,7 @@ constructor(){
 
     this.ensureConnection();
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log("event",event)
       this.ws.send(JSON.stringify(event));
     } else {
       this.queue.push(event);
