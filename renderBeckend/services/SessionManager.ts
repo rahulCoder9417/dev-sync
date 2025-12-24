@@ -74,14 +74,11 @@ export class SessionManager {
   /**
    * Generate preview token for port
    */
-  generatePreviewToken(userId: string, port: string): string {
-    const data = `${userId}:${port}:${Date.now()}`;
-    return crypto
-      .createHmac("sha256", config.proxy.previewSecret)
-      .update(data)
-      .digest("hex");
+  generatePreviewToken(userId: string, port: string) {
+    const secret = process.env.PREVIEW_SECRET || "supersecret";
+    const data = `${userId}:${port}`;
+    return crypto.createHmac("sha256", secret).update(data).digest("hex");
   }
-
   /**
    * Add or update preview entry
    */

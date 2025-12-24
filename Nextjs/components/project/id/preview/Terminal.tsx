@@ -34,6 +34,7 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
           case "output":
             if (typeof payload.data === "string") {
               if (payload.data.startsWith("PREVIEW:")) {
+                console.log(payload.data)
                 const [port, token] = payload.data.replace("PREVIEW:", "").split(":")
                 if (port) {
                   setPorts((prev) => {
