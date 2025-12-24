@@ -277,7 +277,12 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       showToast(false, "Error saving content  -> " + r.error, "Please do a refresh");
       return
     }
-    saveNode(files,id!,obj.content)
+    dispatch(addFileOp({
+      type: "save",
+      id: id,
+      content: obj.content,
+      projectId: projectId
+    }));
     sendMessage("fileSave", projectId, id, { content: obj.content });
     setResourceTargetId(null);
   }, [actionHandler])
