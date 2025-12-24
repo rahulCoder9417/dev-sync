@@ -62,12 +62,6 @@ export class FSEventHandler {
     projectId: string,
     absPath: string
   ): Promise<void> {
-    // Get file ID
-    const fileId = await fileSystemService.getFileIdByPath(projectId, absPath);
-    if (!fileId) {
-      console.warn(`⚠️  No file ID found for: ${absPath}`);
-      return;
-    }
 
     // Get parent directory
     const parentPath = path.dirname(absPath);
@@ -83,7 +77,7 @@ export class FSEventHandler {
     fileSyncWS.broadcast({
       type: "create",
       projectId,
-      fileFolderId: fileId,
+      fileFolderId: id,
       parentId: parentId || "",
       fileName,
     });

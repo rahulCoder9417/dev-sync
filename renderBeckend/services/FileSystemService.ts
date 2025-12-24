@@ -3,6 +3,7 @@ import path from "path";
 import { ServiceResult } from "../types.js";
 import config from "../config/index.js";
 import { loadProjectIntoDisk } from "../controller/diskFileSave.js";
+import { getRealProjectDir } from "../utils/getProjectDir.js";
 
 /**
  * File metadata for tracking
@@ -90,7 +91,8 @@ export class FileSystemService {
 
     // Root directory case
     if (!fileId) {
-      return path.join(config.projectRoot, projectId);
+      
+    return await getRealProjectDir(config.projectRoot, projectId);
     }
 
     const projectMap = this.cache.get(projectId);

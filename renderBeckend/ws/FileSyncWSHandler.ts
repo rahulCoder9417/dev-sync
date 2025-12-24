@@ -158,8 +158,8 @@ export class FileSyncWSHandler {
     // Get parent directory path
     const parentAbs = await fileSystemService.getFilePath(projectId, parentId) || null
 
-
-    const newAbs = path.join(parentAbs || config.projectRoot, fileName);
+if(!parentAbs)return
+    const newAbs = path.join(parentAbs , fileName);
 
     // Check if path should be ignored
     if (this.isIgnored(newAbs)) {

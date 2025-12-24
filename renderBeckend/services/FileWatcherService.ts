@@ -192,7 +192,7 @@ export class FileWatcherService {
     if (this.isPathSuppressed(config, event.absPath)) {
       return;
     }
-
+    console.log(event)
 await config.handlers(event).catch(error => {
   console.error(`❌ Handler error for ${event.type}:`, error);
 })
