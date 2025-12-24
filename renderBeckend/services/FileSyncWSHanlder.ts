@@ -171,6 +171,7 @@ export class FileSyncWSHandler {
     }
 
     // Suppress watcher events for this path
+    console.log(`Suppressing watcher events for: ${newAbs}`);
     fileWatcherService.suppressPath(projectId, newAbs);
 
     // Create file or directory

@@ -189,6 +189,7 @@ export class FileWatcherService {
    */
   private async handleEvent(config: WatcherConfig, event: FileSystemEvent) {
     // Check if path is suppressed
+    console.log(`Watcher fired: ${event.absPath}`);
     if (this.isPathSuppressed(config, event.absPath)) {
       return;
     }
@@ -215,10 +216,11 @@ await config.handlers(event).catch(error => {
    * Check if path or any parent is suppressed
    */
   private isPathSuppressed(config: WatcherConfig, absPath: string): boolean {
-
-
     const key = this.normalize(absPath);
+    
+    console.log(`Checking suppression for: ${absPath}`);
     for (const [p, ts] of config.suppressionTimeouts.entries()) {
+      console.log(`Checking suppression for: ${p}`);
       if (Date.now() - ts > this.SUPPRESSION_TIME) {
         config.suppressionTimeouts.delete(p);
         continue;

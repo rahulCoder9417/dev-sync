@@ -171,18 +171,12 @@ export class VNCSessionService {
       console.log(`🪟 Starting ${config.gui.windowManager} on ${display}...`);
 
       const wm = spawn(config.gui.windowManager, [], {
-        stdio: ["ignore", "pipe", "pipe"],
+        stdio: ["ignore", "ignore", "ignore"],
         detached: false,
         env: { ...process.env, DISPLAY: display },
       });
 
-      wm.stdout?.on("data", (data) =>
-        console.log(`[${config.gui.windowManager} ${display}] ${data.toString().trim()}`)
-      );
-
-      wm.stderr?.on("data", (data) =>
-        console.error(`[${config.gui.windowManager} ${display}] ${data.toString().trim()}`)
-      );
+      
 
       wm.on("error", (err) => {
         console.error(`❌ Window manager error on ${display}:`, err);
