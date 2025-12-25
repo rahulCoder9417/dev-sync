@@ -15,7 +15,7 @@ const PROJECT_ROOT = "/usr/src/app/projects";
 export const checkFileSeprator =(absPath:string)=>{
   //made because in db folder name stored as / at last but ,watcher does not add / at last 
   const hasExt = path.extname(absPath) !== "";
-  if (!hasExt && !absPath.endsWith(path.sep)) {
+  if (!hasExt && !absPath.endsWith(path.sep) && !absPath.startsWith(".")) {
     absPath = absPath + path.sep;
   }
   return absPath;
@@ -46,7 +46,8 @@ export async function handleFileCreate(
     fileId: id ,
     content,
   })
-  const newFileItem = await db.fileItem.create({
+  try{
+    const newFileItem = await db.fileItem.create({
     data: {
       id,
       name:absPath.split("/")[absPath.split("/").length - 1],
@@ -59,6 +60,10 @@ export async function handleFileCreate(
     },
 
   })
+}
+catch(e){
+  console.log("error in handleFileCreate",e)
+}
 }
 
 // ---------------- FOLDER CREATE ----------------
@@ -80,7 +85,8 @@ export async function handleFolderCreate(
     parentId: parentId || null,
     fileName: absPath.split("/")[absPath.split("/").length - 1] + "/",
   })
-  const newFileItem = await db.fileItem.create({
+  try{
+    const newFileItem = await db.fileItem.create({
     data: {
       id,
       name:absPath.split("/")[absPath.split("/").length - 1]+"/",
@@ -93,6 +99,10 @@ export async function handleFolderCreate(
     },
 
   })
+}
+catch(e){
+  console.log("error in handleFolderCreate",e)
+}
 }
 
 // ---------------- FILE UPDATE ----------------
@@ -111,7 +121,8 @@ export async function handleFileUpdate(
     fileId: fileId || null,
     content,
   })
-  await db.fileItem.update({
+  try{
+    await db.fileItem.update({
     where: {
       id: fileId,
     },
@@ -120,6 +131,10 @@ export async function handleFileUpdate(
       updatedAt: new Date(),
     },
   })
+}
+catch(e){
+  console.log("error in handleFileUpdate",e)
+}
 }
 
 // ---------------- FILE DELETE ----------------
@@ -137,11 +152,16 @@ export async function handleFileDelete(
     fileName: checkFileSeprator(absPath.split("/")[absPath.split("/").length - 1]),
     fileId: fileId || null,
   })
-  await db.fileItem.delete({
+  try{
+    await db.fileItem.delete({
     where: {
       id: fileId,
     },
   })
+}
+catch(e){
+  console.log("error in handleFileDelete",e)
+}
   FilePathCrud.deleteFilePath(projectId, fileId)
   console.log("[FS] file:delete", absPath);
 }
@@ -161,11 +181,16 @@ export async function handleFolderDelete(
     projectId,
     fileId: fileId || null,
   })
-  await db.fileItem.delete({
+  try{
+    await db.fileItem.delete({
     where: {
       id: fileId,
     },
   })
+}
+catch(e){
+  console.log("error in handleFolderDelete",e)
+}
   FilePathCrud.deleteFilePath(projectId, fileId)
   console.log("[FS] folder:delete", absPath);
 }

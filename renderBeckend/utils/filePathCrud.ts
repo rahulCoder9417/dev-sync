@@ -109,7 +109,7 @@ export class FileSystemService {
     if (!projectMap) return null;
     // Normalize folder paths (ensure trailing separator)
     const hasExt = path.extname(absPath) !== "";
-    if (!hasExt && !absPath.endsWith(path.sep)) {
+    if (!hasExt && !absPath.endsWith(path.sep) && !absPath.startsWith(".")) {
       absPath = absPath + path.sep;
     }
 

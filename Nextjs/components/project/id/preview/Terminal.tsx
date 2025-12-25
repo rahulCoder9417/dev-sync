@@ -5,9 +5,14 @@ import { FitAddon } from "xterm-addon-fit"
 import "xterm/css/xterm.css"
 import { useAppSelector } from "@/lib/redux/hooks"
 import useTerminal from "@/customHooks/useTerminal"
-import { randomUUID } from "crypto"
 
 type PortInfo = { port: string; token: string }
+
+type Shortcut = {
+  id: string
+  label: string
+  command: string
+}
 
 type TerminalProps = {
   setIframeUrl?: (url: string) => void
@@ -15,7 +20,11 @@ type TerminalProps = {
   projectId?: string
 }
 
-const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,projectId = ""}) => {
+const Terminal: React.FC<TerminalProps> = ({ 
+  setIframeUrl, 
+  className = "", 
+  projectId = "" 
+}) => {
   const terminalRef = useRef<HTMLDivElement | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
   const termRef = useRef<XTerminal | null>(null)
@@ -23,8 +32,16 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
   const [showGUI, setShowGUI] = useState(false)
   const userId = useAppSelector((state) => state.user.id)
 
+  // Shortcuts state
+  const [shortcuts, setShortcuts] = useState<Shortcut[]>([
+    { id: "1", label: "npm start", command: "npm start" },
+    { id: "2", label: "npm install", command: "npm install" },
+    { id: "3", label: "Clear", command: "clear" },
+  ])
+  const [showShortcutDialog, setShowShortcutDialog] = useState(false)
+  const [newShortcut, setNewShortcut] = useState({ label: "", command: "" })
 
-  const { status, start, input, resize, stop,disconnect } = useTerminal({
+  const { status, start, input, resize, stop, disconnect } = useTerminal({
     onMessage: (payload: any) => {
       const term = termRef.current
       if (!term) return
@@ -68,7 +85,6 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
     termRef: termRef,
   })
 
-  // Prevent xterm crash by ensuring element has real size
   const safeFit = () => {
     const fit = fitAddonRef.current
     const term = termRef.current
@@ -83,13 +99,43 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
     resize(term.cols, term.rows)
   }
 
-  useEffect(()=>{
-    return()=>{
+  // Execute command in terminal
+  const executeCommand = (command: string) => {
+    if (!termRef.current) return
+    
+    // Type the command
+    input(command)
+    // Send enter key
+    input('\r')
+  }
+
+  // Add new shortcut
+  const addShortcut = () => {
+    if (!newShortcut.label || !newShortcut.command) return
+    
+    const shortcut: Shortcut = {
+      id: Date.now().toString(),
+      label: newShortcut.label,
+      command: newShortcut.command,
+    }
+    
+    setShortcuts([...shortcuts, shortcut])
+    setNewShortcut({ label: "", command: "" })
+    setShowShortcutDialog(false)
+  }
+
+  // Delete shortcut
+  const deleteShortcut = (id: string) => {
+    setShortcuts(shortcuts.filter(s => s.id !== id))
+  }
+
+  useEffect(() => {
+    return () => {
       stop()
       disconnect()
     }
-  }
-  ,[])
+  }, [])
+
   useEffect(() => {
     if (!terminalRef.current) return
 
@@ -110,7 +156,6 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
 
     term.open(terminalRef.current)
 
-    // Fit after DOM is fully painted
     setTimeout(() => safeFit(), 0)
 
     start(term.cols, term.rows)
@@ -127,7 +172,6 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
     }
   }, [start, input, resize, stop])
 
-  // Fit after any UI transitions
   useEffect(() => {
     const el = terminalRef.current
     if (!el) return
@@ -138,7 +182,7 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
     return () => el.removeEventListener("transitionend", handler)
   }, [showGUI])
 
-  const API_URL = "https"+process.env.NEXT_PUBLIC_WS_URL_TERMINAL
+  const API_URL = "https" + process.env.NEXT_PUBLIC_WS_URL_TERMINAL
   const guiURL = `${API_URL}/gui/${encodeURIComponent(userId || "")}`
 
   const openPreview = (p: PortInfo) => {
@@ -152,13 +196,97 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
 
   return (
     <div className={`${className} h-full w-full flex flex-col`}>
+      {/* Shortcuts Bar */}
+      <div className="px-3 py-2 bg-neutral-800 border-b border-neutral-700 flex gap-2 items-center flex-wrap">
+        <span className="text-white text-sm font-semibold mr-2">Shortcuts:</span>
+        
+        {shortcuts.map((shortcut) => (
+          <div key={shortcut.id} className="relative group">
+            <button
+              className="bg-violet-700 hover:bg-violet-600 text-white px-3 py-1.5 rounded text-sm border border-violet-600"
+              onClick={() => executeCommand(shortcut.command)}
+              title={shortcut.command}
+            >
+              ▶ {shortcut.label}
+            </button>
+            <button
+              className="absolute -top-1 -right-1 bg-red-600 hover:bg-red-500 text-white rounded-full w-5 h-5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => deleteShortcut(shortcut.id)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        
+        <button
+          className="bg-neutral-700 hover:bg-neutral-600 text-white px-3 py-1.5 rounded text-sm border border-neutral-600"
+          onClick={() => setShowShortcutDialog(true)}
+        >
+          + Add Shortcut
+        </button>
+      </div>
+
+      {/* Shortcut Dialog */}
+      {showShortcutDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-neutral-800 p-6 rounded-lg border border-neutral-700 w-96">
+            <h3 className="text-white text-lg font-semibold mb-4">Add New Shortcut</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-white text-sm block mb-1">Label</label>
+                <input
+                  type="text"
+                  className="w-full bg-neutral-900 text-white px-3 py-2 rounded border border-neutral-700 focus:border-violet-600 focus:outline-none"
+                  placeholder="e.g., npm start"
+                  value={newShortcut.label}
+                  onChange={(e) => setNewShortcut({ ...newShortcut, label: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="text-white text-sm block mb-1">Command</label>
+                <input
+                  type="text"
+                  className="w-full bg-neutral-900 text-white px-3 py-2 rounded border border-neutral-700 focus:border-violet-600 focus:outline-none"
+                  placeholder="e.g., npm start"
+                  value={newShortcut.command}
+                  onChange={(e) => setNewShortcut({ ...newShortcut, command: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && addShortcut()}
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-6">
+              <button
+                className="flex-1 bg-violet-700 hover:bg-violet-600 text-white px-4 py-2 rounded"
+                onClick={addShortcut}
+              >
+                Add
+              </button>
+              <button
+                className="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2 rounded"
+                onClick={() => {
+                  setShowShortcutDialog(false)
+                  setNewShortcut({ label: "", command: "" })
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Terminal */}
       <div
         ref={terminalRef}
-        className={`w-full bg-neutral-900 transition-all`}
+        className={`w-full bg-neutral-900 transition-all flex-1`}
         data-status={status}
       />
 
-      <div className="px-3 py-2 bg-neutral-900 text-white flex flex-1 gap-2">
+      {/* GUI Controls */}
+      <div className="px-3 py-2 bg-neutral-900 text-white flex gap-2">
         <button
           className="bg-neutral-800 h-12 hover:bg-neutral-700 px-4 py-2 rounded border border-neutral-700"
           onClick={() => window.open(guiURL, "_blank")}
@@ -178,10 +306,12 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
         </button>
       </div>
 
+      {/* GUI iframe */}
       {showGUI && (
         <iframe src={guiURL} className="w-full h-[40vh] border-0 bg-black" />
       )}
 
+      {/* Detected Servers */}
       <div className="px-3 py-2 bg-neutral-950 text-white">
         <h3 className="mb-2 font-semibold">Detected Servers:</h3>
 
