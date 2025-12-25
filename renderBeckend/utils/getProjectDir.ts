@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { loadFile } from "./filePathCrud.js";
+import FilePathCrud from "./filePathCrud.js";
 
 export async function getRealProjectDir(baseDir, projectId) 
 {
@@ -8,7 +8,7 @@ export async function getRealProjectDir(baseDir, projectId)
   try {
      root = path.join(baseDir, projectId);
   } catch (error) {
-    await loadFile(baseDir, projectId);
+    await FilePathCrud.loadProject(projectId);
     root = path.join(baseDir, projectId);
   }
 
