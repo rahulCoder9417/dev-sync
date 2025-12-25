@@ -193,12 +193,13 @@ class TerminalWS {
       const userId = decodeURIComponent(encodedUserId || "");
 
       const session = this.room.getUserSession(userId);
-      const gui = session && session.gui;
+      let gui =  session.gui;
       if (!gui || !gui.vncPort) {
        await VNCSessionService.cleanupSession(userId);
        await VNCSessionService.ensureSession(userId);
-        console.error("No GUI session or VNC port for user:", userId)
+        gui = this.room.getUserSession(userId).gui
       }
+      
 
       const vncPort = gui.vncPort;
       const tcpSocket = net.connect(vncPort, "127.0.0.1");

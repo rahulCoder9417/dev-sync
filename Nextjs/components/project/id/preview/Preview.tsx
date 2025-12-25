@@ -48,7 +48,7 @@ const Preview = ({ projectId,terminalLoaded ,setTerminalLoaded}: { projectId: st
    if(!terminalLoaded) init();
   }, [terminalLoaded]);
 
-  if (diskStorageSet === "connecting" || diskStorageSet === "idle") {
+  if ((diskStorageSet === "connecting" || diskStorageSet === "idle" )&&!terminalLoaded) {
     return <div className='w-full h-full flex items-center justify-center bg-secondary'>
       <NewLoader size={14} gap={12} />
     </div>;
