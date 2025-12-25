@@ -197,9 +197,7 @@ class TerminalWS {
       if (!gui || !gui.vncPort) {
        await VNCSessionService.cleanupSession(userId);
        await VNCSessionService.ensureSession(userId);
-        console.error("No GUI session or VNC port for user:", userId);
-        ws.close();
-        return;
+        console.error("No GUI session or VNC port for user:", userId)
       }
 
       const vncPort = gui.vncPort;
