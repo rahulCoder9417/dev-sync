@@ -97,6 +97,7 @@ export class FileSyncWSHandler {
       console.log("🔗 File sync WebSocket connected");
 
       ws.on("message", async (buf: Buffer) => {
+        console.log("message incoming in fileSync this.handleCreate");
         try {
           const event = JSON.parse(buf.toString()) as IncomingFileEvent;
           await this.handleIncomingEvent(event);
