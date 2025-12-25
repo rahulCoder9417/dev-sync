@@ -123,6 +123,7 @@ export class TerminalWSHandler {
 
     // Setup WebSocket message handler
     ws.on("message", (msg: Buffer) => {
+      console.log("incoming data")
       this.handleClientMessage(ws, userId, terminalId, msg);
     });
 
@@ -188,7 +189,7 @@ export class TerminalWSHandler {
         console.error(`❌ Terminal not found: user=${userId}, terminal=${terminalId}`);
         return;
       }
-
+      console.log("message incoming")
       switch (data.type) {
         case "input":
           const writeResult = terminalService.writeToTerminal(terminal, data.data);
@@ -242,6 +243,7 @@ export class TerminalWSHandler {
    * Send terminal output to client
    */
   private sendOutput(ws: ExtendedWebSocket, data: string) {
+    console.log("output sent")
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: "output", data }));
     }
