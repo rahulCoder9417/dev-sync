@@ -13,7 +13,7 @@ import fileWatcherService from "./services/FileWatcherService.js";
 import terminalWSHandler from "./ws/TerminalWSHandler.js";
 import vncWSHandler from "./ws/VNCWSHandler.js";
 import fileSyncWSHandler from "./ws/FileSyncWSHandler.js";
-
+//unloading this type of project 
 // Initialize Express app and HTTP server
 const app = express();
 const server = http.createServer(app);
