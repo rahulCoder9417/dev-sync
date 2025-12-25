@@ -168,6 +168,7 @@ export class FileSyncWS {
 //there will be only one client connected the main beckend
 
   public sendFileEvent(ev: OutGoingFileBroadcast) {
+    console.log("[FS] file:send", ev);
     this.wss.clients.forEach((ws) => {
       ws.send(JSON.stringify(ev));
     });

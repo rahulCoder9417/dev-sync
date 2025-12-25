@@ -53,6 +53,7 @@ function startFsWatcher(projectDir: string, projectId: string) {
     ],
   });
   watcher.on("add", async(absPath) => {
+    
     if (Sup.isSuppressedOrParent(absPath)) return;
     await handleFileCreate(absPath, projectId);
   });
