@@ -16,7 +16,6 @@ import  VNCSessionService  from "../utils/VNC.js";
 class TerminalWS {
   private wss: WebSocketServer;
   private heartbeatInterval: NodeJS.Timeout | null = null;
-  private room: RoomManager;
   private vncWss: WebSocketServer;
 
   private projectTerminalCount = new Map<string, number>();
@@ -25,7 +24,6 @@ class TerminalWS {
     this.vncWss = new WebSocketServer({ noServer: true });
     this.setup();
     this.startHeartbeat();
-    this.room = new RoomManager();
   }
 
   // ---- TOKEN GENERATION ----
@@ -44,13 +42,13 @@ class TerminalWS {
           `🖥️  Terminal WS connected: user=${ws.userId}, terminal=${ws.terminalId}`
         );
 
-        const session = this.room.getUserSession(ws.userId);
+        const session = RoomManager.getUserSession(ws.userId);
         // ✅ AUTO-ASSIGN GUI: Create GUI session when user opens any terminal
         const gui = await VNCSessionService.ensureSession(ws.userId);
         console.log(
           `🖼️  GUI session assigned: DISPLAY=${gui.data?.display} VNC=:${gui.data?.vncPort} for user=${ws.userId}`
         );
-        let cwd = await getRealProjectDir(this.room.PROJECT_ROOT, ws.projectId);
+        let cwd = await getRealProjectDir(RoomManager.PROJECT_ROOT, ws.projectId);
         const count = this.projectTerminalCount.get(ws.projectId) ?? 0;
         if (count === 0) {
           await FilePathCrud.loadProject(ws.projectId);
@@ -114,12 +112,8 @@ class TerminalWS {
             console.log("🚀 Production server detected on port:", detectedPort);
             const token = this.generatePreviewToken(ws.userId, detectedPort);
 
-            // Store preview info
-            session.previews[detectedPort] = {
-              port: detectedPort,
-              token,
-              startedAt: new Date(),
-            };
+            RoomManager.addPreview(ws.userId, detectedPort, token);
+         
 
             ws.send(
               JSON.stringify({
@@ -138,7 +132,7 @@ class TerminalWS {
             );
           }
         });
-        session.terminals[ws.terminalId] = ptyProcess;
+        RoomManager.addTerminal(ws.userId, ws.terminalId, ptyProcess);
         ws.on("pong", () => {
           ws.isAlive = true;
         });
@@ -161,6 +155,7 @@ class TerminalWS {
               type: "exit",
             })
           );
+          RoomManager.removeTerminal(ws.userId, ws.terminalId);
           console.log(`[WS] client disconnected userId=${ws.userId}`);
           // 🧹 TERMINAL CLEANUP
           const count = this.projectTerminalCount.get(ws.projectId) ?? 1;
@@ -192,7 +187,7 @@ class TerminalWS {
       const [, , encodedUserId] = url.pathname.split("/");
       const userId = decodeURIComponent(encodedUserId || "");
 
-      const session = this.room.getUserSession(userId);
+      const session = RoomManager.getUserSession(userId);
       let gui =  session.gui;
       if (!gui || !gui.vncPort) {
        await VNCSessionService.cleanupSession(userId);

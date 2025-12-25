@@ -1,6 +1,7 @@
 import { spawn, ChildProcess } from "child_process";
 import { GuiSession, ServiceResult, CleanupResult } from "../types.js";
 import config from "../config/index.js";
+import RoomManager from "./roomManager.js";
 
 /**
  * Manages VNC/Xvfb GUI sessions with proper lifecycle management
@@ -75,7 +76,7 @@ export class VNCSessionService {
     session.processes.wm = wm;
     session.processes.x11vnc = x11vnc;
     session.ready = true;
-
+    RoomManager.addGui(userId, session);
     const elapsed = Date.now() - startTime;
     console.log(`✅ GUI session ready in ${elapsed}ms: user=${userId} display=${display} vnc=:${vncPort}`);
     
@@ -298,7 +299,7 @@ export class VNCSessionService {
         }
       }
     }
-
+    RoomManager.removeGui(userId);
     this.activeSessions.delete(userId);
     
     return { processesKilled: killed, errors };
@@ -320,7 +321,7 @@ export class VNCSessionService {
     const allErrors = results.flatMap(r => r.errors);
 
     console.log(`✅ Cleaned up ${totalKilled} processes with ${allErrors.length} errors`);
-    
+    RoomManager.removeGui();
     return { processesKilled: totalKilled, errors: allErrors };
   }
 }
