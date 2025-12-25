@@ -24,7 +24,7 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
   const userId = useAppSelector((state) => state.user.id)
 
 
-  const { status, start, input, resize, stop } = useTerminal({
+  const { status, start, input, resize, stop,disconnect } = useTerminal({
     onMessage: (payload: any) => {
       const term = termRef.current
       if (!term) return
@@ -83,6 +83,13 @@ const Terminal: React.FC<TerminalProps> = ({ setIframeUrl, className = "" ,proje
     resize(term.cols, term.rows)
   }
 
+  useEffect(()=>{
+    return()=>{
+      stop()
+      disconnect()
+    }
+  }
+  ,[])
   useEffect(() => {
     if (!terminalRef.current) return
 
