@@ -50,7 +50,7 @@ export async function handleUpgrade(request: any, socket: any, head: any) {
     //vnc
     else if (pathname.startsWith("/websockify/")) {
       console.log("✅ Matched: VNC WebSocket");
-      handleUpgradeWs.upgrade(true, request, socket, head);
+     await handleUpgradeWs.upgrade(true, request, socket, head);
       return;
     } 
      // Preview WebSocket (for Express apps with WebSocket support).yeh likh diya hai ,ise kam krne ke liye project me specify krna hoga uska ws url preview/userid/port?token=token ,aur addiditional  info deni hogi

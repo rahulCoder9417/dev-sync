@@ -187,7 +187,7 @@ class TerminalWS {
       }
     });
 
-    this.vncWss?.on("connection", (ws: WebSocket, req: IncomingMessage) => {
+    this.vncWss?.on("connection",async (ws: WebSocket, req: IncomingMessage) => {
       const url = new URL(req.url, "http://localhost");
       const [, , encodedUserId] = url.pathname.split("/");
       const userId = decodeURIComponent(encodedUserId || "");
@@ -195,6 +195,8 @@ class TerminalWS {
       const session = this.room.getUserSession(userId);
       const gui = session && session.gui;
       if (!gui || !gui.vncPort) {
+       await VNCSessionService.cleanupSession(userId);
+       await VNCSessionService.ensureSession(userId);
         console.error("No GUI session or VNC port for user:", userId);
         ws.close();
         return;
