@@ -196,10 +196,15 @@ class TerminalWS {
       let gui =  session.gui;
       if (!gui || !gui.vncPort) {
        await VNCSessionService.cleanupSession(userId);
-       await VNCSessionService.ensureSession(userId);
-        gui = this.room.getUserSession(userId).gui
+       const res=  await VNCSessionService.ensureSession(userId);
+       if(res.success){
+        gui = res.data}
+        else{
+          console.log("cannot assign gui ==",res.error)
+          return
+        }
       }
-      
+      console.log(gui)
 
       const vncPort = gui.vncPort;
       const tcpSocket = net.connect(vncPort, "127.0.0.1");
