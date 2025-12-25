@@ -146,6 +146,7 @@ export async function handleFileDelete(
   console.log(absPath)
   const fileId = await FilePathCrud.getFileIdByPath(projectId, absPath) ;
   console.log("deleting file--- id" + fileId +" path" + absPath)
+  
   fileSyncWS.sendFileEvent({
     type:"delete",
     projectId,

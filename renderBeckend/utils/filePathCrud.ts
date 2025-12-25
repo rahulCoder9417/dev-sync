@@ -53,7 +53,7 @@ export class FileSystemService {
       // Load existing map
       const raw = await fs.readFile(mapPath, "utf8");
       const fileMap = JSON.parse(raw);
-
+      console.log(fileMap)
       // Build reverse map
       const reverseMap = Object.fromEntries(
         Object.entries(fileMap).map(([fileId, absPath]) => [absPath as string, fileId])
@@ -109,6 +109,7 @@ export class FileSystemService {
     if (!projectMap) return null;
     // Normalize folder paths (ensure trailing separator)
     const hasExt = path.extname(absPath) !== "";
+    console.log("isFolder" + absPath + (!hasExt && !absPath.endsWith(path.sep) && !absPath.startsWith(".")))
     if (!hasExt && !absPath.endsWith(path.sep) && !absPath.startsWith(".")) {
       absPath = absPath + path.sep;
     }

@@ -108,6 +108,7 @@ export default function useTerminal(opts: {
   
   const disconnect = useCallback(() => {
     manualClose.current = true;
+    
     wsRef.current?.close();
     wsRef.current = null;
   }, []);
