@@ -63,8 +63,8 @@ export class TerminalWSHandler {
     console.log(`😊 session incomig for user=${userId}`);
     const existingTerminal = sessionManager.getTerminal(userId, terminalId);
     if (existingTerminal) {
-      console.log(`♻️  Reusing existing terminal for user=${userId}, terminal=${terminalId}`);
-      return;
+      console.log(`disconnecting him`);
+    await  this.handleDisconnect(userId, terminalId, projectId);
     }
     const session = sessionManager.getOrCreateSession(userId);
 

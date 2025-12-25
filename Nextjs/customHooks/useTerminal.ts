@@ -111,6 +111,7 @@ export default function useTerminal(opts: {
   }, []);
 
   const send = useCallback((msg: TerminalClientMessage) => {
+    console.log("message sent",msg)
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return false;
     try {
       wsRef.current.send(JSON.stringify(msg));
@@ -130,7 +131,7 @@ export default function useTerminal(opts: {
 
   useEffect(() => {
     console.log("autoConnect", autoConnect);
-    if (autoConnect && status === "idle") connect();
+    if (autoConnect && status === "idle" && !wsRef) connect();
     return () => {
       disconnect();
     };
