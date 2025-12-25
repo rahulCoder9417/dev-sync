@@ -34,6 +34,13 @@ export async function handleFileCreate(
   const content = await fs.readFile(absPath, "utf8");
   FilePathCrud.setFilePath(projectId, id, absPath)
   fileSyncWS.sendFileEvent({
+    type:"create",
+    projectId,
+    fileFolderId: id || null,
+    parentId: parentId || null,
+    fileName: absPath.split("/")[absPath.split("/").length - 1] ,
+  })
+  fileSyncWS.sendFileEvent({
     type:"save",
     projectId,
     fileId: id ,
