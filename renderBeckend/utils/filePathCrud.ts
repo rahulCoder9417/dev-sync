@@ -108,10 +108,7 @@ export class FileSystemService {
 
     const projectMap = this.cache.get(projectId);
     if (!projectMap) return null;
-    // Normalize folder paths (ensure trailing separator)
-    if (getType(absPath) === "folder" && !absPath.endsWith(path.sep)) {
-      absPath = absPath + path.sep;
-    }
+   
 
     return projectMap.reverseMap[absPath] || null;
   }
