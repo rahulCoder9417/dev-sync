@@ -4,6 +4,7 @@ import { ServiceResult } from "../types.js";
 import config from "../config/index.js";
 import { loadProjectIntoDisk } from "../controller/diskFileSave.js";
 import { getRealProjectDir } from "../utils/getProjectDir.js";
+import { getType } from "./fileOrFolder.js";
 
 /**
  * File metadata for tracking
@@ -108,9 +109,7 @@ export class FileSystemService {
     const projectMap = this.cache.get(projectId);
     if (!projectMap) return null;
     // Normalize folder paths (ensure trailing separator)
-    const hasExt = path.extname(absPath) !== "";
-    console.log("isFolder" + absPath + (!hasExt && !absPath.endsWith(path.sep) && !absPath.startsWith(".")))
-    if (!hasExt && !absPath.endsWith(path.sep) && !absPath.startsWith(".")) {
+    if (getType(absPath) === "folder" && !absPath.endsWith(path.sep)) {
       absPath = absPath + path.sep;
     }
 

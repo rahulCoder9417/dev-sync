@@ -6,20 +6,14 @@ import { db } from "../lib/db/db.js";
 import  cuid  from "cuid";
 import fs from "fs/promises";
 import  fileSyncWS  from "../ws/fileSyncHandler.js";
+import { getType } from "./fileOrFolder.js";
 /**
  * Convert absolute path → project-relative path
  */
 const PROJECT_ROOT = "/usr/src/app/projects";
 // ---------------- FILE CREATE ----------------
 
-export const checkFileSeprator =(absPath:string)=>{
-  //made because in db folder name stored as / at last but ,watcher does not add / at last 
-  const hasExt = path.extname(absPath) !== "";
-  if (!hasExt && !absPath.endsWith(path.sep) && !absPath.startsWith(".")) {
-    absPath = absPath + path.sep;
-  }
-  return absPath;
-}
+
 
 export async function handleFileCreate(
   absPath: string,
@@ -146,11 +140,11 @@ export async function handleFileDelete(
   console.log(absPath)
   const fileId = await FilePathCrud.getFileIdByPath(projectId, absPath) ;
   console.log("deleting file--- id" + fileId +" path" + absPath)
-  
+
   fileSyncWS.sendFileEvent({
     type:"delete",
     projectId,
-    fileName: checkFileSeprator(absPath.split("/")[absPath.split("/").length - 1]),
+    fileName: absPath.split("/")[absPath.split("/").length - 1],
     fileId: fileId || null,
   })
   try{
@@ -178,7 +172,7 @@ export async function handleFolderDelete(
   console.log("deleting folder--- id" + fileId +" path" + absPath)
   fileSyncWS.sendFileEvent({
     type:"delete",  
-    fileName: checkFileSeprator(absPath.split("/")[absPath.split("/").length - 1]),
+    fileName: absPath.split("/")[absPath.split("/").length - 1] + path.sep,
     projectId,
     fileId: fileId || null,
   })

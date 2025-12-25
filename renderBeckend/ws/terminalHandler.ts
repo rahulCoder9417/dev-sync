@@ -256,7 +256,7 @@ class TerminalWS {
           console.error("[WS] ping error", e);
         }
       });
-    }, 30000);
+    }, 300000);
   }
 
   public upgrade(
