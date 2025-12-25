@@ -49,6 +49,8 @@ export class FileWatcherService {
     "**/.git/**",
     "**/.next/**",
     "**/dist/**",
+    "**/.git/**",
+    "!**/.gitignore", 
     "**/build/**",
     "**/out/**",
     "**/.cache/**",
@@ -79,7 +81,7 @@ export class FileWatcherService {
 
       // Create chokidar watcher
       const watcher = chokidar.watch(projectDir, {
-        ignoreInitial: true,
+        ignoreInitial: false,
         persistent: true,
         depth: 99,
         ignored: this.IGNORED_PATTERNS,
@@ -224,8 +226,10 @@ await config.handlers(event).catch(error => {
     
     console.log(`Checking suppression for: ${absPath}`);
     for (const [p, ts] of config.suppressionTimeouts.entries()) {
-      console.log(`Checking suppression for: ${p}`);
-      if (Date.now() - ts > this.SUPPRESSION_TIME) {
+      console.log(`Checking suppression for: ${p} `);
+      let a = Date.now() - ts;
+      console.log(`Suppression time: ${a}`);
+      if (a > this.SUPPRESSION_TIME) {
         config.suppressionTimeouts.delete(p);
         continue;
       }

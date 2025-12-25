@@ -24,6 +24,8 @@ export default function useTerminal(opts: {
 } = {}) {
   const { wsUrl = process.env.NEXT_PUBLIC_WS_URL_TERMINAL ?? "", projectId = "",autoConnect = true, onMessage,termRef } = opts;
   const { getToken } = useAuth();
+  const hasConnectedRef = useRef(false);
+
   // Generate a stable terminalId per hook instance using browser crypto if available
   const genId = () => {
     const g: any = typeof globalThis !== "undefined" ? (globalThis as any) : {};
@@ -52,58 +54,58 @@ export default function useTerminal(opts: {
     return `wss${wsUrl}/ws/terminal?token=${token}&terminalId=${t}&projectId=${projectId}`;
   }, [wsUrl, projectId, getToken]);
 
+  const connectingRef = useRef(false);
+
   const connect = useCallback(async () => {
+    if (wsRef.current || connectingRef.current) return;
+  
+    connectingRef.current = true;
     setStatus("connecting");
-    console.log("[WS] connecting...");
+  
     try {
       const url = await buildWsUrl();
-      console.log(url,"jjj")
       const ws = new WebSocket(url);
       wsRef.current = ws;
+  
       ws.onopen = () => {
-        ws.send(JSON.stringify({ action: "start" }));
+        connectingRef.current = false;
         setStatus("connected");
-        console.log("[WS] connected");
-        
-      termRef?.current?.write(`✓ Connected \r\n`);
-        showToast(true,"Terminal connected")
+        ws.send(JSON.stringify({ action: "start" }));
+        termRef?.current?.write("✓ Connected\r\n");
+        showToast(true, "Terminal connected");
         reconnectAttempts.current = 0;
       };
-
+  
       ws.onmessage = (ev) => {
-        console.log("[WS] received:", ev);
         try {
-          const payload = JSON.parse(ev.data) 
-          onMessage?.(payload);
-        } catch (e) {
-          console.log("[WS] received:", e);
-          // ignore non-JSON
-        }
+          onMessage?.(JSON.parse(ev.data));
+        } catch {}
       };
-
+  
       ws.onerror = () => {
+        connectingRef.current = false;
         setStatus("error");
       };
-
+  
       ws.onclose = () => {
         wsRef.current = null;
+        connectingRef.current = false;
+  
         if (manualClose.current) {
           setStatus("closed");
           return;
         }
+  
         setStatus("reconnecting");
-        const delay = Math.min(1000 * 2 ** reconnectAttempts.current, 10000);
-        reconnectAttempts.current += 1;
-        setTimeout(() => {
-          connect();
-        }, delay);
+        const delay = Math.min(1000 * 2 ** reconnectAttempts.current++, 10000);
+        setTimeout(connect, delay);
       };
-    } catch (e) {
-      console.log(e)
+    } catch {
+      connectingRef.current = false;
       setStatus("error");
     }
-  }, [buildWsUrl]);
-
+  }, [buildWsUrl, onMessage]);
+  
   const disconnect = useCallback(() => {
     manualClose.current = true;
     wsRef.current?.close();
@@ -111,7 +113,7 @@ export default function useTerminal(opts: {
   }, []);
 
   const send = useCallback((msg: TerminalClientMessage) => {
-    console.log("message sent",msg)
+    console.log("message sent",wsRef.current?.readyState,WebSocket.OPEN)
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return false;
     try {
       wsRef.current.send(JSON.stringify(msg));
@@ -131,9 +133,9 @@ export default function useTerminal(opts: {
 
   useEffect(() => {
     console.log("autoConnect", autoConnect);
-    if (autoConnect && status === "idle" && !wsRef) connect();
+    if (autoConnect && status === "idle") connect();
     return () => {
-      disconnect();
+  //export it and run on another dismount    disconnect();
     };
   }, [autoConnect, connect, disconnect]);
 

@@ -82,6 +82,7 @@ export class TerminalWSHandler {
 
     // Start file watcher if this is first terminal for project
     const watcherCount = this.projectWatcherRefs.get(projectId) ?? 0;
+    console.log(`watcherCount ${watcherCount}`);
     if (watcherCount === 0) {
       await fileSystemService.loadProject(projectId);
       
@@ -92,6 +93,7 @@ export class TerminalWSHandler {
         (event) => fsEventHandler.handleEvent(event)
       );
     }
+    console.log("watcher count incremented" + watcherCount +1)
     this.projectWatcherRefs.set(projectId, watcherCount + 1);
 
     // Create terminal
