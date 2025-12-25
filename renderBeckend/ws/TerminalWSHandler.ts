@@ -60,6 +60,12 @@ export class TerminalWSHandler {
     projectId: string
   ) {
     // Get or create user session
+    console.log(`😊 session incomig for user=${userId}`);
+    const existingTerminal = sessionManager.getTerminal(userId, terminalId);
+    if (existingTerminal) {
+      console.log(`♻️  Reusing existing terminal for user=${userId}, terminal=${terminalId}`);
+      return;
+    }
     const session = sessionManager.getOrCreateSession(userId);
 
     // Ensure GUI session

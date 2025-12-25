@@ -121,6 +121,7 @@ export class FileSyncWSHandler {
    */
   private async handleIncomingEvent(event: IncomingFileEvent): Promise<void> {
     const { projectId } = event;
+    console.log("event type: ", event.type);
 
     try {
       switch (event.type) {

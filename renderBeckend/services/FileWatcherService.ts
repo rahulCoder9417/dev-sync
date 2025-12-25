@@ -88,6 +88,7 @@ export class FileWatcherService {
           pollInterval: 50,
         },
       });
+      
 
       const config: WatcherConfig = {
         projectId,
@@ -97,6 +98,7 @@ export class FileWatcherService {
         suppressionTimeouts: new Map(),
       };
 
+      this.watchers.set(projectId, config);
       // Setup event listeners
       this.setupWatcherEvents(config);
 
@@ -109,16 +111,17 @@ export class FileWatcherService {
 
         watcher.on("error", (error) => {
           console.error(`❌ Watcher error for project=${projectId}:`, error);
+          this.watchers.delete(projectId);
           reject(error);
         });
 
         // Timeout after 10 seconds
         setTimeout(() => {
+          this.watchers.delete(projectId);
           reject(new Error("Watcher initialization timeout"));
         }, 10000);
       });
 
-      this.watchers.set(projectId, config);
 
       return { success: true };
     } catch (error) {
@@ -209,6 +212,7 @@ await config.handlers(event).catch(error => {
   suppressPath(projectId: string, absPath: string) {
     const config = this.watchers.get(projectId);
     if (!config) return;
+    console.log(`supressed watcher events for: ${absPath}`);
     config.suppressionTimeouts.set(this.normalize(absPath), Date.now());
   }
 
