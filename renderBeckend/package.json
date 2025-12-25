@@ -14,15 +14,15 @@
     "@clerk/backend": "^1.5.0",
     "@prisma/client": "^5.22.0",
     "axios": "^1.13.2",
-    "chokidar": "^3.6.0",
     "cors": "^2.8.5",
-    "cuid": "^3.0.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.0",
-    "http-proxy-middleware": "^2.0.9",
+    "http-proxy-middleware": "^2.0.6",
     "node-pty": "^1.0.0",
     "prisma": "^5.22.0",
-    "ws": "^8.16.0"
+    "ws": "^8.16.0",
+    "cuid": "^3.0.0",
+    "chokidar": "^3.6.0"
   },
   "devDependencies": {
     "ts-node": "^10.9.2",

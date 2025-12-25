@@ -12,7 +12,7 @@ export class VNCSessionService {
   /**
    * Get or create a GUI session for a user
    */
-  async ensureSession(userId: string): Promise<ServiceResult<GuiSession>> {
+ public async ensureSession(userId: string): Promise<ServiceResult<GuiSession>> {
     try {
       // Return existing session if available and healthy
       const existing = this.activeSessions.get(userId);
@@ -60,7 +60,6 @@ export class VNCSessionService {
       vncPort,
       index,
       ready: false,
-      startedAt: new Date(),
       processes: { xvfb },
     };
 

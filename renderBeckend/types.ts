@@ -1,19 +1,14 @@
 import { WebSocket } from "ws";
-//@ts-ignore
-import { IPty } from "node-pty";
+// @ts-ignore
+import { PtyProcess } from "node-pty";
 import type { ChildProcess } from "child_process";
 
-/* ==================== Core Domain Types ==================== */
-
-/**
- * GUI session representing an Xvfb display with VNC access
- */
+/* ---------- GUI Session ---------- */
 export interface GuiSession {
   display: string;
   vncPort: number;
   index: number;
   ready: boolean;
-  startedAt: Date;
   processes: {
     xvfb: ChildProcess;
     wm?: ChildProcess;
@@ -21,110 +16,57 @@ export interface GuiSession {
   };
 }
 
-/**
- * Terminal session with PTY process
- */
-export interface TerminalSession {
-  pty: IPty;
-  projectId: string;
-  startedAt: Date;
-  lastActivity: Date;
-}
-
-/**
- * Preview server entry with authentication token
- */
+/* ---------- Preview Entry ---------- */
 export interface PreviewEntry {
   port: string;
   token: string;
   startedAt: Date;
-  lastAccessed?: Date;
 }
-
-/**
- * Complete user session containing all resources
- */
-export interface UserSession {
-  userId: string;
-  terminals: Map<string, TerminalSession>;
-  gui: GuiSession | null;
-  previews: Map<string, PreviewEntry>;
-  createdAt: Date;
-  lastActivity: Date;
+export type ExtendedWebSocket = WebSocket & {
+    userId?: string;
+    terminalId?: string;
+    projectId?: string;
+    isAlive?: boolean;
 }
-
-
-/* ==================== WebSocket Types ==================== */
-
-export interface ExtendedWebSocket extends WebSocket {
-  userId?: string;
-  terminalId?: string;
-  projectId?: string;
-  isAlive?: boolean;
+export interface Session {
+    terminals: {
+      [terminalId: string]: PtyProcess;   // from node-pty
+    };
+    
+    gui: GuiSession | null;
+    
+    previews: {
+      [port: string]: PreviewEntry;
+    };
+  }
   
-  // Explicitly declare WebSocket methods to avoid TypeScript errors
-  close(code?: number, reason?: string): void;
-  send(data: any, cb?: (err?: Error) => void): void;
-  ping(data?: any, mask?: boolean, cb?: (err: Error) => void): void;
-  terminate(): void;
-  readyState: number;
-  on(event: string, listener: (...args: any[]) => void): this;
+  export interface ServiceResult<T> {
+    success: boolean;
+    data?: T;
+    error?: {
+      code: string;
+      message: string;
+      details?: any;
+    };
+  }
+  
+  export interface CleanupResult {
+    processesKilled: number;
+    errors: Error[];
+  }
+  
+export interface ServerConfig {
+  port: number;
+  projectRoot: string;
+  novncPath: string;
+  cors: {
+    origin: string | string[];
+    credentials: boolean;
+  };
+  gui: GuiConfig;
+  terminal: TerminalConfig;
+  proxy: ProxyConfig;
 }
-
-/* ==================== Message Types ==================== */
-
-export type TerminalMessageType = 
-  | "input" 
-  | "output" 
-  | "resize" 
-  | "exit" 
-  | "error"
-  | "preview";
-
-export interface BaseTerminalMessage {
-  type: TerminalMessageType;
-}
-
-export interface TerminalInputMessage extends BaseTerminalMessage {
-  type: "input";
-  data: string;
-}
-
-export interface TerminalOutputMessage extends BaseTerminalMessage {
-  type: "output";
-  data: string;
-}
-
-export interface TerminalResizeMessage extends BaseTerminalMessage {
-  type: "resize";
-  cols: number;
-  rows: number;
-}
-
-export interface TerminalExitMessage extends BaseTerminalMessage {
-  type: "exit";
-  code?: number;
-}
-
-export interface TerminalErrorMessage extends BaseTerminalMessage {
-  type: "error";
-  message: string;
-}
-
-export interface TerminalPreviewMessage extends BaseTerminalMessage {
-  type: "preview";
-  port: string;
-  token: string;
-}
-
-export type TerminalMessage = 
-  | TerminalInputMessage 
-  | TerminalOutputMessage 
-  | TerminalResizeMessage 
-  | TerminalExitMessage
-  | TerminalErrorMessage
-  | TerminalPreviewMessage;
-
 /* ==================== Configuration Types ==================== */
 
 export interface GuiConfig {
@@ -146,42 +88,4 @@ export interface TerminalConfig {
 export interface ProxyConfig {
   previewSecret: string;
   tokenExpiry: number;
-}
-
-export interface ServerConfig {
-  port: number;
-  projectRoot: string;
-  novncPath: string;
-  cors: {
-    origin: string | string[];
-    credentials: boolean;
-  };
-  gui: GuiConfig;
-  terminal: TerminalConfig;
-  proxy: ProxyConfig;
-}
-
-/* ==================== Service Response Types ==================== */
-
-export interface ServiceResult<T> {
-  success: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-    details?: any;
-  };
-}
-
-export interface CleanupResult {
-  processesKilled: number;
-  errors: Error[];
-}
-
-/* ==================== Utility Types ==================== */
-
-export type AsyncCleanup = () => Promise<void>;
-
-export interface Disposable {
-  dispose(): Promise<void>;
 }
