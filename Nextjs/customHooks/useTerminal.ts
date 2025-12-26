@@ -1,4 +1,8 @@
 "use client";
+
+if (typeof window === "undefined") {
+  throw new Error("useTerminal can only run on the client");
+}
 import { showToast } from "@/components/main/Toast";
 import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -22,6 +26,7 @@ export default function useTerminal(opts: {
   projectId?: string;
   termRef?: React.RefObject<XTerminal | null>;
 } = {}) {
+
   const { wsUrl = process.env.NEXT_PUBLIC_WS_URL_TERMINAL ?? "", projectId = "",autoConnect = true, onMessage,termRef } = opts;
   const { getToken } = useAuth();
   const hasConnectedRef = useRef(false);

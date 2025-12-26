@@ -16,6 +16,7 @@ export const useCollabSync = (
   docRef: React.MutableRefObject<Y.Doc>,
   docsRef: React.MutableRefObject<Map<string, Y.Doc>>,
   readOnly: boolean,
+  setforceRenderEditor: React.Dispatch<React.SetStateAction<boolean>>,
   editorRef: React.MutableRefObject<any>,
   monacoRef: React.MutableRefObject<any>,
   awarenessMap: React.MutableRefObject<Map<string, any>>,
@@ -147,7 +148,17 @@ export const useCollabSync = (
       }
       
       const updateArray = new Uint8Array(update.data);
-
+      if(update.type==="YjsCodeChangesFirstSync"){
+        setforceRenderEditor(prev=>!prev)
+        setTimeout(()=>{
+          try {
+            Y.applyUpdate(docRef.current, updateArray);
+          } catch (error) {
+            console.error("❌ Failed to apply update:", error);
+          }
+        },0)
+        return
+      }
       try {
         Y.applyUpdate(docRef.current, updateArray);
       } catch (error) {

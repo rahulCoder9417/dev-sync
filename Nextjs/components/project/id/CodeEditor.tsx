@@ -4,7 +4,6 @@
 "use client"
 import Editor, { OnMount } from "@monaco-editor/react";
 import * as Y from "yjs";
-import { MonacoBinding } from "y-monaco";
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Tab, FileNode } from '@/lib/types/types';
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
@@ -50,7 +49,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const [tabToClose, setTabToClose] = useState<string | null>(null);
   const [readOnly, setReadOnly] = useState(false);
   const [isFirstSync, setIsFirstSync] = useState<string | null>(null);
-
+const [forceRenderEditor, setforceRenderEditor] = useState(false)//toggle to only force render editor
   const activeTab = tabs.find(tab => tab.isActive);
   const dispatch = useAppDispatch();
 
@@ -66,10 +65,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
   const pendingScrollRef = useRef<{top: number, left: number} | null>(null);
-  const bindingRef = useRef<MonacoBinding | null>(null);
+  const bindingRef = useRef<any | null>(null);
   const activeTabRef = useRef<Tab | null>(activeTab);
   const silentMode = useRef(false);
   const updateHandlerRef = useRef<((update: Uint8Array) => void) | null>(null);
+  const MonacoBindingRef = useRef<any>(null);
 
   // ============================================
   // Save Hook
@@ -104,6 +104,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     docRef,
     docsRef,
     readOnly,
+    setforceRenderEditor,
     editorRef,
     monacoRef,
     awarenessMap,
@@ -124,6 +125,16 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     ));
   }, [isTeam, setTabs]);
 
+  useEffect(() => {
+    async function setup() {
+      const mod = await import("y-monaco");
+      MonacoBindingRef.current = mod.MonacoBinding;
+    }
+    setup();
+  }, []);
+  
+
+    
   // ============================================
   // Effect: Active Tab Changes
   // ============================================
@@ -202,12 +213,55 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       const isOwner = collaboratorsMap[0].userId === userId;
       if (!isOwner) {
         if (!readOnly) setReadOnly(true);
+        
         if (isFirstSync !== activeTab.id) {
+          // FIX: Properly destroy and recreate the binding along with the doc
           setTimeout(() => {
-            docRef.current.destroy()
-            docsRef.current.set(activeTab.id, new Y.Doc())
+            // Destroy existing binding first
+            if (bindingRef.current) {
+              try {
+                bindingRef.current.destroy?.(true);
+              } catch (e) {
+                // pass
+              }
+              bindingRef.current = null;
+            }
+  
+            // Destroy old doc
+            docRef.current.destroy();
             
-            docRef.current = docsRef.current.get(activeTab.id)!
+            // Create new doc
+            const newDoc = new Y.Doc();
+            docsRef.current.set(activeTab.id, newDoc);
+            docRef.current = newDoc;
+            
+            // Recreate Monaco binding if editor is ready
+            if (editorRef.current && monacoRef.current) {
+              const ytext = newDoc.getText("monaco");
+              const model = editorRef.current.getModel();
+              
+              if (model) {
+                // Clear model content
+                model.setValue('');
+                
+                // Create new binding
+                const binding = new MonacoBindingRef.current(
+                  ytext,
+                  model,
+                  new Set([editorRef.current]),
+                  null
+                );
+                bindingRef.current = binding;
+                
+                // Recreate awareness
+                const awareness = new awarenessProtocol.Awareness(newDoc);
+                awareness.setLocalState({});
+                awarenessMap.current.set(activeTab.id, awareness);
+                binding.awareness = awareness;
+              }
+            }
+            
+            // Now request sync
             sendMessage("sync", projectId, activeTab.id);
             setIsFirstSync(activeTab.id);
           }, 0);
@@ -216,10 +270,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         if (readOnly) setReadOnly(false);
       }
       
-      setIsFirstSync(activeTab.id);
+      if (isFirstSync !== activeTab.id) {
+        setIsFirstSync(activeTab.id);
+      }
     }
   }, [collaboratorsMap, activeTab?.id, isFirstSync, userId, readOnly, projectId, sendMessage, docsRef]);
-
   // ============================================
   // Editor Mount Handler
   // ============================================
@@ -230,7 +285,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     docRef.current = ydoc;
     editorRef.current = editor;
     monacoRef.current = monaco;
-
     const model = monaco.editor.createModel(
       ydoc.getText("monaco").toString(),
       getLanguage(activeTab.name ?? "plaintext")
@@ -248,7 +302,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
 
     // Create Monaco binding
-    const binding = new MonacoBinding(ydoc.getText("monaco"), model, new Set([editor]), null);
+    const binding = new MonacoBindingRef.current(ydoc.getText("monaco"), model, new Set([editor]), null);
     bindingRef.current = binding;
     
     const awareness = new awarenessProtocol.Awareness(ydoc);
@@ -353,7 +407,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             <PreviewCloud url={activeTab.content!} type={fileType as any} />
           ) : (
             <Editor
-              key={`${activeTab.id}-${readOnly}`}
+              key={`${activeTab.id}-${readOnly}-${forceRenderEditor}`}
               onMount={handleEditorMount}
               height="100%"
               defaultLanguage="plaintext"

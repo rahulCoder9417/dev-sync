@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react'
 import NewLoader from '@/components/main/SpiningLoader'
 import { X } from 'lucide-react'
 import Terminal from './Terminal'
+import TerminalClient from './TerminalClient'
 
 const Preview = ({ projectId,terminalLoaded ,setTerminalLoaded,projectName}: { projectId: string,terminalLoaded:boolean,setTerminalLoaded:React.Dispatch<React.SetStateAction<boolean>>,projectName:string }) => {
   const [diskStorageSet, setdiskStorageSet] = useState<"idle" | "connecting" | "connected" | "error">("idle")
@@ -64,7 +65,7 @@ const Preview = ({ projectId,terminalLoaded ,setTerminalLoaded,projectName}: { p
     </div>;
   }
   return <div className='w-full h-full flex items-center justify-center bg-secondary'>
-    <Terminal projectName={projectName} projectId={projectId}/>
+    <TerminalClient projectName={projectName} projectId={projectId}/>
   </div>;
 }
 export default Preview

@@ -71,10 +71,7 @@ server.on('upgrade', async (request, socket, head) => {
 // Start the server
 const PORT = config.port ? parseInt(config.port.toString())  : 8000; 
 server.listen(PORT, () => {
-  console.log(`Split WebSocket server listening on http://localhost:${PORT}`);
-  console.log(`WebSocket endpoints:`);
-  console.log(`- File operations: ws://localhost:${PORT}/ws/file`);
-  console.log(`- Chat: ws://localhost:${PORT}/ws/chat`);
+  console.log(`Split WebSocket server listening on ${PORT}`);
 });
 
 // Graceful shutdown

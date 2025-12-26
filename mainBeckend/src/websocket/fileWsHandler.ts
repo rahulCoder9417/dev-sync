@@ -451,7 +451,7 @@ export class FileWsHandler extends BaseWsHandler {
     if (!isIn) return;
     isIn.send(
       JSON.stringify({
-        type: "YjsCodeChanges",
+        type: "YjsCodeChangesFirstSync",
         room: makeRoomId(projectId, fileId),
         data,
         fileId,

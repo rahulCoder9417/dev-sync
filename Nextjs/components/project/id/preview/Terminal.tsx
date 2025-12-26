@@ -100,8 +100,15 @@ const Terminal: React.FC<TerminalProps> = ({
     const r = el.getBoundingClientRect()
     if (r.width === 0 || r.height === 0) return
 
-    fit.fit()
-    resize(term.cols, term.rows)
+    try {
+      // Check if terminal is open before fitting
+      if (term.element && term.element.offsetParent !== null) {
+        fit.fit()
+        resize(term.cols, term.rows)
+      }
+    } catch (error) {
+      console.warn('Fit addon error:', error)
+    }
   }
 
   // Execute command in terminal

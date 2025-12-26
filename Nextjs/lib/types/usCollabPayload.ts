@@ -142,6 +142,13 @@ export type UserJoinedBroadcast = {
     from: UserInfo;
     data: any;
   };
+  export type YjsCodeChangesFirstSyncBroadcast = {
+    type: "YjsCodeChangesFirstSync";
+    room: string;
+    fileId: string;
+    updateType: string;
+    data: Uint8Array;
+  };
   
   export type ErrorBroadcast = {
     type: "error";
@@ -162,6 +169,7 @@ export type UserJoinedBroadcast = {
     | FileSaveBroadcast
     | AwarenessBroadcast
     | YjsCodeChangesBroadcast
+    | YjsCodeChangesFirstSyncBroadcast
     | SyncBroadcast
     | ChangeAdminBroadcast
     | MessageBroadcast

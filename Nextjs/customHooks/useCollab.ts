@@ -100,6 +100,15 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                 })
               );
               break;
+            case "YjsCodeChangesFirstSync":
+              dispatch(
+                updateCode({
+                  fileId: payload.fileId,
+                  type:"YjsCodeChangesFirstSync",
+                  data: payload.data,
+                })
+              );
+              break;
               //cursor ,scroll and selection
             case "awareness":
               dispatch(
