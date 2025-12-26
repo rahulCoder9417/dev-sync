@@ -1,8 +1,8 @@
 import WebSocket from "ws";
 import dotenv from "dotenv";
 import path from "path";
-import { IncomingFileBroadcast, RenderFileEvent } from "../types/renderSync";
-import { fileWsHandler } from "../../server";
+import { IncomingFileBroadcast, RenderFileEvent } from "../types/renderSync.js";
+import { fileWsHandler } from "../../server.js";
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const RENDER_WS_URL = (process.env.TERMINAL_WS_URL || "ws://localhost:4000") +"/ws/file-sync";

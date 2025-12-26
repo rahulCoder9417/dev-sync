@@ -1,7 +1,7 @@
 import { WebSocket as WS, WebSocketServer, RawData } from 'ws';
 import { IncomingMessage } from 'http';
-import { UserMeta } from '../types/user';
-import { ExtWebSocket } from '../types/ws';
+import { UserMeta } from '../types/user.js';
+import { ExtWebSocket } from '../types/ws.js';
 
 
 

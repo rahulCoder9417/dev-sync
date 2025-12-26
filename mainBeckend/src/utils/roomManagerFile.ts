@@ -1,6 +1,6 @@
-import { UserInfo } from "../types/fileWs";
-import { ExtWebSocket } from "../types/ws";
-import makeRoomId from "./makeRoomId";
+import { UserInfo } from "../types/fileWs.js";
+import { ExtWebSocket } from "../types/ws.js";
+import makeRoomId from "./makeRoomId.js";
 
 
 export default class RoomManager {

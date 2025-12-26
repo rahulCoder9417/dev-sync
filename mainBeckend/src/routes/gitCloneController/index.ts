@@ -3,13 +3,13 @@ import { Octokit } from "@octokit/core";
 import { unzipSync, strFromU8 } from "fflate";
 import fetch from "node-fetch";
 
-import { db } from "../../lib/db/db";
+import { db } from "../../lib/db/db.js";
 import {
   cleanupCloudinaryFiles,
   uploadToCloudinary,
   UploadedAsset,
-} from "../../utils/cloudinary/cloudinary";
-import { decrypt } from "../../utils/decrypt/decrypt";
+} from "../../utils/cloudinary/cloudinary.js";
+import { decrypt } from "../../utils/decrypt/decrypt.js";
 
 // Constants
 const FILE_EXTENSIONS = {

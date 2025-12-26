@@ -1,4 +1,4 @@
-import { db } from "../../db/db";
+import { db } from "../../db/db.js";
 
 export async function deleteFileOrFolder(fileId: string,userId:string) {
   try {

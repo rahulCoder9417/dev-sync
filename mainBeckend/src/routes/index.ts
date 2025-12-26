@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
-import { gitCloneController } from './gitCloneController';
-import { formParser } from '../utils/multer';
+import { gitCloneController } from './gitCloneController/index.js';
+import { formParser } from '../utils/multer.js';
 const router = express.Router();
 
 // Health check route

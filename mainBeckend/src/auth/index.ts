@@ -1,6 +1,6 @@
 import { verifyToken } from "@clerk/backend";
-import { UserMeta } from "../types/user";
-import { getUserByEmail } from "../lib/action/user/getUser";
+import { UserMeta } from "../types/user.js";
+import { getUserByEmail } from "../lib/action/user/getUser.js";
 
 export async function getAuthData(token: string):Promise<UserMeta | null> {
   try {
