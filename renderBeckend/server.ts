@@ -51,8 +51,6 @@ app.use((req, res, next) => {
   // Rewrite only once
   const rewritten = `/preview/${userId}/${port}${url}?token=${token}`;
 
-  console.log(`🔁 Asset fix: ${url} → ${rewritten}`);
-
   return res.redirect(rewritten);
 });
 
@@ -80,6 +78,9 @@ app.get("/gui/:userId", async (req, res) => {
 
 // ---- SECURE REVERSE PROXY (PRODUCTION BUILD PREVIEW) ----
 app.use("/preview/:userId/:port*", (req, res, next) => {
+  if(!req.params){
+    return res.status(403).send("Missing params");
+  }
   const { userId, port } = req.params;
   const { token } = req.query;
 
@@ -147,9 +148,7 @@ app.use("/preview/:userId/:port*", (req, res, next) => {
             (match, key, path) => {
               const replaced = `${key}="${baseUrl}/${path}?token=${token}"`;
           
-              console.log("MATCH:", match);
-              console.log("BECOMES:", replaced);
-          
+             
               return replaced;
             }
           );
@@ -160,9 +159,7 @@ app.use("/preview/:userId/:port*", (req, res, next) => {
           (match, prefix, path, suffix) => {
             const replaced = `${prefix}${baseUrl}${path}?token=${token}${suffix}`;
         
-            console.log("MATCH:", match);
-            console.log("BECOMES:", replaced);
-        
+           
             return replaced;
           }
         );

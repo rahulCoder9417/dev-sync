@@ -65,7 +65,6 @@ export const updateProjectStatus = async ({
       }
 
       case "archive": {
-        console.log(isOwner,isMember)
         if (!(isOwner || isMember)) {
           throw new Error("Only team member can archive/unarchive");
         }

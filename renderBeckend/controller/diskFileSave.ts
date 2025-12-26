@@ -90,8 +90,7 @@ async function createFileMap( files: any[],
           const filePath = path.join(basePath, currentPath, file.name);
       
           if (file.type === "folder") {
-            await fs.mkdir(filePath, { recursive: true });
-            console.log(`✅ Created folder: ${filePath}`);
+              await fs.mkdir(filePath, { recursive: true });
             fileMap[file.id] = filePath;
             if (file.children && file.children.length > 0) {
               await createFileStructure(
@@ -103,13 +102,10 @@ async function createFileMap( files: any[],
           } else {
             if (isSupportedMediaFile(file.name) && file.content?.startsWith("http") && file.content.includes("res.cloudinary.com")
             ) {
-              console.log(`⬇️  Downloading: ${file.name}`);
               const buffer = await downloadFile(file.content);
               await fs.writeFile(filePath, buffer);
-              console.log(`✅ Downloaded file: ${filePath}`);
             } else {
               await fs.writeFile(filePath, file.content || "", "utf8");
-              console.log(`✅ Created file: ${filePath}`);
             }
             fileMap[file.id] = filePath;
           }

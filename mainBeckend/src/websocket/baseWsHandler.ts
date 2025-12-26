@@ -76,7 +76,7 @@ export abstract class BaseWsHandler {
         ws.isAlive = false;
         ws.ping();
       });
-    }, 30_000);
+    }, 30000);
 
     this.wss.on('close', () => {
       clearInterval(interval);

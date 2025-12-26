@@ -124,7 +124,6 @@ export class ChatWsHandler extends BaseWsHandler {
   private async handleTypingStart(ws: ExtWebSocket, message: any) {
     if(message.action !== "typingStart") return
     const { chatId, } = message;
-    console.log(chatId)
     this.room.addToTypingStatus(chatId, ws);
   }
 

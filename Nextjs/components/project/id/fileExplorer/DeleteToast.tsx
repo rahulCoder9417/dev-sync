@@ -30,7 +30,6 @@ let userId = useAppSelector((state) => state.user.id)
 const [click, setclick] = useState(false)
   // Auto-dismiss when done
   useEffect(() => {
-    console.log(done)
     if(done && Array.isArray(done) && done.includes(userId)){
       setclick(true)
     }

@@ -20,8 +20,6 @@ export async function handleFileCreate(
   projectId: string
 ) {
 
-  console.log("[FS] file:create", absPath);
-  console.log("path.dirname(absPath)",path.dirname(absPath))
   const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath) +"/") || null;
   
   const id =cuid()
@@ -66,8 +64,6 @@ export async function handleFolderCreate(
   absPath: string,
   projectId: string
 ) {
-  console.log("[FS] folder:create", absPath);
-
 
   const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath) +"/") || null;
   const id =cuid()
@@ -105,7 +101,6 @@ export async function handleFileUpdate(
   absPath: string,
   projectId: string
 ) {
-  console.log(absPath)
   const content = await fs.readFile(absPath, "utf8");
   const fileId = await FilePathCrud.getFileIdByPath(projectId, absPath) ;
   
@@ -137,9 +132,7 @@ export async function handleFileDelete(
   absPath: string,
   projectId: string 
 ) {
-  console.log(absPath)
   const fileId = await FilePathCrud.getFileIdByPath(projectId, absPath) ;
-  console.log("deleting file--- id" + fileId +" path" + absPath)
 
   fileSyncWS.sendFileEvent({
     type:"delete",
@@ -158,7 +151,6 @@ catch(e){
   console.log("error in handleFileDelete",e)
 }
   FilePathCrud.deleteFilePath(projectId, fileId)
-  console.log("[FS] file:delete", absPath);
 }
 
 // ---------------- FOLDER DELETE ----------------
@@ -167,9 +159,7 @@ export async function handleFolderDelete(
   absPath: string,
   projectId: string
 ) {
-  console.log(absPath)
   const fileId = await FilePathCrud.getFileIdByPath(projectId, absPath + "/") ;
-  console.log("deleting folder--- id" + fileId +" path" + absPath)
   fileSyncWS.sendFileEvent({
     type:"delete",  
     fileName: absPath.split("/")[absPath.split("/").length - 1] + path.sep,
@@ -187,5 +177,4 @@ catch(e){
   console.log("error in handleFolderDelete",e)
 }
   FilePathCrud.deleteFilePath(projectId, fileId)
-  console.log("[FS] folder:delete", absPath);
 }

@@ -94,7 +94,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   const toggleFolder = useCallback((folderId: string) => {
     setExpandedFolders(prev => {
       const next = new Set(prev);
-      console.log("toggleFolder", folderId, next);
       if (next.has(folderId)) next.delete(folderId);
       else next.add(folderId);
       return next;
@@ -153,7 +152,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       }
       setrootAction(null);
     } else {
-      console.log("disp");
       dispatch(addFileOp({
         type: "create",
         name: name,
@@ -247,7 +245,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
     const uploadRes = await res.json()
     let obj;
-    console.log("uploadRes", uploadRes)
     if (uploadRes.success) {
       obj = {
         path: filename,

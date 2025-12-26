@@ -40,7 +40,6 @@ export const useCollabSync = (
   useEffect(() => {
     if (savePending.length === 0) return
     savePending.forEach((item: any) => {
-      console.log("hmm", item.content, item.fileId)
       setTabs(prev => prev.map(t =>
         t.id === item.fileId ? { ...t, content: item.content, isDirty: false } : t
       ));
@@ -137,7 +136,6 @@ export const useCollabSync = (
         });
         
         if(!editorRef.current) return;
-        showToast(true,"fired code editor")
         const top = editorRef.current!.getScrollTop();
         const left = editorRef.current!.getScrollLeft();
         sendMessage("awareness", projectId, tab.id, {
@@ -152,7 +150,6 @@ export const useCollabSync = (
 
       try {
         Y.applyUpdate(docRef.current, updateArray);
-        console.log("✅ Update applied successfully");
       } catch (error) {
         console.error("❌ Failed to apply update:", error);
       }

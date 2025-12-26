@@ -125,8 +125,6 @@ export default function FriendshipButton({
   /* ---------------- Guards ---------------- */
 
   if (!currentUserId || currentUserId === userId) {
-    console.log('currentUserId', currentUserId);
-    console.log('userId', userId);
     return null;
   }
 

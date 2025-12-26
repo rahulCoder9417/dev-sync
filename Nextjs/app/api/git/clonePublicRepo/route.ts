@@ -86,7 +86,7 @@ export async function POST(req: Request) {
           const user = await octokit.request("GET /user");
 
           isOwner = repo.data.owner.login === user.data.login;
-          console.log(isOwner);
+     
           if (!isOwner) {
             send({
               step: 1,

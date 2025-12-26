@@ -114,13 +114,11 @@ export class FileSyncWS {
         Sup.suppress(abs);
         let fileName = path.basename(abs);
          if (isSupportedMediaFile(fileName) && ev.content?.startsWith("http") && ev.content.includes("res.cloudinary.com") ) {
-                      console.log(`⬇️  Downloading: ${fileName}`);
+
                       const buffer = await downloadFile(ev.content);
                       await fs.writeFile(abs, buffer);
-                      console.log(`✅ Downloaded file: ${abs}`);
                     } else {
                       await fs.writeFile(abs, ev.content || "", "utf8");
-                      console.log(`✅ Created file: ${abs}`);
                     }
         break;
       }
@@ -168,7 +166,6 @@ export class FileSyncWS {
 //there will be only one client connected the main beckend
 
   public sendFileEvent(ev: OutGoingFileBroadcast) {
-    console.log("[FS] file:send", ev);
     this.wss.clients.forEach((ws) => {
       ws.send(JSON.stringify(ev));
     });

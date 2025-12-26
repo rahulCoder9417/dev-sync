@@ -6,13 +6,12 @@ import NewLoader from '@/components/main/SpiningLoader'
 import { X } from 'lucide-react'
 import Terminal from './Terminal'
 
-const Preview = ({ projectId,terminalLoaded ,setTerminalLoaded}: { projectId: string,terminalLoaded:boolean,setTerminalLoaded:React.Dispatch<React.SetStateAction<boolean>> }) => {
+const Preview = ({ projectId,terminalLoaded ,setTerminalLoaded,projectName}: { projectId: string,terminalLoaded:boolean,setTerminalLoaded:React.Dispatch<React.SetStateAction<boolean>>,projectName:string }) => {
   const [diskStorageSet, setdiskStorageSet] = useState<"idle" | "connecting" | "connected" | "error">("idle")
   const userId = useAppSelector((state) => state.user.id)
   useEffect(() => {
     const init = async () => {
       setdiskStorageSet("connecting");
-      console.log(`https${process.env.NEXT_PUBLIC_WS_URL_TERMINAL}/terminal/saveFile`)
       try {
         const res = await fetch(
           `https${process.env.NEXT_PUBLIC_WS_URL_TERMINAL}/api/terminal/saveFile`,
@@ -65,7 +64,7 @@ const Preview = ({ projectId,terminalLoaded ,setTerminalLoaded}: { projectId: st
     </div>;
   }
   return <div className='w-full h-full flex items-center justify-center bg-secondary'>
-    <Terminal projectId={projectId}/>
+    <Terminal projectName={projectName} projectId={projectId}/>
   </div>;
 }
 export default Preview

@@ -148,9 +148,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     // Insert content if empty
     silentMode.current = true;
     if (ytext.length === 0 && activeTab.content) {
-      console.log("inserting the contesnts of save", activeTab.content)
       ytext.insert(0, activeTab.content);
-      console.log("insertedok")
     }
     setTimeout(() => {
       silentMode.current = false;
@@ -199,7 +197,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   // ============================================
   useEffect(() => {
     if (!activeTab?.id) return;
-    console.log("ask for sync")
     
     if (collaboratorsMap.length > 0 && userId) {
       const isOwner = collaboratorsMap[0].userId === userId;
@@ -211,7 +208,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             docsRef.current.set(activeTab.id, new Y.Doc())
             
             docRef.current = docsRef.current.get(activeTab.id)!
-            console.log("new doc set")
             sendMessage("sync", projectId, activeTab.id);
             setIsFirstSync(activeTab.id);
           }, 0);
@@ -229,7 +225,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   // ============================================
   const handleEditorMount: OnMount = (editor, monaco) => {
     if (!activeTab || typeof window === "undefined") return;
-    console.log("mounting doc")
     
     const ydoc = getOrCreateDoc(activeTab.id);
     docRef.current = ydoc;

@@ -54,7 +54,6 @@ export class FileSystemService {
       // Load existing map
       const raw = await fs.readFile(mapPath, "utf8");
       const fileMap = JSON.parse(raw);
-      console.log(fileMap)
       // Build reverse map
       const reverseMap = Object.fromEntries(
         Object.entries(fileMap).map(([fileId, absPath]) => [absPath as string, fileId])

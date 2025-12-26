@@ -18,7 +18,6 @@ const Header = ({ projectName ,users,participantsRef}: HeaderProps) => {
 
   const [showAllUsers, setShowAllUsers] = useState(false);
  const onlineUsers = useMemo(()=>{
-  console.log("user online")
   return users.filter((user)=>participantsRef.includes(user.userId))
  },[participantsRef.length])
 

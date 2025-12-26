@@ -36,11 +36,8 @@ export class FsSuppressionRegistry {
 
   isSuppressedOrParent(absPath: string): boolean {
     const key = this.normalize(absPath);
-    console.log(key);
     for (const [p, ts] of this.map.entries()) {
-      console.log(p,ts);
       if (Date.now() - ts > this.ttl) {
-        console.log("deleted",p);
         this.map.delete(p);
         continue;
       }

@@ -18,12 +18,14 @@ type TerminalProps = {
   setIframeUrl?: (url: string) => void
   className?: string
   projectId?: string
+  projectName?: string
 }
 
 const Terminal: React.FC<TerminalProps> = ({ 
   setIframeUrl, 
   className = "", 
-  projectId = "" 
+  projectId = "",
+  projectName = ""
 }) => {
   const terminalRef = useRef<HTMLDivElement | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
@@ -40,6 +42,10 @@ const Terminal: React.FC<TerminalProps> = ({
   ])
   const [showShortcutDialog, setShowShortcutDialog] = useState(false)
   const [newShortcut, setNewShortcut] = useState({ label: "", command: "" })
+  const [showRunMenu, setShowRunMenu] = useState(false)
+  const [selectedCommand, setSelectedCommand] = useState("npm start")
+  const runMenuRef = useRef<HTMLDivElement>(null)
+  const [showHelpDialog, setShowHelpDialog] = useState(false)
 
   const { status, start, input, resize, stop, disconnect } = useTerminal({
     onMessage: (payload: any) => {
@@ -51,7 +57,6 @@ const Terminal: React.FC<TerminalProps> = ({
           case "output":
             if (typeof payload.data === "string") {
               if (payload.data.startsWith("PREVIEW:")) {
-                console.log(payload.data)
                 const [port, token] = payload.data.replace("PREVIEW:", "").split(":")
                 if (port) {
                   setPorts((prev) => {
@@ -129,6 +134,18 @@ const Terminal: React.FC<TerminalProps> = ({
     setShortcuts(shortcuts.filter(s => s.id !== id))
   }
 
+  // Close run menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (runMenuRef.current && !runMenuRef.current.contains(event.target as Node)) {
+        setShowRunMenu(false)
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   useEffect(() => {
     return () => {
       stop()
@@ -189,42 +206,122 @@ const Terminal: React.FC<TerminalProps> = ({
     const url = `${API_URL}/preview/${encodeURIComponent(
       userId || ""
     )}/${encodeURIComponent(p.port)}?token=${encodeURIComponent(p.token)}`
-    console.log(url)
+
     if (setIframeUrl) setIframeUrl(url)
     else window.open(url, "_blank")
   }
 
   return (
     <div className={`${className} h-full w-full flex flex-col`}>
-      {/* Shortcuts Bar */}
-      <div className="px-3 py-2 bg-neutral-800 border-b border-neutral-700 flex gap-2 items-center flex-wrap">
-        <span className="text-white text-sm font-semibold mr-2">Shortcuts:</span>
-        
-        {shortcuts.map((shortcut) => (
-          <div key={shortcut.id} className="relative group">
-            <button
-              className="bg-violet-700 hover:bg-violet-600 text-white px-3 py-1.5 rounded text-sm border border-violet-600"
-              onClick={() => executeCommand(shortcut.command)}
-              title={shortcut.command}
-            >
-              ▶ {shortcut.label}
-            </button>
-            <button
-              className="absolute -top-1 -right-1 bg-red-600 hover:bg-red-500 text-white rounded-full w-5 h-5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => deleteShortcut(shortcut.id)}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-        
+      {/* Top Control Bar */}
+      <div className="px-3 py-1.5 bg-neutral-900 border-b border-neutral-700 flex gap-2 items-center">
+        {/* Run Button with Dropdown */}
+        <div className="relative" ref={runMenuRef}>
+          <button
+            className="bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded text-sm flex items-center gap-2 border border-green-600"
+            onContextMenu={(e) => {
+              e.preventDefault()
+              setShowRunMenu(!showRunMenu)
+            }}
+            onClick={() => executeCommand(selectedCommand)}
+            title={`Right-click to change command • Current: ${selectedCommand}`}
+          >
+            <span>▶</span>
+            <span className="font-medium">Run</span>
+          </button>
+
+          {/* Run Menu Dropdown */}
+          {showRunMenu && (
+            <div className="absolute top-full left-0 mt-1 bg-neutral-800 border border-neutral-700 rounded shadow-lg z-50 min-w-48">
+              <div className="p-2 border-b border-neutral-700">
+                <p className="text-neutral-400 text-xs">Select command:</p>
+              </div>
+              
+              {shortcuts.map((shortcut) => (
+                <button
+                  key={shortcut.id}
+                  className="w-full text-left px-3 py-2 text-white text-sm hover:bg-neutral-700 flex items-center gap-2"
+                  onClick={() => {
+                    setSelectedCommand(shortcut.command)
+                    setShowRunMenu(false)
+                  }}
+                >
+                  <span className={selectedCommand === shortcut.command ? "text-green-500" : "text-neutral-500"}>
+                    {selectedCommand === shortcut.command ? "✓" : "○"}
+                  </span>
+                  <span>{shortcut.label}</span>
+                </button>
+              ))}
+              
+              <div className="border-t border-neutral-700">
+                <button
+                  className="w-full text-left px-3 py-2 text-violet-400 text-sm hover:bg-neutral-700"
+                  onClick={() => {
+                    setShowShortcutDialog(true)
+                    setShowRunMenu(false)
+                  }}
+                >
+                  + Add Custom Command
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Open GUI Button */}
         <button
-          className="bg-neutral-700 hover:bg-neutral-600 text-white px-3 py-1.5 rounded text-sm border border-neutral-600"
-          onClick={() => setShowShortcutDialog(true)}
+          className="bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-1 rounded text-sm border border-neutral-600"
+          onClick={() => window.open(guiURL, "_blank")}
+          title="Open GUI in new tab"
         >
-          + Add Shortcut
+          🖥️ GUI
         </button>
+
+        {/* Show Web Project Button */}
+          <button
+            className="bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-1 rounded text-sm border border-neutral-600"
+            onClick={() => {
+              const url = `${API_URL}/projects/${projectId}/${projectName}`
+              window.open(url, "_blank")
+            }}
+            title="Open web project"
+          >
+            🌐 Project
+          </button>
+
+        {/* Show help */}
+        <div className="relative">
+  <button
+    className="bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-1 rounded text-sm border border-neutral-600"
+    onClick={() => setShowHelpDialog((prev) => !prev)}
+    title="Show help"
+  >
+    ?
+  </button>
+
+  {showHelpDialog && (
+    <div className="absolute right-0 top-full mt-2 bg-neutral-800 border border-neutral-700 rounded shadow-lg z-50 w-72">
+      <div className="bg-violet-900/20 p-4 rounded border border-violet-700">
+        <h4 className="text-violet-300 font-semibold mb-2">💡 Tips</h4>
+        <ul className="text-neutral-300 text-sm space-y-1 list-disc list-inside">
+          <li>Add custom commands by right-clicking the Run button</li>
+          <li>If using gui,after running gui command click on open gui button </li>
+          <li>For basic html css js project use open project button</li>
+          <li>Ports are auto-detected when you start a dev server</li>
+          <li>dev server for vite are not allowed use by building then preview</li>
+        </ul>
       </div>
+
+      <button
+        className="mt-3 w-full bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2 rounded"
+        onClick={() => setShowHelpDialog(false)}
+      >
+        Got it!
+      </button>
+    </div>
+  )}
+</div>
+</div>
 
       {/* Shortcut Dialog */}
       {showShortcutDialog && (
@@ -285,50 +382,27 @@ const Terminal: React.FC<TerminalProps> = ({
         data-status={status}
       />
 
-      {/* GUI Controls */}
-      <div className="px-3 py-2 bg-neutral-900 text-white flex gap-2">
-        <button
-          className="bg-neutral-800 h-12 hover:bg-neutral-700 px-4 py-2 rounded border border-neutral-700"
-          onClick={() => window.open(guiURL, "_blank")}
-        >
-          Open GUI in New Tab
-        </button>
-
-        <button
-          className={`px-4 py-2 rounded h-12 border ${
-            showGUI
-              ? "bg-violet-700 border-violet-600"
-              : "bg-neutral-800 border-neutral-700"
-          } hover:opacity-90`}
-          onClick={() => setShowGUI((s) => !s)}
-        >
-          {showGUI ? "Hide GUI" : "Show GUI Below"}
-        </button>
-      </div>
-
-      {/* GUI iframe */}
-      {showGUI && (
-        <iframe src={guiURL} className="w-full h-[40vh] border-0 bg-black" />
-      )}
-
       {/* Detected Servers */}
-      <div className="px-3 py-2 bg-neutral-950 text-white">
-        <h3 className="mb-2 font-semibold">Detected Servers:</h3>
-
-        {ports.length === 0 && (
-          <p className="text-neutral-400">No dev server detected yet</p>
-        )}
-
-        <div className="flex flex-wrap gap-2">
-          {ports.map((p) => (
-            <button
-              key={p.port}
-              className="bg-neutral-800 hover:bg-neutral-700 px-3 py-2 rounded border border-neutral-700"
-              onClick={() => openPreview(p)}
-            >
-              Open Preview: {p.port}
-            </button>
-          ))}
+      <div className="px-3 py-1.5 bg-neutral-950 text-white border-t border-neutral-700">
+        <div className="flex items-center gap-2">
+          <span className="text-neutral-400 text-xs">Ports:</span>
+          
+          {ports.length === 0 ? (
+            <span className="text-neutral-500 text-xs">None detected</span>
+          ) : (
+            <div className="flex gap-2">
+              {ports.map((p) => (
+                <button
+                  key={p.port}
+                  className="bg-neutral-800 hover:bg-neutral-700 px-2 py-0.5 text-xs rounded border border-neutral-700"
+                  onClick={() => openPreview(p)}
+                  title={`Open preview on port ${p.port}`}
+                >
+                  {p.port}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

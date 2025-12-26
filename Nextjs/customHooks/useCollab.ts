@@ -136,9 +136,9 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               }, 50)
               showToast(
                 true,
-                " File deleted by " +
+                " File deleted by ->" +
                   payload.deletedBy +
-                  " on file" +
+                  "-> on file ->" +
                   payload.fileName
               );
               dispatch(
@@ -165,11 +165,11 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               //file op for creation and rename
               showToast(
                 true,
-                " File Operation " +
+                " File Operation ->" +
                   payload.action +
-                  " done by " +
+                  " done by ->" +
                   payload.from.fullName +
-                  "on file" +
+                  "on file ->" +
                   payload.fileName
               );
               dispatch(
@@ -425,7 +425,6 @@ export default function useCollab(opts: UseCollabOptions = {}) {
   const send = useCallback((msg: ClientMessage) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       reSend.current++
-      console.log(reSend.current)
       if(reSend.current>5){
         showToast(false,"[collab] trying to send but socket not open");
         return false;
@@ -461,7 +460,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
 
     // process leaves first
     for (const key of Array.from(pendingLeavesRef.current)) {
-      console.log("leave")
+    
       const { projectId, fileId } = parseRoomKey(key);
       const ok = send({ action: "leave", projectId, fileId: fileId ?? null });
       if (ok) pendingLeavesRef.current.delete(key);
@@ -469,7 +468,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
     }
     // then joins
     for (const key of Array.from(pendingJoinsRef.current)) {
-      console.log("join")
+
       const { projectId, fileId } = parseRoomKey(key);
       const ok = send({ action: "join", projectId, fileId: fileId ?? null });
       if (ok) pendingJoinsRef.current.delete(key);

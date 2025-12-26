@@ -69,13 +69,11 @@ function startFsWatcher(projectDir: string, projectId: string) {
   });
 
   watcher.on("unlink", async(absPath) => {
-    console.log("unlinking  file---",absPath)
     if (Sup.isSuppressedOrParent(absPath)) return;
     await handleFileDelete(absPath, projectId);
   });
 
   watcher.on("unlinkDir", async(absPath) => {
-    console.log("unlinking  folder---",absPath)
     if (Sup.isSuppressedOrParent(absPath)) return;
     await handleFolderDelete(absPath, projectId);
   });

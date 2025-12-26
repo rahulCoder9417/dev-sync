@@ -46,9 +46,7 @@ const TreeNodeInner: React.FC<Props> = ({ node,errorMarkers,  sendMessage, depth
     setIsUserAdmin(collaboratorsMap[0].userId===user && collaboratorsMap.length>1)
   }, [collaboratorsMap])
   const handleClick = useCallback(() => {
-    console.log("click",action)
     if (action) return
-    console.log("click",node)
     if (node.type === 'folder') onToggle(node.id);
     
     else onSelect(node);

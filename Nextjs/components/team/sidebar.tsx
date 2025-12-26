@@ -132,7 +132,6 @@ const Sidebar = ({ dmAndTeam, selectedChat, setSelectedChat }: SidebarProps) => 
       );
       const data = await res.json();
       
-      showToast(true, `${data?.teams?.length || 0} teams found`);
       setFetchedData((prev) => ({
         teams: data?.teams ?? [],
         users: prev?.users ?? [],

@@ -65,7 +65,6 @@ const [lastMessageRead, setlastMessageRead] = useState<boolean>(user.lastMessage
     return last
   }, shallowEqual);
   useEffect(() => {
-    console.log(last,user.fullName)
 
     if (!last) return;
     if(!last.isRead && last.sender.id === user.userId){setlastMessageRead(false)}else{setlastMessageRead(true)}

@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useRef } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { useAppDispatch, useAppSelector } from "./hooks";
 import { connectChat, setupWebSocket, disconnectChat, setStatus } from "./features/chatSlice";
 import { AppDispatch, RootState, store } from "./store";
@@ -22,11 +22,11 @@ export function useChatInitializer(isLoaded:boolean) {
   const chatStatus = useAppSelector((state) => state.chat.status);
   const initializingRef = useRef(false);
   const initializedRef = useRef(false);
-
+  const { user } = useUser();
   useEffect(() => {
     // Prevent multiple initializations
     if(chatStatus === "reconnecting")initializedRef.current = false
-    if (initializingRef.current || initializedRef.current || !isLoaded || !chatStatus) {
+    if (initializingRef.current || initializedRef.current || !isLoaded || !chatStatus || !user) {
       return;
     }
 
@@ -62,7 +62,7 @@ export function useChatInitializer(isLoaded:boolean) {
     };
 
     initializeChat();
-  }, [dispatch, getToken, chatStatus,isLoaded]);
+  }, [dispatch, getToken, chatStatus,isLoaded,user]);
 }
 
 /**

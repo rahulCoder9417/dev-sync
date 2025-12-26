@@ -167,7 +167,6 @@ handleFileSelect(t)
 
 
   useEffect(()=>{
-    console.log(status)
     if(data?.type==="PRIVATE" && !(data.isOwner || data.isTeamMember)){
       // route to dashboard
       router.push("/dashboard")
@@ -178,7 +177,6 @@ handleFileSelect(t)
       
     }
     return ()=>{
-      console.log("leave")
       if(data?.id && (data.isOwner || data.isTeamMember))leave(data?.id!)
       if(data?.id && tabs[0]?.id && (data.isOwner || data.isTeamMember))leave(data?.id!,tabs[0].id)
     }
@@ -244,7 +242,7 @@ handleFileSelect(t)
         {visibleSection.preview && (
           <>
             <div style={{ width: `${previewWidth}%` }} className="max-md:w-1/2">
-              <Preview setTerminalLoaded={setTerminalLoaded} terminalLoaded={terminalLoaded} projectId={data.id}/>
+              <Preview projectName={data.name} setTerminalLoaded={setTerminalLoaded} terminalLoaded={terminalLoaded} projectId={data.id}/>
             </div>
             {visibleSection.chat && (
               <div className="w-1 bg-gray-700 cursor-default" />

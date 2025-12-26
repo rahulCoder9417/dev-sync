@@ -5,7 +5,7 @@ import { IncomingFileBroadcast, RenderFileEvent } from "../types/renderSync";
 import { fileWsHandler } from "../../server";
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-const RENDER_WS_URL = (process.env.RENDER_WS_URL || "ws://localhost:4000") +"/ws/file-sync";
+const RENDER_WS_URL = (process.env.TERMINAL_WS_URL || "ws://localhost:4000") +"/ws/file-sync";
 
 class RenderSyncClient {
   private ws: WebSocket | null = null;
@@ -33,7 +33,6 @@ constructor(){
     });
     this.ws.on("message", (data) => {
       const ev :IncomingFileBroadcast = JSON.parse(data.toString());
-      console.log("message",ev)
       switch (ev.type) {
         case "save":
           fileWsHandler.handleSave(ev.projectId,ev.fileId,ev.content);
@@ -73,7 +72,6 @@ constructor(){
 
     this.ensureConnection();
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log("event",event)
       this.ws.send(JSON.stringify(event));
     } else {
       this.queue.push(event);

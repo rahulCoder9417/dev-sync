@@ -28,6 +28,15 @@ export async function saveUserToDB(rawData: unknown) {
         avatar:"",
         githubUrl:"",
       },
+      select:{
+        id: true,
+        fullName: true,
+        githubUrl:true,
+        email: true,
+        avatar:true,
+        username: true,
+        bio:true
+      }
     });
 
     return { success: true, message: "User created successfully" ,user};

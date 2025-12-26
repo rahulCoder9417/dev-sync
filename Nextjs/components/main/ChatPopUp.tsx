@@ -8,14 +8,14 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { updateChatPopUp } from "@/lib/redux/features/chatPopUpSlice";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import getDMAndTeam from "@/lib/actions/chat/dmAndTeam";
-import { dmAndTeam } from "@/app/team/page";
+import { DMAndTeamResult } from "@/lib/types/chat";
 
 export function ChatPopup() {
     
     const [position, setPosition] = useState({ x: 100, y: 100 });
     const chat = useAppSelector((state) => state.chatPopUp);
     const dispatch = useAppDispatch();
-    const [messageData, setMessageData] = useState<dmAndTeam >({teams:[],friends:[]})
+    const [messageData, setMessageData] = useState<DMAndTeamResult >({teams:[],friends:[]})
     useEffect(() => {
       async function  getData(){
         try {

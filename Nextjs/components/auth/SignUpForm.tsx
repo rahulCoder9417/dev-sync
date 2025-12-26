@@ -73,10 +73,11 @@ export default function SignUpForm() {
           dispatch(setUser({
             fullName: resp.user.fullName,
             email: resp.user.email,
-            githubUrl:resp.user.githubUrl,
+            bio: resp.user.bio,
+            avatar: resp.user.avatar,
+            githubUrl:resp.user.githubUrl || null,
             id:resp.user.id,
             username: resp.user.username,
-            isAuthenticated: true,
           }));
           await setActive({ session: res.createdSessionId });
           router.push("/");
