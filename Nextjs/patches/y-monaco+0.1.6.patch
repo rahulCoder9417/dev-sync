@@ -1,0 +1,42 @@
+diff --git a/node_modules/y-monaco/dist/src/y-monaco.d.ts b/node_modules/y-monaco/dist/src/y-monaco.d.ts
+index 43e2877..d6c10ab 100644
+--- a/node_modules/y-monaco/dist/src/y-monaco.d.ts
++++ b/node_modules/y-monaco/dist/src/y-monaco.d.ts
+@@ -25,7 +25,7 @@ export class MonacoBinding {
+     _monacoChangeHandler: monaco.IDisposable;
+     _monacoDisposeHandler: monaco.IDisposable;
+     awareness: Awareness | undefined;
+-    destroy(): void;
++    destroy(skipYjs:boolean): void;
+ }
+ import * as Y from "yjs";
+ import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
+diff --git a/node_modules/y-monaco/src/y-monaco.js b/node_modules/y-monaco/src/y-monaco.js
+index bed9096..35a2de9 100644
+--- a/node_modules/y-monaco/src/y-monaco.js
++++ b/node_modules/y-monaco/src/y-monaco.js
+@@ -209,14 +209,19 @@ export class MonacoBinding {
+       this.awareness = awareness
+     }
+   }
+-
+-  destroy () {
++  destroy (skipYjsUnobserve = false) {
+     this._monacoChangeHandler.dispose()
+     this._monacoDisposeHandler.dispose()
+-    this.ytext.unobserve(this._ytextObserver)
++    
++    if (!skipYjsUnobserve) {
++    try { this.ytext.unobserve(this._ytextObserver) } catch {}
++    }
+     this.doc.off('beforeAllTransactions', this._beforeTransaction)
++    
+     if (this.awareness) {
+-      this.awareness.off('change', this._rerenderDecorations)
++    this.awareness.off('change', this._rerenderDecorations)
+     }
+-  }
++    }
++    
++    
+ }
