@@ -28,7 +28,7 @@ export async function getAuthData(token: string):Promise<UserMeta | null> {
       };
       
   } catch (error) {
-    g("Error happend finding user",error)
+    console.log("Error happend finding user",error)
     return null
   }
 }
