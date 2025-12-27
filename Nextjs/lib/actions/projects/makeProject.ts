@@ -2,7 +2,7 @@
 
 import db from "@/lib/db/prisma"
 import prisma from '@/lib/db/prisma'
-import { TeamRole } from "@/lib/generated/prisma";
+import { TeamRole } from "@prisma/client"
 import { middleWare } from "@/lib/mainUtils/beckendMiddleWare";
 import { currentUser } from '@clerk/nextjs/server'
 
