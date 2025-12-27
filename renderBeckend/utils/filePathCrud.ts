@@ -44,8 +44,13 @@ export class FileSystemService {
   async loadProject(projectId: string): Promise<ServiceResult<void>> {
     try {
       // Return if already loaded
-      if (this.cache.has(projectId)) {
+      if (this.cache.has(projectId)) { 
+        try {
+         const a = path.join(config.projectRoot, projectId);
         return { success: true };
+        } catch (error) {
+          // pass
+        }
       }
 
       await loadProjectIntoDisk(projectId, false);

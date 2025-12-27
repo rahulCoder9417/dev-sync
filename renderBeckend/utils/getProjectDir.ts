@@ -2,8 +2,9 @@ import fs from "fs/promises";
 import path from "path";
 import FilePathCrud from "./filePathCrud.js";
 
-export async function getRealProjectDir(baseDir, projectId) 
+export async function getRealProjectDir(baseDir: string, projectId: string) 
 {
+  if(!projectId)return
   let root;
   try {
      root = path.join(baseDir, projectId);
