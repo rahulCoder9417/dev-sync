@@ -80,7 +80,7 @@ export default function SignUpForm() {
             username: resp.user.username,
           }));
           await setActive({ session: res.createdSessionId });
-          router.push("/");
+          window.location.href = "/dashboard";
         }
       } else throw new Error("Incomplete");
     } catch (err: any) {

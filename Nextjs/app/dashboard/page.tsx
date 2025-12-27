@@ -36,6 +36,22 @@ function StatsFallback() {
   );
 }
 
+function StatsError() {
+  return (
+    <div className="bg-destructive/10 text-destructive p-4 rounded">
+      <p>Failed to load statistics. Please refresh the page.</p>
+    </div>
+  );
+}
+
+function ProjectsError() {
+  return (
+    <div className="bg-destructive/10 text-destructive p-4 rounded">
+      <p>Failed to load projects. Please refresh the page.</p>
+    </div>
+  );
+}
+
 /* -------------------------------------------------------------------------- */
 /*                                   Page                                     */
 /* -------------------------------------------------------------------------- */
@@ -50,7 +66,7 @@ export default function Dashboard() {
           <div className="max-w-7xl mx-auto space-y-8">
             {/* Stats */}
             <Suspense fallback={<StatsFallback />}>
-              <StatsCards />
+              <StatsCardsWrapper />
             </Suspense>
 
             {/* Recent Projects */}
@@ -67,7 +83,7 @@ export default function Dashboard() {
               <Suspense
                 fallback={<Loader length={3} className="h-32 flex flex-1" />}
               >
-                <RecentProjects />
+                <RecentProjectsWrapper />
               </Suspense>
             </section>
 
@@ -78,4 +94,23 @@ export default function Dashboard() {
       </div>
     </MaxWidth>
   );
+}
+
+// Wrapper components with error handling
+async function StatsCardsWrapper() {
+  try {
+    return <StatsCards />;
+  } catch (error) {
+    console.error('StatsCards error:', error);
+    return <StatsError />;
+  }
+}
+
+async function RecentProjectsWrapper() {
+  try {
+    return <RecentProjects />;
+  } catch (error) {
+    console.error('RecentProjects error:', error);
+    return <ProjectsError />;
+  }
 }

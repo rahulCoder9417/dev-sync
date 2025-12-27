@@ -184,7 +184,7 @@ function AvatarNotify() {
       </div>
 
       {/* Name */}
-      <div className="hidden md:flex items-center text-primary font-semibold text-lg">
+      <div className="hidden md:flex items-center text-primary font-semibold text-md">
         {fullName}
       </div>
     </div>

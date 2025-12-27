@@ -71,7 +71,7 @@ export default function SignInForm() {
 
         setIsSubmitting("connected");
         await setActive({ session: result.createdSessionId });
-        router.push("/");
+        window.location.href = "/dashboard";
       } else {
         setAuthError("Sign-in could not be completed. Please try again.");
       }
