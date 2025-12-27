@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button"
 import { getProjectById } from "@/lib/actions/projects/getProject"
 import { ProjectById } from "@/lib/types/types"
 import Link from "next/link"
+const page = async (
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const { id } = await params;
 
-const page = async({params}:{params:{id:string}}) => {
-  const {id}= await params
   const data:ProjectById = await getProjectById(id)
   if(data.status !== 200){
     return <div className="min-h-screen w-full bg-primary flex items-center justify-center">

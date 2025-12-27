@@ -65,8 +65,10 @@ export default function SignInForm() {
           githubUrl:resp.user.githubUrl,
           avatar:resp.user.avatar ?? "",
           username: resp.user.username,
-          isAuthenticated: true,
+          bio:resp.user.bio || "",
+          
         }));
+
         setIsSubmitting("connected");
         await setActive({ session: result.createdSessionId });
         router.push("/");

@@ -1,6 +1,5 @@
-// /app/api/auth/github/callback/route.ts
 import { NextResponse } from 'next/server'
-import  db  from '@/lib/db/prisma' // Your Prisma client
+import  db  from '@/lib/db/prisma' 
 import {  currentUser } from '@clerk/nextjs/server'
 import { encrypt } from '@/lib/mainUtils/crypto'
 export async function GET(req: Request) {

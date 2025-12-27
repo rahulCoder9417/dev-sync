@@ -72,8 +72,9 @@ const Index = async() => {
         </div>
 
         {/* Projects Section */}
-        <ProjectSection  />
-
+        <Suspense fallback={<div className="p-6">Loading projects...</div>}>
+      <ProjectSection />
+    </Suspense>
       </div>
     </div>
   );

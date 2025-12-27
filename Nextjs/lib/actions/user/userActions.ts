@@ -64,6 +64,7 @@ export async function getUserByIdentifier(identifier: string) {
         id: true,
         fullName: true,
         githubUrl:true,
+        bio:true,
         email: true,
         avatar:true,
         username: true,

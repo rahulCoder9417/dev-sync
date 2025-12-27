@@ -11,9 +11,9 @@ import { getUserDetails } from '@/lib/actions/user/userDetailes';
 /* -------------------------------------------------------------------------- */
 
 interface PageProps {
-  params: {
+  params: Promise<{
     username: string;
-  };
+  }>;
 }
 
 
@@ -22,7 +22,7 @@ interface PageProps {
 /* -------------------------------------------------------------------------- */
 
 export default async function Page({ params }: PageProps) {
-  const { username } = params;
+  const { username } = await params;
 
   const data = await getUserDetails(username);
   if (!data.success) {
