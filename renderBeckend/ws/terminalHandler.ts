@@ -41,7 +41,11 @@ class TerminalWS {
         console.log(
           `🖥️  Terminal WS connected: user=${ws.userId}, terminal=${ws.terminalId}`
         );
-
+        ws.isAlive = true;
+        ws.on("pong", () => {
+          ws.isAlive = true;
+        });
+      
         const session = RoomManager.getUserSession(ws.userId);
         // ✅ AUTO-ASSIGN GUI: Create GUI session when user opens any terminal
         const gui = await VNCSessionService.ensureSession(ws.userId);
@@ -132,6 +136,16 @@ class TerminalWS {
             );
           }
         });
+        ptyProcess.onExit(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(
+              JSON.stringify({
+                type: "exit",
+              })
+            );
+          }
+        });
+        
         RoomManager.addTerminal(ws.userId, ws.terminalId, ptyProcess);
         ws.on("pong", () => {
           ws.isAlive = true;
@@ -148,11 +162,7 @@ class TerminalWS {
         });
 
         ws.on("close", () => {
-          ws.send(
-            JSON.stringify({
-              type: "exit",
-            })
-          );
+      
           RoomManager.removeTerminal(ws.userId, ws.terminalId);
           console.log(`[WS] client disconnected userId=${ws.userId}`);
           // 🧹 TERMINAL CLEANUP
@@ -197,7 +207,6 @@ class TerminalWS {
           return
         }
       }
-      console.log(gui)
 
       const vncPort = gui.vncPort;
       const tcpSocket = net.connect(vncPort, "127.0.0.1");
@@ -245,7 +254,16 @@ class TerminalWS {
           console.log(
             `[WS] Terminating stale connection for userId=${client.userId}`
           );
+          const pty = RoomManager.getTerminal(
+            client.userId,
+            client.terminalId
+          );
+          try {
+            pty?.kill();
+          } catch {}
+  
           return client.terminate();
+
         }
         client.isAlive = false;
         try {
@@ -254,7 +272,7 @@ class TerminalWS {
           console.error("[WS] ping error", e);
         }
       });
-    }, 300000);
+    }, 30000);
   }
 
   public upgrade(

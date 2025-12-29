@@ -24,7 +24,7 @@ class RoomManager {
     }
 
     public getTerminal(userId: string, terminalId: string){
-      return this.sessions[userId].terminals[terminalId]
+      return this.sessions[userId].terminals[terminalId] || null
     }
 
     public addGui(userId: string,gui:GuiSession){

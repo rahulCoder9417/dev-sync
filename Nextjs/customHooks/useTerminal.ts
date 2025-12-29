@@ -73,6 +73,7 @@ export default function useTerminal(opts: {
       wsRef.current = ws;
   
       ws.onopen = () => {
+        manualClose.current = false;
         connectingRef.current = false;
         setStatus("connected");
         ws.send(JSON.stringify({ action: "start" }));

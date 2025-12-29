@@ -1,4 +1,4 @@
-import { WebSocketServer } from "ws";
+import { WebSocketServer,WebSocket } from "ws";
 import type { IncomingMessage } from "http";
 import fs from "fs/promises";
 import path from "path";
@@ -8,6 +8,7 @@ import { Sup } from "../utils/pathSuppressor.js";
 import { downloadFile, isSupportedMediaFile } from "../controller/diskFileSave.js";
 
 // Event schema parity with main backend
+type AliveWebSocket = WebSocket & { isAlive?: boolean };
 
  type RenderFileEvent =
   | {
@@ -65,11 +66,13 @@ const IGNORED = new Set(["node_modules", "dist", "build", ".next", "out"]);
 
 export class FileSyncWS {
   private wss: WebSocketServer;
+  private heartbeatInterval: NodeJS.Timeout | null = null;
   private PROJECT_ROOT = "/usr/src/app/projects";
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
     this.setup();
+
   }
 
   private isIgnored(rel: string) {
@@ -153,6 +156,12 @@ export class FileSyncWS {
 
   private setup() {
     this.wss.on("connection", async (ws) => {
+      ws.isAlive = true;
+
+      ws.on("pong", () => {
+        ws.isAlive = true;
+      });
+  
       ws.on("message", async (buf) => {
         try {
           const ev = JSON.parse(buf.toString()) as RenderFileEvent;
@@ -162,8 +171,35 @@ export class FileSyncWS {
         }
       });
     });
+    this.startHeartbeat()
   }
 //there will be only one client connected the main beckend
+private startHeartbeat() {
+  if (this.heartbeatInterval) return;
+
+  this.heartbeatInterval = setInterval(() => {
+    this.wss.clients.forEach((ws: AliveWebSocket) => {
+      if (ws.isAlive === false) {
+        console.log("[FileSyncWS] stale connection terminated");
+        return ws.terminate();
+      }
+
+      ws.isAlive = false;
+      try {
+        ws.ping();
+      } catch (e) {
+        console.error("[FileSyncWS] ping error", e);
+      }
+    });
+  }, 30000);
+}
+public close() {
+  if (this.heartbeatInterval) {
+    clearInterval(this.heartbeatInterval);
+    this.heartbeatInterval = null;
+  }
+  this.wss.close();
+}
 
   public sendFileEvent(ev: OutGoingFileBroadcast) {
     this.wss.clients.forEach((ws) => {
