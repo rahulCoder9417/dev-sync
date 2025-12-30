@@ -267,6 +267,7 @@ export class FileWsHandler extends BaseWsHandler {
       return;
     }
     if(type==="create"){
+      console.log("file create",parsed);
       sendFileCreated({
         projectId,
         fileName,
@@ -275,6 +276,7 @@ export class FileWsHandler extends BaseWsHandler {
         parentId :fileId!,
       });
     }else if(type==="rename"){
+      console.log("file rename",parsed);
       sendFileRenamed({
         projectId,
       fileFolderId :fileId!,
