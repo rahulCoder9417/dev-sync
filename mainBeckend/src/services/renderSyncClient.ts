@@ -62,7 +62,6 @@ constructor(){
   }
 
   public send(event: RenderFileEvent) {
-    console.log("event",event)
     // ignore prohibited directories early (double safety)
     try {
       const first = (event as any).path?.split("/")[0];
@@ -73,7 +72,6 @@ constructor(){
 
     this.ensureConnection();
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log("event sent",event)
       this.ws.send(JSON.stringify(event));
     } else {
       this.queue.push(event);

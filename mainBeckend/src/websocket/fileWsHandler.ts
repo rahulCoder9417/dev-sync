@@ -54,7 +54,6 @@ export class FileWsHandler extends BaseWsHandler {
     }
 
     try {
-      console.log("parsed",parsed)
       switch (parsed.action) {
         case "join":
           this.handleJoinRoom(ws, parsed);
@@ -64,7 +63,6 @@ export class FileWsHandler extends BaseWsHandler {
           break;
         case "fileOp":
           //file op mainly create and rename
-          console.log("fileOp",parsed)
           this.handleFileUpdate(ws, parsed );
           
           break;
@@ -265,12 +263,10 @@ export class FileWsHandler extends BaseWsHandler {
       },
       ws
     );
-    if(!parsed.newNode){
+    if(!parsed.newNode && type==="create"){
       return;
     }
-    console.log("parsed",parsed)
     if(type==="create"){
-      console.log("file create",parsed);
       sendFileCreated({
         projectId,
         fileName,
@@ -279,7 +275,6 @@ export class FileWsHandler extends BaseWsHandler {
         parentId :fileId!,
       });
     }else if(type==="rename"){
-      console.log("file rename",parsed);
       sendFileRenamed({
         projectId,
       fileFolderId :fileId!,

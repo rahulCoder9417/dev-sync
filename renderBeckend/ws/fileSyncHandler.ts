@@ -87,7 +87,7 @@ export class FileSyncWS {
 
   private async handleEvent(ev: RenderFileEvent) {
     const projectDir = this.PROJECT_ROOT
-    console.log("ev",ev)
+    
     switch (ev.type) {
       // Disappearance events happen instantly.
       //  must suppress before they happen.
@@ -137,15 +137,11 @@ export class FileSyncWS {
       }
   
       case "file:rename": {
-        console.log("file rename",ev);
         const oldAbs = await FilePathCrud.getFilePath( ev.projectId, ev.fileFolderId);
-        console.log("oldAbs",oldAbs);
         if (!oldAbs) return;
   
         const dir = path.dirname(oldAbs);
-        console.log("dir",dir);
         const newAbs = path.join(dir, ev.fileName);
-        console.log("newAbs",newAbs);
   
         if (this.isIgnored(newAbs)) return;
         Sup.suppress(oldAbs);
