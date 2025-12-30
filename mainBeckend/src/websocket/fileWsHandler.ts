@@ -266,6 +266,7 @@ export class FileWsHandler extends BaseWsHandler {
     if(!parsed.newNode){
       return;
     }
+    console.log("parsed",parsed)
     if(type==="create"){
       console.log("file create",parsed);
       sendFileCreated({
