@@ -87,7 +87,7 @@ export class FileSyncWS {
 
   private async handleEvent(ev: RenderFileEvent) {
     const projectDir = this.PROJECT_ROOT
-  
+    console.log("ev",ev)
     switch (ev.type) {
       // Disappearance events happen instantly.
       //  must suppress before they happen.
