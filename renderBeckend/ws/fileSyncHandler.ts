@@ -137,11 +137,15 @@ export class FileSyncWS {
       }
   
       case "file:rename": {
+        console.log("file rename",ev);
         const oldAbs = await FilePathCrud.getFilePath( ev.projectId, ev.fileFolderId);
+        console.log("oldAbs",oldAbs);
         if (!oldAbs) return;
   
         const dir = path.dirname(oldAbs);
+        console.log("dir",dir);
         const newAbs = path.join(dir, ev.fileName);
+        console.log("newAbs",newAbs);
   
         if (this.isIgnored(newAbs)) return;
         Sup.suppress(oldAbs);
