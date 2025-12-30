@@ -54,6 +54,7 @@ export class FileWsHandler extends BaseWsHandler {
     }
 
     try {
+      console.log("parsed",parsed)
       switch (parsed.action) {
         case "join":
           this.handleJoinRoom(ws, parsed);
@@ -63,6 +64,7 @@ export class FileWsHandler extends BaseWsHandler {
           break;
         case "fileOp":
           //file op mainly create and rename
+          console.log("fileOp",parsed)
           this.handleFileUpdate(ws, parsed );
           
           break;
