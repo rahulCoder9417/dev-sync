@@ -61,7 +61,7 @@ export async function GET() {
         friendshipId: f.id,
         status: f.status,
         createdAt: f.createdAt,
-
+        isInitiator,
         id: otherUser.id,
         fullName: otherUser.fullName,
         username: otherUser.username,

@@ -21,6 +21,7 @@ export interface Friend {
   username: string;
   avatar: string | null;
   status: FriendStatus;
+  isInitiator: boolean;
 }
 
 interface FriendsListProps {
@@ -192,13 +193,16 @@ function FriendRow({
         <Button
           size="sm"
           variant="outline"
-          disabled={loading}
+          disabled={loading || (friend.status === 'pending' && friend.isInitiator)}
           onClick={onAction}
         >
           {loading
             ? 'Processing...'
+            
             : isPending
-            ? 'Accept'
+            ? friend.isInitiator 
+            ? 'pending'
+            : 'Accept'
             : 'Unfriend'}
         </Button>
       </div>
