@@ -69,10 +69,9 @@ QuickActions    ← static UI
 
 | Component      | Responsibility            | Documentation Path                                  |
 | -------------- | ------------------------- | --------------------------------------------------- |
-| HeaderHome     | Top navigation & identity | `docs/components/main/headerHome/README.md`         |
-| StatsCards     | Platform metrics overview | `docs/components/dashboard/README.md`               |
-| RecentProjects | User’s recent work        | `docs/components/dashboard/RecentProject/README.md` |
-| QuickActions   | Common next actions       | `docs/components/dashboard/quickAction/README.md`   |
+| HeaderHome     | Top navigation & identity |  [HeaderHome README](../../componenets/main/headerHome/README.MD)    |
+| RecentProjects | User’s recent work        | [RecentProjects README](../../componenets/dashboard/recentProject/README.MD) |
+| QuickActions   | Common next actions       | [QuickActions README](../../componenets/dashboard/quickAction/README.MD)   |
 
 
 ---
