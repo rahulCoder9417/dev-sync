@@ -113,7 +113,7 @@ export default function SignUpForm() {
             </div>
           )}
           <form onSubmit={verify} className="space-y-4">
-            <Label htmlFor="code" className="font-bold">Verification Code</Label>
+            <Label htmlFor="code" className="font-bold text-primary">Verification Code</Label>
             <Input className="border-primary text-primary" id="code" value={code} onChange={e => setCode(e.target.value)} autoFocus />
             <Button type="submit" className="w-full cursor-pointer">{isSubmitting ? "Verifying..." : "Verify"}</Button>
           </form>

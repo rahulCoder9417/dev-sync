@@ -257,11 +257,10 @@ const Sidebar = ({ dmAndTeam, selectedChat, setSelectedChat }: SidebarProps) => 
         </Tabs>
       </div>
 
-      {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-hidden">
+      {/* Teams Section - Fixed Height with Scroll */}
+      <div className="flex-1 overflow-hidden max-h-[40vh] border-b border-primary">
         <ScrollArea className="h-full">
-          {/* Teams Section */}
-          <div className="border-b border-primary pb-4">
+          <div className="pb-4">
             {teamsToShow.length > 0 ? (
               <div className="p-2">
                 <div className="flex justify-between items-center px-3 py-2">
@@ -357,8 +356,12 @@ const Sidebar = ({ dmAndTeam, selectedChat, setSelectedChat }: SidebarProps) => 
               </div>
             ) : null}
           </div>
+        </ScrollArea>
+      </div>
 
-          {/* Users Section */}
+      {/* Users Section - Takes Remaining Space with Scroll */}
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
           <div className="pb-4">
             {usersToShow.length > 0 ? (
               <div className="p-2">

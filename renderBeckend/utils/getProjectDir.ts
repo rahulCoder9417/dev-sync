@@ -5,17 +5,21 @@ import FilePathCrud from "./filePathCrud.js";
 export async function getRealProjectDir(baseDir: string, projectId: string) 
 {
   if(!projectId)return
-  let root;
+  const root = path.join(baseDir, projectId);
+
   try {
-     root = path.join(baseDir, projectId);
+    await fs.access(root);
   } catch (error) {
-    await FilePathCrud.loadProject(projectId);
-    root = path.join(baseDir, projectId);
+  const result =   await FilePathCrud.loadProject(projectId);
+ 
+  if (!result.success) {
+    throw new Error(`Failed to load project: ${result.error?.message}`);
   }
+  }
+
 
   const items = await fs.readdir(root, { withFileTypes: true });
 
-  // the only folder = the project folder
   const folder = items.find((i) => i.isDirectory());
 
   if (!folder) throw new Error("Project folder not found");

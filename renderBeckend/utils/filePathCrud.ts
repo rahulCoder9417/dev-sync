@@ -43,27 +43,31 @@ export class FileSystemService {
    */
   async loadProject(projectId: string): Promise<ServiceResult<void>> {
     try {
-      // Return if already loaded
+      const projectRoot = path.join(config.projectRoot, projectId);
+      
+      // Check if already loaded AND exists on disk
       if (this.cache.has(projectId)) { 
         try {
-         const a = path.join(config.projectRoot, projectId);
-        return { success: true };
+          await fs.access(projectRoot);
+          return { success: true };
         } catch (error) {
-          // pass
+          this.cache.delete(projectId);
         }
       }
-
+  
       await loadProjectIntoDisk(projectId, false);
-      const mapPath = path.join(config.projectRoot, projectId, "fileMap.json");
       
-      // Load existing map
+      await fs.access(projectRoot);
+      
+      const mapPath = path.join(projectRoot, "fileMap.json");
+      
       const raw = await fs.readFile(mapPath, "utf8");
       const fileMap = JSON.parse(raw);
-      // Build reverse map
+      
       const reverseMap = Object.fromEntries(
         Object.entries(fileMap).map(([fileId, absPath]) => [absPath as string, fileId])
       );
-
+  
       const projectMap: ProjectFileMap = {
         projectId,
         fileMap,
@@ -71,10 +75,10 @@ export class FileSystemService {
         lastLoaded: new Date(),
         dirty: false,
       };
-
+  
       this.cache.set(projectId, projectMap);
       console.log(`✅ Loaded fileMap for project=${projectId} (${Object.keys(fileMap).length} entries)`);
-
+  
       return { success: true };
     } catch (error) {
       return {
