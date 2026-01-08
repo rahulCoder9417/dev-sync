@@ -184,7 +184,7 @@ const Sidebar = ({ dmAndTeam, selectedChat, setSelectedChat }: SidebarProps) => 
   }
 
   return (
-    <div className="w-[20%] max-md:w-[30%] bg-card border-r border-primary flex flex-col min-h-full relative">
+    <div className="w-[20%] max-md:w-[30%] bg-card border-r border-primary flex flex-col h-screen relative">
       {/* Close Button */}
       <Button
         onClick={() => setIsSidebarOpen(false)}
@@ -196,7 +196,7 @@ const Sidebar = ({ dmAndTeam, selectedChat, setSelectedChat }: SidebarProps) => 
       </Button>
 
       {/* Search Header */}
-      <div className="p-3 sm:p-4 border-b border-primary space-y-3 pt-12 sm:pt-4">
+      <div className="p-3 sm:p-4 border-b border-primary space-y-3 pt-12 sm:pt-4 shrink-0">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-5 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -257,179 +257,182 @@ const Sidebar = ({ dmAndTeam, selectedChat, setSelectedChat }: SidebarProps) => 
         </Tabs>
       </div>
 
-      {/* Teams Section */}
-      <div className="border-b border-primary">
-        <ScrollArea className="h-[30vh] sm:h-[35vh] md:h-[40vh]">
-          {teamsToShow.length > 0 ? (
-            <div className="p-2">
-              <div className="flex justify-between items-center px-3 py-2">
-                <span className="text-xs font-semibold text-secondary uppercase">
-                  Teams
-                </span>
-                {searchTerm && (
-                  <span className="text-xs text-muted-foreground">
-                    {teamsToShow.length} found
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
+          {/* Teams Section */}
+          <div className="border-b border-primary pb-4">
+            {teamsToShow.length > 0 ? (
+              <div className="p-2">
+                <div className="flex justify-between items-center px-3 py-2">
+                  <span className="text-xs font-semibold text-secondary uppercase">
+                    Teams
                   </span>
-                )}
-              </div>
-
-              {teamsToShow.map((team: any) => (
-                <div key={team.id} className="relative group">
-                  <button
-                    disabled={showFetched.team}
-                    onClick={() => {
-                      setSelectedChat({
-                        type: "team",
-                        id: team.id,
-                        name: team.name,
-                      });
-                      clearSearch();
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                      selectedChat?.type === "team" && selectedChat.id === team.id
-                        ? "bg-hover"
-                        : "hover:bg-hover"
-                    }`}
-                  >
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: "rgba(139,92,246,0.2)" }}
-                    >
-                      <Users className="h-5 w-5" style={{ color: "#8b5cf6" }} />
-                    </div>
-                    
-                    <div className="flex-1 text-left min-w-0">
-                      <p className="font-medium text-primary truncate text-sm">{team.name}</p>
-                      <p className="text-xs text-secondary">
-                        {team.memberCount ?? 0} members
-                      </p>
-                    </div>
-
-                    {!team.lastMessageRead && (
-                      <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-                    )}
-                  </button>
-
-                  {!showFetched.team  && (
-                    <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Link href={`/projects/get/${team.projectId}`}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-hover">
-                          <SendHorizonal className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-hover max-md:hidden"
-                        onClick={() =>
-                          dispatch(
-                            updateChatPopUp({
-                              isOpen: true,
-                              selectedChat: { type: "team", id: team.id, name: team.name },
-                            })
-                          )
-                        }
-                      >
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  {searchTerm && (
+                    <span className="text-xs text-muted-foreground">
+                      {teamsToShow.length} found
+                    </span>
                   )}
                 </div>
-              ))}
-            </div>
-          ) : searchTerm && searchMode === "global" ? (
-            <div className="p-6 text-center space-y-3">
-              <p className="text-sm text-primary">Search for teams globally</p>
-              <Button
-                onClick={fetchTeams}
-                variant="default"
-                className="hover:bg-hover"
-              >
-                Search Teams
-              </Button>
-            </div>
-          ) : searchTerm && searchMode === "local" ? (
-            <div className="p-6 text-center">
-              <p className="text-sm text-muted-foreground">No teams found locally</p>
-            </div>
-          ) : null}
+
+                {teamsToShow.map((team: any) => (
+                  <div key={team.id} className="relative group">
+                    <button
+                      disabled={showFetched.team}
+                      onClick={() => {
+                        setSelectedChat({
+                          type: "team",
+                          id: team.id,
+                          name: team.name,
+                        });
+                        clearSearch();
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                        selectedChat?.type === "team" && selectedChat.id === team.id
+                          ? "bg-hover"
+                          : "hover:bg-hover"
+                      }`}
+                    >
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: "rgba(139,92,246,0.2)" }}
+                      >
+                        <Users className="h-5 w-5" style={{ color: "#8b5cf6" }} />
+                      </div>
+                      
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="font-medium text-primary truncate text-sm">{team.name}</p>
+                        <p className="text-xs text-secondary">
+                          {team.memberCount ?? 0} members
+                        </p>
+                      </div>
+
+                      {!team.lastMessageRead && (
+                        <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                      )}
+                    </button>
+
+                    {!showFetched.team && (
+                      <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Link href={`/projects/get/${team.projectId}`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-hover">
+                            <SendHorizonal className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-hover max-md:hidden"
+                          onClick={() =>
+                            dispatch(
+                              updateChatPopUp({
+                                isOpen: true,
+                                selectedChat: { type: "team", id: team.id, name: team.name },
+                              })
+                            )
+                          }
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : searchTerm && searchMode === "global" ? (
+              <div className="p-6 text-center space-y-3">
+                <p className="text-sm text-primary">Search for teams globally</p>
+                <Button
+                  onClick={fetchTeams}
+                  variant="default"
+                  className="hover:bg-hover"
+                >
+                  Search Teams
+                </Button>
+              </div>
+            ) : searchTerm && searchMode === "local" ? (
+              <div className="p-6 text-center">
+                <p className="text-sm text-muted-foreground">No teams found locally</p>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Users Section */}
+          <div className="pb-4">
+            {usersToShow.length > 0 ? (
+              <div className="p-2">
+                <div className="flex justify-between items-center px-3 py-2">
+                  <span className="text-xs font-semibold text-secondary uppercase">
+                    Direct Messages
+                  </span>
+                  {searchTerm && (
+                    <span className="text-xs text-muted-foreground">
+                      {usersToShow.length} found
+                    </span>
+                  )}
+                </div>
+
+                {usersToShow.map((user: any) =>
+                  showFetched.user ? (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-hover rounded-lg"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Avatar
+                          fullName={user.fullName}
+                          username={user.username}
+                          avatar={user.avatar}
+                          getInfo={true}
+                          className="w-10 h-10 shrink-0"
+                        />
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="font-medium text-primary truncate text-sm">
+                            {user.fullName}
+                          </span>
+                          <span className="text-xs text-secondary truncate">
+                            @{user.username}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <Link href={`/profile/${user.username}`}>
+                        <Button size="sm" variant="outline" className="shrink-0 text-xs">
+                          View
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <UserListItem
+                      key={user.id}
+                      user={user}
+                      selectedChat={selectedChat}
+                      setSelectedChat={setSelectedChat}
+                      clearSearch={searchTerm ? clearSearch : undefined}
+                    />
+                  )
+                )}
+              </div>
+            ) : searchTerm && searchMode === "global" ? (
+              <div className="p-6 text-center space-y-3">
+                <p className="text-sm text-primary">Search for users globally</p>
+                <Button
+                  onClick={fetchUsers}
+                  variant="default"
+                  className="hover:bg-hover"
+                >
+                  Search Users
+                </Button>
+              </div>
+            ) : searchTerm && searchMode === "local" ? (
+              <div className="p-6 text-center">
+                <p className="text-sm text-muted-foreground">No users found locally</p>
+              </div>
+            ) : null}
+          </div>
         </ScrollArea>
       </div>
-
-      {/* Users Section */}
-      <ScrollArea className="flex-1">
-        {usersToShow.length > 0 ? (
-          <div className="p-2">
-            <div className="flex justify-between items-center px-3 py-2">
-              <span className="text-xs font-semibold text-secondary uppercase">
-                Direct Messages
-              </span>
-              {searchTerm && (
-                <span className="text-xs text-muted-foreground">
-                  {usersToShow.length} found
-                </span>
-              )}
-            </div>
-
-            {usersToShow.map((user: any) =>
-              showFetched.user ? (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-hover rounded-lg"
-                >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <Avatar
-                      fullName={user.fullName}
-                      username={user.username}
-                      avatar={user.avatar}
-                      getInfo={true}
-                      className="w-10 h-10 shrink-0"
-                    />
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="font-medium text-primary truncate text-sm">
-                        {user.fullName}
-                      </span>
-                      <span className="text-xs text-secondary truncate">
-                        @{user.username}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <Link href={`/profile/${user.username}`}>
-                    <Button size="sm" variant="outline" className="shrink-0 text-xs">
-                      View
-                    </Button>
-                  </Link>
-                </div>
-              ) : (
-                <UserListItem
-                  key={user.id}
-                  user={user}
-                  selectedChat={selectedChat}
-                  setSelectedChat={setSelectedChat}
-                  clearSearch={searchTerm ? clearSearch : undefined}
-                />
-              )
-            )}
-          </div>
-        ) : searchTerm && searchMode === "global" ? (
-          <div className="p-6 text-center space-y-3">
-            <p className="text-sm text-primary">Search for users globally</p>
-            <Button
-              onClick={fetchUsers}
-              variant="default"
-              className="hover:bg-hover"
-            >
-              Search Users
-            </Button>
-          </div>
-        ) : searchTerm && searchMode === "local" ? (
-          <div className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">No users found locally</p>
-          </div>
-        ) : null}
-      </ScrollArea>
     </div>
   );
 };

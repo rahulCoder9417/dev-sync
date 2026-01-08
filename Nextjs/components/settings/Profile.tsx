@@ -65,6 +65,10 @@ export default function Profile() {
 
   /* ---------------- Submit ---------------- */
   async function handleSubmit() {
+    if(avatarFile && avatarFile?.size > 1 * 1024 * 1024){
+      showToast(false, "Avatar size must be less than 1MB.");
+      return;
+    }
     const res = await updateProfile({
       username: form.username,
       fullName: form.fullName,
@@ -118,7 +122,7 @@ export default function Profile() {
             />
 
             <p className="mt-2 text-xs text-muted">
-              JPG, PNG or GIF. Max size 2MB
+              JPG, PNG or GIF. Max size 1MB
             </p>
           </div>
         </div>

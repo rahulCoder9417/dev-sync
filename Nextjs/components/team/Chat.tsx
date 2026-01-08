@@ -14,7 +14,7 @@ const Chat = ({dmAndTeam}: {dmAndTeam: DMAndTeamResult}) => {
       } | null>(null);
     
   return (
-    <div className="flex max-h-screen w-screen bg-primary ">
+    <div className="flex min-h-screen w-screen bg-primary ">
       {/* Sidebar */}
       <Sidebar dmAndTeam={dmAndTeam} selectedChat={selectedChat} setSelectedChat={setSelectedChat} />
       {/* Main Chat Area */}

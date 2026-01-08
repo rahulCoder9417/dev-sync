@@ -101,10 +101,10 @@ export default function SignUpForm() {
     return (
       <Card className="max-w-md border-primary mx-auto">
         <CardHeader className="text-center">
-          <h1 className="text-2xl text-primary font-bold">Verify Email</h1>
+          <h1 className="text-2xl text-secondary font-bold">Verify Email</h1>
           <p className="text-secondary">Check your inbox for the code</p>
         </CardHeader>
-        <div className="border-primary border-b" />
+        <div className="border border-b" />
         <CardContent>
           {verificationError && (
             <div className="p-3 bg-destructive/10 text-destructive mb-4 rounded-2xl font-bold flex items-center space-x-2">

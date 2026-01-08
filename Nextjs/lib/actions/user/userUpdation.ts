@@ -36,7 +36,17 @@ export async function updateProfile(
   try {
     const data = updateProfileSchema.parse(rawData);
 
-
+    if(data.avatar?.size){
+      const maxSize = 1 * 1024 * 1024; 
+      
+      if(data.avatar.size > maxSize){
+        return {
+          success: false,
+          error:
+            "Avatar size must be less than 1MB"
+        };
+      }
+    }
     const avatarUrl = await handleAvatarUpload(
       data.avatar,
       data.username
@@ -57,7 +67,7 @@ export async function updateProfile(
       avatarUrl,
     };
   } catch (error) {
-    console.error('[UPDATE_PROFILE_FAILED]', error);
+    console.log('[UPDATE_PROFILE_FAILED]', error);
 
     return {
       success: false,
