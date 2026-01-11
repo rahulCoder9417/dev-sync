@@ -139,7 +139,7 @@ export default function SignUpForm() {
   }
 
   return (
-    <Card className="max-w-md border-primary shadow-xl bg-secondary text-white mx-auto">
+    <Card className="min-w-xl max-md:max-w-md border-primary shadow-xl bg-secondary text-white mx-auto">
       <CardHeader className="text-center">
         <h1 className="text-2xl font-bold">Create Your Account</h1>
         <p className="text-secondary">Secure image management starts here</p>
