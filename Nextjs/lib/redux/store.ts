@@ -7,8 +7,10 @@ import chatPopUpReducer from "./features/chatPopUpSlice";
 import chatReducer from "./features/chatSlice";
 import collabCodeEditorUpdateReducer from "./features/collabCodeEditorUpdate";
 import onlineUserReducer from "./features/onlineUserSlice";
+import terminalOptionsReducer from "./features/terminalOptions";
 export const store = configureStore({
   reducer: {
+    terminalOptions: terminalOptionsReducer,
     user: userReducer,
     chatPopUp: chatPopUpReducer,
     chat: chatReducer,

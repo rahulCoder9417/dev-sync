@@ -199,7 +199,7 @@ handleFileSelect(t)
           />
         )
       }
-      <Header projectName={data.name} users={data.team.members} participantsRef={Array.from(participantsRef.current.keys())}  />
+      <Header projectName={data.name} users={data.team.members} participantsRef={Array.from(participantsRef.current.keys())} isMember={data.isTeamMember || data.isOwner} projectId={data.id} />
 
       <div ref={containerRef} className="flex-1 flex overflow-hidden">
         {visibleSection.file && (

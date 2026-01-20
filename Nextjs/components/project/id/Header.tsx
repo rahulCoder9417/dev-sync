@@ -4,6 +4,7 @@ import { Users, Settings } from 'lucide-react';
 import LaptopNotify from '@/components/main/AvatarNotify';
 import Avatar from '@/components/main/Avatar';
 import { UserSummary } from '@/lib/types/types';
+import CodeOption from './CodeOption';
 type HeaderProps = {
   projectName: string; 
   users:{
@@ -11,10 +12,12 @@ type HeaderProps = {
       id: string; fullName: string; username: string; avatar: string | null; };
       userId: string;
        role: "ADMIN"|"MEMBER"; }[];
+       projectId: string;
   participantsRef: string[];
+  isMember: boolean;
       }
 
-const Header = ({ projectName ,users,participantsRef}: HeaderProps) => {
+const Header = ({ projectName ,users,participantsRef,isMember,projectId}: HeaderProps) => {
 
   const [showAllUsers, setShowAllUsers] = useState(false);
  const onlineUsers = useMemo(()=>{
@@ -49,6 +52,7 @@ const Header = ({ projectName ,users,participantsRef}: HeaderProps) => {
         </div>
 
         <LaptopNotify/>
+       {isMember && <CodeOption projectId={projectId}/>}
       </div>
     </header>
   );
