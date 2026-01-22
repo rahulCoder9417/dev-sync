@@ -6,8 +6,13 @@ import NewLoader from '@/components/main/SpiningLoader'
 import { X } from 'lucide-react'
 import Terminal from './Terminal'
 import TerminalClient from './TerminalClient'
-
-const Preview = ({ projectId,terminalLoaded ,setTerminalLoaded,projectName}: { projectId: string,terminalLoaded:boolean,setTerminalLoaded:React.Dispatch<React.SetStateAction<boolean>>,projectName:string }) => {
+export interface ServerTerminalProps{
+  projectId:string,
+  terminalLoaded:boolean,
+  setTerminalLoaded:React.Dispatch<React.SetStateAction<boolean>>,
+  projectName:string
+}
+const ServerTerminalProps = ({ projectId,terminalLoaded ,setTerminalLoaded,projectName}: ServerTerminalProps) => {
   const [diskStorageSet, setdiskStorageSet] = useState<"idle" | "connecting" | "connected" | "error">("idle")
   const userId = useAppSelector((state) => state.user.id)
   useEffect(() => {
@@ -45,7 +50,7 @@ const Preview = ({ projectId,terminalLoaded ,setTerminalLoaded,projectName}: { p
       }
     };
 
-   if(!terminalLoaded) init();
+   if(!terminalLoaded && projectId && userId) init();
    return()=>{
     setTerminalLoaded(false);
    }
@@ -68,4 +73,4 @@ const Preview = ({ projectId,terminalLoaded ,setTerminalLoaded,projectName}: { p
     <TerminalClient projectName={projectName} projectId={projectId}/>
   </div>;
 }
-export default Preview
+export default ServerTerminalProps

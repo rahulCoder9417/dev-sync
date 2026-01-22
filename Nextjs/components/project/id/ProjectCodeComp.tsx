@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Header from '@/components/project/id/Header';
 import FileExplorer from '@/components/project/id/fileExplorer/FileExplorer';
 import CodeEditor from '@/components/project/id/CodeEditor';
-import Preview from '@/components/project/id/preview/Preview';
+import Preview from '@/components/project/id/preview/ServerTerminalProps';
 import ChatBot from '@/components/project/id/ChatBot';
 import { useRouter } from "next/navigation";
 
@@ -12,6 +12,7 @@ import Loader from '@/components/main/Loader';
 import useCollab from '@/customHooks/useCollab';
 import { DeleteToast } from './fileExplorer/DeleteToast';
 import ChatComponent from '@/components/team/chatComponent';
+import MainTerminal from './preview/MainTerminal';
 
 export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
   const [errorMarkers,setErrorMarkers] = useState<Record<string, boolean> | null>(null)
@@ -242,7 +243,7 @@ handleFileSelect(t)
         {visibleSection.preview && (
           <>
             <div style={{ width: `${previewWidth}%` }} className="max-md:w-1/2">
-              <Preview projectName={data.name} setTerminalLoaded={setTerminalLoaded} terminalLoaded={terminalLoaded} projectId={data.id}/>
+              <MainTerminal projectName={data.name} setTerminalLoaded={setTerminalLoaded} terminalLoaded={terminalLoaded} projectId={data.id}/>
             </div>
             {visibleSection.chat && (
               <div className="w-1 bg-gray-700 cursor-default" />

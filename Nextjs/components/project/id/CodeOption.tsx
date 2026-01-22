@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+"use client"
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setTerminalOptions, TerminalType } from "@/lib/redux/features/terminalOptions";
 import { RootState } from "@/lib/redux/store";
@@ -22,6 +23,12 @@ const CodeOption: React.FC<CodeOptionProps> = ({ projectId }) => {
     dispatch(setTerminalOptions({ id: projectId, terminalOption: option }));
     setOpen(false);
   };
+
+  useEffect(()=>{
+    if(projectId){
+      dispatch(setTerminalOptions({ id: projectId, terminalOption: "server" }));
+    }
+  },[projectId])
 
   return (
     <div
