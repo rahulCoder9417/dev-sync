@@ -15,92 +15,85 @@ const PROJECT_ROOT = "/usr/src/app/projects";
 // ---------------- FILE CREATE ----------------
 
 
-function isRootChild(absPath: string, projectDir: string): boolean {
-  const rel = path.relative(projectDir, absPath);
-  return rel !== "." && !rel.startsWith("..") && !rel.includes(path.sep);
-}
-function normalize(p: string) {
-  return p.replace(/\\/g, "/").replace(/\/+$/, "");
-}
-function folderKey(p: string) {
-  return normalize(p) + path.sep;
-}
 
+export async function handleFileCreate(
+  absPath: string,
+  projectId: string
+) {
 
-
-export async function handleFileCreate(absPath: string, projectId: string) {
-  console.log("handleFileCreate", absPath, projectId);
-  console.log("path.dirname(absPath) + path.sep", path.dirname(absPath) + path.sep);
-  console.log("path.dirname(absPath)" + "/", path.dirname(absPath) + "/");
-  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath) + "/") || null;
-
-  const id = cuid();
+  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath) +"/") || null;
+  
+  const id =cuid()
   const content = await fs.readFile(absPath, "utf8");
+  FilePathCrud.setFilePath(projectId, id, absPath)
   fileSyncWS.sendFileEvent({
-    type: "create",
+    type:"create",
     projectId,
     fileFolderId: id || null,
     parentId: parentId || null,
-    fileName: absPath.split("/")[absPath.split("/").length - 1],
-  });
+    fileName: absPath.split("/")[absPath.split("/").length - 1] ,
+  })
   fileSyncWS.sendFileEvent({
-    type: "save",
+    type:"save",
     projectId,
-    fileId: id,
+    fileId: id ,
     content,
-  });
-  try {
+  })
+  try{
     const newFileItem = await db.fileItem.create({
-      data: {
-        id,
-        name: absPath.split("/")[absPath.split("/").length - 1],
-        type: "file",
-        content: content,
-        projectId,
-        parentId: parentId || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    });
+    data: {
+      id,
+      name:absPath.split("/")[absPath.split("/").length - 1],
+      type:"file",
+      content: content,
+      projectId,
+      parentId: parentId || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
 
-    FilePathCrud.setFilePath(projectId, id, absPath);
-  } catch (e) {
-    console.log("error in handleFileCreate " + absPath + " " + id, e);
-  }
+  })
+}
+catch(e){
+  console.log("error in handleFileCreate",e)
+}
 }
 
 // ---------------- FOLDER CREATE ----------------
 
-export async function handleFolderCreate(absPath: string, projectId: string) {
-  console.log("handleFolderCreate", absPath, projectId);
-  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath) + "/") || null;
-  const id = cuid();
+export async function handleFolderCreate(
+  absPath: string,
+  projectId: string
+) {
+
+  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath) +"/") || null;
+  const id =cuid()
+  FilePathCrud.setFilePath(projectId, id, absPath + "/")
   fileSyncWS.sendFileEvent({
-    type: "create",
+    type:"create",
     projectId,
     fileFolderId: id || null,
     parentId: parentId || null,
     fileName: absPath.split("/")[absPath.split("/").length - 1] + "/",
-  });
-  try {
+  })
+  try{
     const newFileItem = await db.fileItem.create({
-      data: {
-        id,
-        name: absPath.split("/")[absPath.split("/").length - 1] + "/",
-        type: "folder",
-        content: "",
-        projectId,
-        parentId: parentId || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    });
-    
-    FilePathCrud.setFilePath(projectId, id, absPath + "/");
-  } catch (e) {
-    console.log("error in handleFolderCreate " + absPath + " " + id, e);
-  }
+    data: {
+      id,
+      name:absPath.split("/")[absPath.split("/").length - 1]+"/",
+      type:"folder",
+      content: "",
+      projectId,
+      parentId: parentId || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
 
+  })
+}
+catch(e){
+  console.log("error in handleFolderCreate",e)
+}
 }
 
 // ---------------- FILE UPDATE ----------------
