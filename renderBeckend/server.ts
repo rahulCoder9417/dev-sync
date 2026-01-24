@@ -4,15 +4,10 @@ import cors from "cors";
 import { handleUpgrade } from "./utils/upgradeRouter.js";
 import config from "./config/index.js";
 import router from "./routes/index.js";
-import { verifyPreviewToken } from "./utils/verifyToken.js";
-//@ts-ignore
-import { createProxyMiddleware, RequestHandler } from "http-proxy-middleware";
-import type { IncomingMessage, ServerResponse } from "http";
-
-import guu from "./ws/terminalHandler.js";
-import  VNCSessionService  from "./utils/VNC.js";
+import VNCSessionService from "./utils/VNC.js";
 import { authenticatePreview, createPreviewProxy } from "./utils/previewPort.js";
 import session from "express-session";
+
 const app = express();
 const server = http.createServer(app);
 
@@ -34,14 +29,12 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Set to true in production with HTTPS
+    secure: true,
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24, // 24 hours
     sameSite: 'lax'
   }
 }));
-
-
 
 // API routes
 app.use("/api", router);
@@ -50,6 +43,7 @@ app.use("/api", router);
 app.get("/health", (req, res) => {
   res.json({ ok: true });
 });
+
 app.use("/projects", express.static("/usr/src/app/projects"));
 
 // ---- SERVE noVNC STATIC FILES ----
@@ -66,35 +60,42 @@ app.get("/gui/:userId", async (req, res) => {
 
 // ---- SECURE REVERSE PROXY (PRODUCTION BUILD PREVIEW) ----
 app.use('/preview/:userId/:port', (req, res, next) => {
-  const { userId, port } = req.params ;
+  const { userId, port } = req.params;
+  
+  console.log('\n📥 ========== PREVIEW REQUEST ==========');
+  console.log(`📍 URL: ${req.originalUrl}`);
+  console.log(`👤 User: ${userId}`);
+  console.log(`🔌 Port: ${port}`);
   
   // First, authenticate the request
   authenticatePreview(req, res, (err) => {
     if (err) return next(err);
     
     // If authentication passed, proxy the request
-    const proxy : any= createPreviewProxy(userId, port);
+    const proxy: any = createPreviewProxy(userId, port);
     proxy(req, res, next);
   });
-}); 
-
-app.listen(4000, () => {
-  console.log('🚀 Preview server running on http://localhost:4000');
 });
+
+// ❌ REMOVE THIS - Don't create a separate server!
+// app.listen(4000, () => {
+//   console.log('🚀 Preview server running on http://localhost:4000');
+// });
 
 // WebSocket upgrade listener
 server.on("upgrade", handleUpgrade);
 
+// ✅ Use only ONE server
 server.listen(config.port, () => {
-  console.log("Server running on port", config.port);
+  console.log(`🚀 Server running on port ${config.port}`);
+  console.log(`📝 Session middleware: ENABLED`);
+  console.log(`🔐 Preview routes available at: http://localhost:${config.port}/preview/:userId/:port`);
 });
-
 
 // Graceful shutdown
 async function shutdown() {
-  console.log("Shutting down split WebSocket server gracefully...");
+  console.log("Shutting down server gracefully...");
 
-  // Close the HTTP server
   server.close((err) => {
     if (err) {
       console.error("Error closing HTTP server:", err);
@@ -103,18 +104,14 @@ async function shutdown() {
     }
   });
 
-  // Close WebSocket handlers
   try {
-    // await close(); // Uncomment if you have a close function
     console.log("All WebSocket handlers closed");
   } catch (err) {
     console.error("Error closing WebSocket handlers:", err);
   }
 
-  // Force exit after a timeout if needed
   setTimeout(() => process.exit(0), 2000);
 }
 
-// Handle process termination
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
