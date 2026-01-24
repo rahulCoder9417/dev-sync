@@ -29,13 +29,36 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true,
+    secure: false,//change to true in production
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24, // 24 hours
-    sameSite: 'lax'
-  }
+    sameSite: 'lax',
+    path: '/'
+  },
+  proxy:true, //change to true in production
 }));
-
+// Add this BEFORE your preview route
+app.get('/test-session', (req : any, res) => {
+  if (!req.session.views) {
+    req.session.views = 0;
+  }
+  req.session.views++;
+  
+  req.session.save((err) => {
+    if (err) {
+      return res.json({ error: err.message });
+    }
+    
+    res.json({
+      message: 'Session test',
+      sessionID: req.sessionID,
+      views: req.session.views,
+      sessionData: req.session,
+      cookie: req.headers.cookie,
+      sessionCookieHeader: res.getHeader('Set-Cookie')
+    });
+  });
+});
 // API routes
 app.use("/api", router);
 

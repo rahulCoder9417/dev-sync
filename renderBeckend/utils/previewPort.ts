@@ -13,7 +13,15 @@ export function authenticatePreview(req, res, next) {
     console.log(`🔌 Port: ${port}`);
     console.log(`🎫 Token in URL: ${token ? 'YES' : 'NO'}`);
     console.log(`📝 Session exists: ${req.session.authenticated?.[sessionKey] ? 'YES' : 'NO'}`);
-    
+      // 🐛 DEBUG: Check session details
+  console.log('🐛 Session Debug:');
+  console.log('  - Session ID:', req.sessionID);
+  console.log('  - Session object exists:', !!req.session);
+  console.log('  - Session data:', JSON.stringify(req.session, null, 2));
+  console.log('  - Cookie header:', req.headers.cookie);
+  console.log(`📝 Session exists: ${req.session?.authenticated?.[sessionKey] ? 'YES' : 'NO'}`);
+  
+
     // Check if already authenticated via session
     if (req.session.authenticated?.[sessionKey]) {
       console.log('✅ Already authenticated via session');
@@ -62,10 +70,12 @@ export function authenticatePreview(req, res, next) {
         return res.status(500).send('Session error');
       }
       
-      console.log('💾 Session saved, redirecting to clean URL');
+      console.log('💾 Session saved successfully');
+      console.log('🍪 Session ID after save:', req.sessionID);
       
       // Remove token from URL and redirect
       const cleanUrl = req.originalUrl.replace(/[?&]token=[^&]+/, '').replace(/\?$/, '');
+      console.log('🔄 Redirecting to:', cleanUrl);
       res.redirect(cleanUrl);
     });
   }
