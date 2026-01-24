@@ -12,6 +12,7 @@ import type { IncomingMessage, ServerResponse } from "http";
 import guu from "./ws/terminalHandler.js";
 import  VNCSessionService  from "./utils/VNC.js";
 import { authenticatePreview, createPreviewProxy } from "./utils/previewPort.js";
+import session from "express-session";
 const app = express();
 const server = http.createServer(app);
 
@@ -26,34 +27,20 @@ app.use(cors({
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-// ==================================================================================
-//  REFRER use karke asset ke userId port milgya
-// ==================================================================================
-app.use((req, res, next) => {
-  const url = req.path; // e.g. /vite.svg
-  const referer = req.get("referer");
 
-  // Ignore if no referer or request is already inside preview route
-  const previewPattern = /^\/preview\/[^/]+\/\d+\//;
-  if (!referer || previewPattern.test(url)) {
-    return next();
+// ⚠️ CRITICAL: Add session middleware BEFORE your routes
+app.use(session({
+  secret: config.proxy.previewSecret || "supersecret",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // Set to true in production with HTTPS
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24, // 24 hours
+    sameSite: 'lax'
   }
+}));
 
-  // Detect assets
-  const isAsset = /\.(png|jpe?g|gif|svg|ico|webp|avif|css|map|js|woff2?|ttf|otf)$/i.test(url);
-  if (!isAsset) return next();
-
-  // Extract preview info from referer
-  const match = referer.match(/\/preview\/([^/]+)\/(\d+)\?token=([^&]+)/);
-  if (!match) return next();
-
-  const [, userId, port, token] = match;
-
-  // Rewrite only once
-  const rewritten = `/preview/${userId}/${port}${url}?token=${token}`;
-
-  return res.redirect(rewritten);
-});
 
 
 // API routes
@@ -78,8 +65,8 @@ app.get("/gui/:userId", async (req, res) => {
 });
 
 // ---- SECURE REVERSE PROXY (PRODUCTION BUILD PREVIEW) ----
-app.use('/preview/:userId/:port*', (req, res, next) => {
-  const { userId, port } = req.params;
+app.use('/preview/:userId/:port', (req, res, next) => {
+  const { userId, port } = req.params ;
   
   // First, authenticate the request
   authenticatePreview(req, res, (err) => {
@@ -89,7 +76,7 @@ app.use('/preview/:userId/:port*', (req, res, next) => {
     const proxy : any= createPreviewProxy(userId, port);
     proxy(req, res, next);
   });
-});
+}); 
 
 app.listen(4000, () => {
   console.log('🚀 Preview server running on http://localhost:4000');
