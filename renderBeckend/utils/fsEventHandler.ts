@@ -31,7 +31,7 @@ function folderKey(p: string) {
 
 export async function handleFileCreate(absPath: string, projectId: string) {
   console.log("handleFileCreate", absPath, projectId);
-  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath));
+  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath) + path.sep) || null;
 
   const id = cuid();
   const content = await fs.readFile(absPath, "utf8");
@@ -72,7 +72,7 @@ export async function handleFileCreate(absPath: string, projectId: string) {
 
 export async function handleFolderCreate(absPath: string, projectId: string) {
   console.log("handleFolderCreate", absPath, projectId);
-  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath));
+  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath) + path.sep) || null;
   const id = cuid();
   fileSyncWS.sendFileEvent({
     type: "create",
