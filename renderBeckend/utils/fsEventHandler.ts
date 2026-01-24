@@ -25,73 +25,13 @@ function normalize(p: string) {
 function folderKey(p: string) {
   return normalize(p) + path.sep;
 }
-export async function ensureFolder(
-  absPath: string,
-  projectId: string,
-  projectDir: string
-): Promise<string | null> {
-  //this is used for checking parent folder
 
-  const normalized = normalize(absPath);
-  const root = normalize(projectDir);
-
-  // 🟢 Project root → no DB row
-  if (normalized === root) {
-    return null;
-  }
-
-  // 🟢 Already exists (idempotent)
-  const cached = await FilePathCrud.getFileIdByPath(
-    projectId,
-    folderKey(absPath)
-  )
-  if (cached) {
-    return cached;
-  }
-
-  // 🟢 ROOT-LEVEL FOLDER
-  if (isRootChild(normalized, root)) {
-    const id = cuid();
-
-    await db.fileItem.create({
-      data: {
-        id,
-        name: path.basename(normalized) + path.sep,
-        type: "folder",
-        content: "",
-        projectId,
-        parentId: null,
-      },
-    });
-
-    FilePathCrud.setFilePath(projectId, id, folderKey(absPath));
-    return id;
-  }
-
-  // 🟢 NESTED FOLDER → ensure parent first
-  const parentPath = path.dirname(normalized) ;
-  const parentId = await ensureFolder(parentPath, projectId, root);
-
-  const id = cuid();
-  await db.fileItem.create({
-    data: {
-      id,
-      name: path.basename(normalized) + path.sep,
-      type: "folder",
-      content: "",
-      projectId,
-      parentId,
-    },
-  });
-
-  FilePathCrud.setFilePath(projectId, id, folderKey(absPath));
-  return id;
-}
 
 
 
 export async function handleFileCreate(absPath: string, projectId: string) {
-  const parentId =(await ensureFolder(path.dirname(absPath), projectId, await getRealProjectDir(PROJECT_ROOT, projectId))) || null;
+  console.log("handleFileCreate", absPath, projectId);
+  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath));
 
   const id = cuid();
   const content = await fs.readFile(absPath, "utf8");
@@ -131,8 +71,8 @@ export async function handleFileCreate(absPath: string, projectId: string) {
 // ---------------- FOLDER CREATE ----------------
 
 export async function handleFolderCreate(absPath: string, projectId: string) {
-  const parentId =
-    (await ensureFolder(path.dirname(absPath), projectId, await getRealProjectDir(PROJECT_ROOT, projectId))) || null;
+  console.log("handleFolderCreate", absPath, projectId);
+  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath));
   const id = cuid();
   fileSyncWS.sendFileEvent({
     type: "create",
