@@ -46,58 +46,76 @@ app.get("/gui/:userId", async (req, res) => {
   const url = `/novnc/vnc.html?path=websockify/${encodedUser}&autoconnect=true&resize=scale`;
   res.redirect(url);
 });
-app.use("/preview/:userId/:port", (req, res, next) => {
+
+app.use("/preview/:userId/:port*", (req :any, res, next) => {
   const { userId, port } = req.params;
-  const { token } = req.query;
+  const { token } = req.query as { token?: string };
 
   if (!token) return res.status(403).send("Missing token");
-
-  if (!verifyPreviewToken(token as string, userId, port)) {
-    return res.status(403).send("Invalid token");
+  if (!verifyPreviewToken(String(token), userId, port)) {
+    return res.status(403).send("Invalid or expired preview token");
   }
 
-  const basePath = `/preview/${userId}/${port}`;
+  const prefix = `/preview/${userId}/${port}`;
 
-  return createProxyMiddleware({
+  const proxy = createProxyMiddleware({
     target: `http://localhost:${port}`,
     changeOrigin: true,
     ws: true,
 
-    pathRewrite: (path) =>
-      path.replace(basePath, "") || "/",
+    // Strip the preview prefix so forwarded path is exactly what the dev server expects.
+    pathRewrite: (path: string, req: any) => {
+      // ensure we remove only the leading prefix
+      const newPath = path.replace(new RegExp(`^${prefix}`), "") || "/";
+      // ensure leading slash
+      return newPath.startsWith("/") ? newPath : `/${newPath}`;
+    },
 
-    selfHandleResponse: true,
+    selfHandleResponse: true, // we only intercept HTML below
+
+    onProxyReq(proxyReq, req, res) {
+      // Helpful logging for debugging forwarded paths
+      console.log(`[preview-proxy] -> ${proxyReq.method} ${proxyReq.path} -> http://localhost:${port}${proxyReq.path}`);
+    },
 
     onProxyRes(proxyRes, req, res) {
-      const contentType = proxyRes.headers["content-type"] || "";
+      const contentType = (proxyRes.headers["content-type"] || "").toString();
 
-      // 🔥 ONLY intercept HTML
+      // Intercept only HTML to inject <base>
       if (contentType.includes("text/html")) {
         let body = "";
-
-        proxyRes.on("data", chunk => body += chunk);
+        proxyRes.on("data", (chunk) => (body += chunk.toString("utf8")));
         proxyRes.on("end", () => {
+          // Inject base href so all relative imports/URLs resolve correctly under preview path.
+          const baseTag = `<base href="${prefix}/">`;
+          // Conservative injection: inject after <head> if present
+          if (body.includes("<head")) {
+            body = body.replace(/<head([^>]*)>/i, (m) => `${m}${baseTag}`);
+          } else {
+            body = baseTag + body;
+          }
 
-          // ✅ THIS FIXES DEV SERVERS
-          body = body.replace(
-            "<head>",
-            `<head><base href="${basePath}/">`
-          );
-
-          res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+          // Preserve headers but ensure content-length matches new body
+          const headers = { ...proxyRes.headers };
+          delete headers["content-length"];
+          res.writeHead(proxyRes.statusCode || 200, headers);
           res.end(body);
         });
       } else {
-        // Pass-through for JS, CSS, images, HMR, etc
+        // Pass through all other types (JS, CSS, images, HMR websockets via upgrade)
         res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
         proxyRes.pipe(res);
       }
     },
 
     onError(err, req, res) {
-      res.status(502).end("Preview proxy error");
-    }
-  })(req, res, next);
+      console.error("[preview-proxy] error", err);
+      res.statusCode = 502;
+      res.end(`<h1>Proxy Error</h1><pre>${err.message}</pre>`);
+    },
+  });
+
+  return proxy(req, res, next);
 });
 
 
