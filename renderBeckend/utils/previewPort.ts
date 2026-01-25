@@ -79,45 +79,88 @@ export function authenticatePreview(req, res, next) {
       res.redirect(cleanUrl);
     });
   }
-export function createPreviewProxy(userId, port) {
+  export function createPreviewProxy(userId: string, port: string) {
     return createProxyMiddleware({
       target: `http://localhost:${port}`,
       changeOrigin: true,
-      ws: true, // Enable WebSocket proxying
+      ws: true,
+      selfHandleResponse: true, // ✅ We need to handle HTML responses
       
-      // Rewrite paths to remove the /preview/:userId/:port prefix
       pathRewrite: (path, req) => {
         const prefix = `/preview/${userId}/${port}`;
-        const newPath = path.replace(prefix, '') || '/';
+        const newPath = path.startsWith(prefix) 
+          ? path.substring(prefix.length) || '/'
+          : path;
         
         console.log(`🔄 Proxying: ${path} → http://localhost:${port}${newPath}`);
         return newPath;
       },
       
-      // Add custom headers if needed
       onProxyReq: (proxyReq, req, res) => {
-        // You can add headers here if your app needs to know it's being proxied
         proxyReq.setHeader('X-Forwarded-User', userId);
         proxyReq.setHeader('X-Forwarded-Port', port);
         proxyReq.setHeader('X-Forwarded-Prefix', `/preview/${userId}/${port}`);
+        
+        console.log(`➡️  Proxying to: http://localhost:${port}${proxyReq.path}`);
       },
       
-      // Simply pass through the response - NO REWRITING!
       onProxyRes: (proxyRes, req, res) => {
-        console.log(`⬅️  Response: ${proxyRes.statusCode} ${proxyRes.headers['content-type']}`);
-        // The proxy library handles this automatically - we don't need to do anything!
+        const contentType = proxyRes.headers['content-type'] || '';
+        
+        console.log(`⬅️  Response: ${proxyRes.statusCode} ${contentType}`);
+        
+        // Only modify HTML responses
+        if (contentType.includes('text/html')) {
+          let body = '';
+          
+          proxyRes.on('data', (chunk) => {
+            body += chunk.toString('utf8');
+          });
+          
+          proxyRes.on('end', () => {
+            console.log('🔧 Injecting base tag into HTML...');
+            
+            // Inject base tag to fix absolute URLs
+            const baseTag = `<base href="/preview/${userId}/${port}/">`;
+            
+            if (body.includes('<head>')) {
+              body = body.replace('<head>', `<head>\n    ${baseTag}`);
+            } else if (body.includes('<html>')) {
+              body = body.replace('<html>', `<html>\n  <head>\n    ${baseTag}\n  </head>`);
+            } else {
+              // No head or html tag, prepend base tag
+              body = baseTag + body;
+            }
+            
+            console.log('✅ Base tag injected');
+            
+            // Update Content-Length header
+            const headers = { ...proxyRes.headers };
+            headers['content-length'] = Buffer.byteLength(body).toString();
+            
+            res.writeHead(proxyRes.statusCode || 200, headers);
+            res.end(body);
+          });
+        } else {
+          // Pass through non-HTML responses (CSS, JS, images, etc.)
+          console.log(`📦 Passing through: ${contentType}`);
+          res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+          proxyRes.pipe(res);
+        }
       },
       
-      // Error handling
-      onError: (err, req, res: any) => {
+      onError: (err: any, req: any, res: any) => {
         console.error('❌ Proxy Error:', err.message);
+        console.error('❌ Target:', `http://localhost:${port}`);
+        console.error('❌ Path:', req.url);
+        
         res.status(502).send(`
           <h1>Service Unavailable</h1>
           <p>The application on port ${port} is not responding.</p>
           <p>Error: ${err.message}</p>
-          <p>Make sure your app is running with 'npm start'</p>
+          <p><strong>Make sure Vite dev server is running:</strong></p>
+          <pre>cd your-project && npm run dev</pre>
         `);
       }
     }) as RequestHandler;
   }
-  
