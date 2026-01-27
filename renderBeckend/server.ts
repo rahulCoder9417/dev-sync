@@ -1,5 +1,5 @@
 import express from "express";
-import http from "http";
+import http, { IncomingMessage, ServerResponse } from "http";
 import cors from "cors";
 import { handleUpgrade } from "./utils/upgradeRouter.js";
 import config from "./config/index.js";
@@ -37,6 +37,34 @@ app.use("/projects", express.static("/usr/src/app/projects"));
 
 // ---- SERVE noVNC STATIC FILES ----
 app.use("/novnc", express.static("/usr/share/novnc"));
+// ==================================================================================
+//  REFRER use karke asset ke userId port milgya
+// ==================================================================================
+app.use((req, res, next) => {
+  const url = req.path; // e.g. /vite.svg
+  const referer = req.get("referer");
+
+  // Ignore if no referer or request is already inside preview route
+  const previewPattern = /^\/preview\/[^/]+\/\d+\//;
+  if (!referer || previewPattern.test(url)) {
+    return next();
+  }
+
+  // Detect assets
+  const isAsset = /\.(png|jpe?g|gif|svg|ico|webp|avif|css|map|js|woff2?|ttf|otf)$/i.test(url);
+  if (!isAsset) return next();
+
+  // Extract preview info from referer
+  const match = referer.match(/\/preview\/([^/]+)\/(\d+)\?token=([^&]+)/);
+  if (!match) return next();
+
+  const [, userId, port, token] = match;
+
+  // Rewrite only once
+  const rewritten = `/preview/${userId}/${port}${url}?token=${token}`;
+
+  return res.redirect(rewritten);
+});
 
 // ---- /gui/:userId → redirects into noVNC with proper WS path ----
 app.get("/gui/:userId", async (req, res) => {
@@ -47,73 +75,116 @@ app.get("/gui/:userId", async (req, res) => {
   res.redirect(url);
 });
 
-app.use("/preview/:userId/:port*", (req :any, res, next) => {
-  const { userId, port } = req.params;
-  const { token } = req.query as { token?: string };
+// ---- SECURE REVERSE PROXY (PRODUCTION BUILD PREVIEW) ----
+app.use("/preview/:userId/:port*", (req, res, next) => {
+  if(!req.params){
+    return res.status(403).send("Missing params");
+  }
+  const { userId, port } = req.params as any;
+  const { token } = req.query;
 
-  if (!token) return res.status(403).send("Missing token");
-  if (!verifyPreviewToken(String(token), userId, port)) {
-    return res.status(403).send("Invalid or expired preview token");
+  console.log('\n🌐 ============ HTTP PROXY REQUEST ============');
+  console.log(`📍 Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  console.log(`📂 Path: ${req.path}`);
+  console.log(`👤 UserId: ${userId}`);
+  console.log(`🔌 Port: ${port}`);
+  console.log(`🎫 Token: ${token }`);
+
+  if (!token) {
+    console.log('❌ FAILED: No token provided');
+    return res.status(403).send("Missing token");
   }
 
-  const prefix = `/preview/${userId}/${port}`;
+  const isValid = verifyPreviewToken(token as string, userId, port);
+  if (!isValid) {
+    console.log('❌ FAILED: Invalid token');
+    return res.status(403).send("Invalid or expired preview token");
+  }
+  console.log('✅ Token verified, creating proxy...');
 
   const proxy = createProxyMiddleware({
     target: `http://localhost:${port}`,
     changeOrigin: true,
     ws: true,
-
-    // Strip the preview prefix so forwarded path is exactly what the dev server expects.
+    selfHandleResponse: true,
     pathRewrite: (path: string, req: any) => {
-      // ensure we remove only the leading prefix
-      const newPath = path.replace(new RegExp(`^${prefix}`), "") || "/";
-      // ensure leading slash
-      return newPath.startsWith("/") ? newPath : `/${newPath}`;
+      const { userId, port } = req.params;
+      const prefix = `/preview/${userId}/${port}`;
+      
+      let newPath = path.replace(prefix, '').replace(/[?&]token=[^&]+/, '').replace(/\?$/, '') || '/';
+      
+      console.log(`🔄 Path rewrite: ${path} → ${newPath}`);
+      return newPath;
     },
-
-    selfHandleResponse: true, // we only intercept HTML below
-
-    onProxyReq(proxyReq, req, res) {
-      // Helpful logging for debugging forwarded paths
-      console.log(`[preview-proxy] -> ${proxyReq.method} ${proxyReq.path} -> http://localhost:${port}${proxyReq.path}`);
+    onProxyReq: (proxyReq: any, req: IncomingMessage, res: ServerResponse) => {
+      console.log(`➡️  Proxying to: http://localhost:${port}${proxyReq.path}`);
     },
-
-    onProxyRes(proxyRes, req, res) {
-      const contentType = (proxyRes.headers["content-type"] || "").toString();
-
-      // Intercept only HTML to inject <base>
-      if (contentType.includes("text/html")) {
-        let body = "";
-        proxyRes.on("data", (chunk) => (body += chunk.toString("utf8")));
-        proxyRes.on("end", () => {
-          // Inject base href so all relative imports/URLs resolve correctly under preview path.
-          const baseTag = `<base href="${prefix}/">`;
-          // Conservative injection: inject after <head> if present
-          if (body.includes("<head")) {
-            body = body.replace(/<head([^>]*)>/i, (m) => `${m}${baseTag}`);
-          } else {
-            body = baseTag + body;
+    onProxyRes: (proxyRes: IncomingMessage, req: IncomingMessage, res: ServerResponse) => {
+      console.log(`⬅️  Response received: ${proxyRes.statusCode} ${proxyRes.statusMessage}`);
+      console.log(`📄 Content-Type: ${proxyRes.headers['content-type']}`);
+      console.log(`📂 Request path: ${(req as any).path}`);
+      
+      const contentType = proxyRes.headers['content-type'] || '';
+      
+      // Rewrite HTML
+      if (contentType.includes('text/html')) {
+        console.log('🔧 Modifying HTML response...');
+        
+        let body = '';
+        proxyRes.on('data', (chunk) => {
+          body += chunk.toString('utf8');
+        });
+        
+        proxyRes.on('end', () => {
+          const baseUrl = `/preview/${userId}/${port}`;
+          
+          console.log('📝 Original HTML length:', body.length);
+          
+          // Rewrite absolute URLs in HTML attributes
+          body = body.replace(
+            /((?:src|href))="\/([^"]*)"/g,
+            (match, key, path) => {
+              const replaced = `${key}="${baseUrl}/${path}?token=${token}"`;
+          
+             
+              return replaced;
+            }
+          );
+          
+         // Also rewrite relative URLs in CSS/JS that reference images
+         body = body.replace(
+          /(url\(['"]?)(\/[^'")]+)(['"]?\))/g,
+          (match, prefix, path, suffix) => {
+            const replaced = `${prefix}${baseUrl}${path}?token=${token}${suffix}`;
+        
+           
+            return replaced;
           }
-
-          // Preserve headers but ensure content-length matches new body
-          const headers = { ...proxyRes.headers };
-          delete headers["content-length"];
-          res.writeHead(proxyRes.statusCode || 200, headers);
+        );
+        
+          
+          console.log('✅ HTML URLs rewritten');
+          
+          res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
           res.end(body);
         });
-      } else {
-        // Pass through all other types (JS, CSS, images, HMR websockets via upgrade)
+      } 
+      // Pass through everything else (images, JS, fonts, etc.)
+      else {
+        console.log('📦 Passing through:', contentType);
         res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
         proxyRes.pipe(res);
       }
     },
-
-    onError(err, req, res) {
-      console.error("[preview-proxy] error", err);
+    onError: (err: any, req: IncomingMessage, res: ServerResponse) => {
+      console.error('❌ ============ PROXY ERROR ============');
+      console.error(`🔴 Error: ${err.message}`);
+      console.error(`🔴 Code: ${err.code}`);
+      console.error(`🔴 Target: http://localhost:${port}`);
       res.statusCode = 502;
-      res.end(`<h1>Proxy Error</h1><pre>${err.message}</pre>`);
+      res.end(`<h1>Proxy Error</h1><p>${err.message}</p><p>Make sure your app is built and running with 'npm start'</p>`);
     },
-  });
+  }) as any;
 
   return proxy(req, res, next);
 });
