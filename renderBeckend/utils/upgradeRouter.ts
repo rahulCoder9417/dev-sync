@@ -4,6 +4,7 @@ import fileSyncWS from "../ws/fileSyncHandler.js";
 import { getAuthData } from "./auth.js";
 import { verifyPreviewToken } from "./verifyToken.js";
 import http from "http";
+import { proxyMap } from "../server.js";
 export async function handleUpgrade(request: any, socket: any, head: any) {
   const { pathname } = parse(request.url || "");
 
@@ -130,8 +131,11 @@ export async function handleUpgrade(request: any, socket: any, head: any) {
       proxyReq.end();
       return;
     } else {
+      for (const proxy of proxyMap.values()) {
+        proxy.upgrade?.(request, socket, head);
+        }
       console.error(`Unknown WebSocket path: ${pathname}`);
-      socket.destroy();
+  
     }
   } catch (err) {
     console.error("WebSocket upgrade error:", err);
