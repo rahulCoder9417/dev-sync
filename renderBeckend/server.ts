@@ -76,118 +76,118 @@ app.get("/gui/:userId", async (req, res) => {
 });
 
 // ---- SECURE REVERSE PROXY (PRODUCTION BUILD PREVIEW) ----
-// app.use("/preview/:userId/:port*", (req, res, next) => {
-//   if(!req.params){
-//     return res.status(403).send("Missing params");
-//   }
-//   const { userId, port } = req.params as any;
-//   const { token } = req.query;
+app.use("/preview/:userId/:port*", (req, res, next) => {
+  if(!req.params){
+    return res.status(403).send("Missing params");
+  }
+  const { userId, port } = req.params as any;
+  const { token } = req.query;
 
-//   console.log('\n🌐 ============ HTTP PROXY REQUEST ============');
-//   console.log(`📍 Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
-//   console.log(`📂 Path: ${req.path}`);
-//   console.log(`👤 UserId: ${userId}`);
-//   console.log(`🔌 Port: ${port}`);
-//   console.log(`🎫 Token: ${token }`);
+  console.log('\n🌐 ============ HTTP PROXY REQUEST ============');
+  console.log(`📍 Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  console.log(`📂 Path: ${req.path}`);
+  console.log(`👤 UserId: ${userId}`);
+  console.log(`🔌 Port: ${port}`);
+  console.log(`🎫 Token: ${token }`);
 
-//   if (!token) {
-//     console.log('❌ FAILED: No token provided');
-//     return res.status(403).send("Missing token");
-//   }
+  if (!token) {
+    console.log('❌ FAILED: No token provided');
+    return res.status(403).send("Missing token");
+  }
 
-//   const isValid = verifyPreviewToken(token as string, userId, port);
-//   if (!isValid) {
-//     console.log('❌ FAILED: Invalid token');
-//     return res.status(403).send("Invalid or expired preview token");
-//   }
-//   console.log('✅ Token verified, creating proxy...');
+  const isValid = verifyPreviewToken(token as string, userId, port);
+  if (!isValid) {
+    console.log('❌ FAILED: Invalid token');
+    return res.status(403).send("Invalid or expired preview token");
+  }
+  console.log('✅ Token verified, creating proxy...');
 
-//   const proxy = createProxyMiddleware({
-//     target: `http://localhost:${port}`,
-//     changeOrigin: true,
-//     ws: true,
-//     selfHandleResponse: true,
-//     pathRewrite: (path: string, req: any) => {
-//       const { userId, port } = req.params;
-//       const prefix = `/preview/${userId}/${port}`;
+  const proxy = createProxyMiddleware({
+    target: `http://localhost:${port}`,
+    changeOrigin: true,
+    ws: true,
+    selfHandleResponse: true,
+    pathRewrite: (path: string, req: any) => {
+      const { userId, port } = req.params;
+      const prefix = `/preview/${userId}/${port}`;
       
-//       let newPath = path.replace(prefix, '').replace(/[?&]token=[^&]+/, '').replace(/\?$/, '') || '/';
+      let newPath = path.replace(prefix, '').replace(/[?&]token=[^&]+/, '').replace(/\?$/, '') || '/';
       
-//       console.log(`🔄 Path rewrite: ${path} → ${newPath}`);
-//       return newPath;
-//     },
-//     onProxyReq: (proxyReq: any, req: IncomingMessage, res: ServerResponse) => {
-//       console.log(`➡️  Proxying to: http://localhost:${port}${proxyReq.path}`);
-//     },
-//     onProxyRes: (proxyRes: IncomingMessage, req: IncomingMessage, res: ServerResponse) => {
-//       console.log(`⬅️  Response received: ${proxyRes.statusCode} ${proxyRes.statusMessage}`);
-//       console.log(`📄 Content-Type: ${proxyRes.headers['content-type']}`);
-//       console.log(`📂 Request path: ${(req as any).path}`);
+      console.log(`🔄 Path rewrite: ${path} → ${newPath}`);
+      return newPath;
+    },
+    onProxyReq: (proxyReq: any, req: IncomingMessage, res: ServerResponse) => {
+      console.log(`➡️  Proxying to: http://localhost:${port}${proxyReq.path}`);
+    },
+    onProxyRes: (proxyRes: IncomingMessage, req: IncomingMessage, res: ServerResponse) => {
+      console.log(`⬅️  Response received: ${proxyRes.statusCode} ${proxyRes.statusMessage}`);
+      console.log(`📄 Content-Type: ${proxyRes.headers['content-type']}`);
+      console.log(`📂 Request path: ${(req as any).path}`);
       
-//       const contentType = proxyRes.headers['content-type'] || '';
+      const contentType = proxyRes.headers['content-type'] || '';
       
-//       // Rewrite HTML
-//       if (contentType.includes('text/html')) {
-//         console.log('🔧 Modifying HTML response...');
+      // Rewrite HTML
+      if (contentType.includes('text/html')) {
+        console.log('🔧 Modifying HTML response...');
         
-//         let body = '';
-//         proxyRes.on('data', (chunk) => {
-//           body += chunk.toString('utf8');
-//         });
+        let body = '';
+        proxyRes.on('data', (chunk) => {
+          body += chunk.toString('utf8');
+        });
         
-//         proxyRes.on('end', () => {
-//           const baseUrl = `/preview/${userId}/${port}`;
+        proxyRes.on('end', () => {
+          const baseUrl = `/preview/${userId}/${port}`;
           
-//           console.log('📝 Original HTML length:', body.length);
+          console.log('📝 Original HTML length:', body.length);
           
-//           // Rewrite absolute URLs in HTML attributes
-//           body = body.replace(
-//             /((?:src|href))="\/([^"]*)"/g,
-//             (match, key, path) => {
-//               const replaced = `${key}="${baseUrl}/${path}?token=${token}"`;
+          // Rewrite absolute URLs in HTML attributes
+          body = body.replace(
+            /((?:src|href))="\/([^"]*)"/g,
+            (match, key, path) => {
+              const replaced = `${key}="${baseUrl}/${path}?token=${token}"`;
           
              
-//               return replaced;
-//             }
-//           );
+              return replaced;
+            }
+          );
           
-//          // Also rewrite relative URLs in CSS/JS that reference images
-//          body = body.replace(
-//           /(url\(['"]?)(\/[^'")]+)(['"]?\))/g,
-//           (match, prefix, path, suffix) => {
-//             const replaced = `${prefix}${baseUrl}${path}?token=${token}${suffix}`;
+         // Also rewrite relative URLs in CSS/JS that reference images
+         body = body.replace(
+          /(url\(['"]?)(\/[^'")]+)(['"]?\))/g,
+          (match, prefix, path, suffix) => {
+            const replaced = `${prefix}${baseUrl}${path}?token=${token}${suffix}`;
         
            
-//             return replaced;
-//           }
-//         );
+            return replaced;
+          }
+        );
         
           
-//           console.log('✅ HTML URLs rewritten');
+          console.log('✅ HTML URLs rewritten');
           
-//           res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
-//           res.end(body);
-//         });
-//       } 
-//       // Pass through everything else (images, JS, fonts, etc.)
-//       else {
-//         console.log('📦 Passing through:', contentType);
-//         res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
-//         proxyRes.pipe(res);
-//       }
-//     },
-//     onError: (err: any, req: IncomingMessage, res: ServerResponse) => {
-//       console.error('❌ ============ PROXY ERROR ============');
-//       console.error(`🔴 Error: ${err.message}`);
-//       console.error(`🔴 Code: ${err.code}`);
-//       console.error(`🔴 Target: http://localhost:${port}`);
-//       res.statusCode = 502;
-//       res.end(`<h1>Proxy Error</h1><p>${err.message}</p><p>Make sure your app is built and running with 'npm start'</p>`);
-//     },
-//   }) as any;
+          res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+          res.end(body);
+        });
+      } 
+      // Pass through everything else (images, JS, fonts, etc.)
+      else {
+        console.log('📦 Passing through:', contentType);
+        res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+        proxyRes.pipe(res);
+      }
+    },
+    onError: (err: any, req: IncomingMessage, res: ServerResponse) => {
+      console.error('❌ ============ PROXY ERROR ============');
+      console.error(`🔴 Error: ${err.message}`);
+      console.error(`🔴 Code: ${err.code}`);
+      console.error(`🔴 Target: http://localhost:${port}`);
+      res.statusCode = 502;
+      res.end(`<h1>Proxy Error</h1><p>${err.message}</p><p>Make sure your app is built and running with 'npm start'</p>`);
+    },
+  }) as any;
 
-//   return proxy(req, res, next);
-// });
+  return proxy(req, res, next);
+});
 //testing new changes for proxy 
 export const proxyMap = new Map<string, any>();
 function getProxy(port: number, userId: string, token: string) {
@@ -259,24 +259,24 @@ function getProxy(port: number, userId: string, token: string) {
   proxyMap.set(key, proxy);
   return proxy;
 }
-app.use("/preview/:userId/:port", (req, res, next) => {
-  const { userId, port } = req.params;
-  const token = req.query.token as string;
+// app.use("/preview/:userId/:port", (req, res, next) => {
+//   const { userId, port } = req.params;
+//   const token = req.query.token as string;
 
-  if (!token) return res.status(403).send("Missing token");
+//   if (!token) return res.status(403).send("Missing token");
 
-  const portNum = Number(port);
-  if (!Number.isInteger(portNum)) {
-    return res.status(400).send("Invalid port");
-  }
+//   const portNum = Number(port);
+//   if (!Number.isInteger(portNum)) {
+//     return res.status(400).send("Invalid port");
+//   }
 
-  if (!verifyPreviewToken(token, userId, String(portNum))) {
-    return res.status(403).send("Invalid token");
-  }
+//   if (!verifyPreviewToken(token, userId, String(portNum))) {
+//     return res.status(403).send("Invalid token");
+//   }
 
-  const proxy = getProxy(portNum, userId, token);
-  proxy(req, res, next);
-});
+//   const proxy = getProxy(portNum, userId, token);
+//   proxy(req, res, next);
+// });
 
 
 // WebSocket upgrade listener
