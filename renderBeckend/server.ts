@@ -74,6 +74,32 @@ app.get("/gui/:userId", async (req, res) => {
   const url = `/novnc/vnc.html?path=websockify/${encodedUser}&autoconnect=true&resize=scale`;
   res.redirect(url);
 });
+//testing build server
+import httpProxy from "http-proxy";
+
+export const devProxy = httpProxy.createProxyServer({
+  ws: true,
+  changeOrigin: true,
+  xfwd: true,
+});
+export function getPortFromHost(host: string) {
+  // example: u123-5173.dev.yourdomain.com
+  const match = host.match(/-(\d+)\./);
+  return match ? Number(match[1]) : null;
+}
+
+app.use((req, res, next) => {
+  const host = req.headers.host;
+  if (!host?.includes(".dev.")) return next();
+
+  const port = getPortFromHost(host);
+  if (!port) return res.status(400).send("Invalid dev preview host");
+
+  devProxy.web(req, res, {
+    target: `http://127.0.0.1:${port}`,
+  });
+});
+
 
 // ---- SECURE REVERSE PROXY (PRODUCTION BUILD PREVIEW) ----
 app.use("/preview/:userId/:port*", (req, res, next) => {
@@ -188,78 +214,6 @@ app.use("/preview/:userId/:port*", (req, res, next) => {
 
   return proxy(req, res, next);
 });
-//testing new changes for proxy 
-export const proxyMap = new Map<string, any>();
-function getProxy(port: number, userId: string, token: string) {
-  const key = `${userId}:${port}`;
-
-  if (proxyMap.has(key)) {
-    return proxyMap.get(key);
-  }
-
-  const proxy = createProxyMiddleware({
-    target: `http://127.0.0.1:${port}`,
-    changeOrigin: true,
-    ws: true,
-    secure: false,
-    selfHandleResponse: true,
-
-    pathRewrite: (path, req: any) => {
-      const prefix = `/preview/${req.params.userId}/${req.params.port}`;
-      return (
-        path
-          .replace(prefix, "")
-          .replace(/[?&]token=[^&]+/, "")
-          .replace(/\?$/, "") || "/"
-      );
-    },
-
-    onProxyRes(proxyRes, req, res) {
-      const contentType = proxyRes.headers["content-type"] || "";
-
-      // 🔥 REQUIRED FIX
-      delete proxyRes.headers["content-length"];
-      delete proxyRes.headers["content-encoding"];
-
-      if (contentType.includes("text/html")) {
-        let body = "";
-
-        proxyRes.on("data", chunk => {
-          body += chunk.toString("utf8");
-        });
-
-        proxyRes.on("end", () => {
-          const base = `/preview/${userId}/${port}`;
-
-          body = body
-            .replace(
-              /(src|href)="\/([^"]+)"/g,
-              (_, k, p) => `${k}="${base}/${p}?token=${token}"`
-            )
-            .replace(
-              /(url\(['"]?)(\/[^'")]+)(['"]?\))/g,
-              (_, a, b, c) => `${a}${base}${b}?token=${token}${c}`
-            );
-
-          res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
-          res.end(body);
-        });
-      } else {
-        res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
-        proxyRes.pipe(res);
-      }
-    },
-
-    onError(err, req, res) {
-      console.error("❌ Proxy error:", err.message);
-      res.status(502).send("Preview server not running");
-    }
-  });
-
-  proxyMap.set(key, proxy);
-  return proxy;
-}
-// app.use("/preview/:userId/:port", (req, res, next) => {
 //   const { userId, port } = req.params;
 //   const token = req.query.token as string;
 
