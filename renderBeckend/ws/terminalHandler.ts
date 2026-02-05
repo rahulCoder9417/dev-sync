@@ -13,6 +13,15 @@ import { ensureProjectWatcher, stopProjectWatcher } from "../utils/watcher.js";
 import net from "net";
 import  FilePathCrud  from "../utils/filePathCrud.js";
 import  VNCSessionService  from "../utils/VNC.js";
+
+// Binary protocol constants
+const MSG_INPUT = 0x01;
+const MSG_RESIZE = 0x02;
+const MSG_STOP = 0x03;
+// Server -> Client
+const MSG_OUTPUT = 0x01;
+const MSG_EXIT = 0x02;
+const MSG_ERROR = 0x03;
 class TerminalWS {
   private wss: WebSocketServer;
   private heartbeatInterval: NodeJS.Timeout | null = null;
@@ -68,25 +77,19 @@ class TerminalWS {
           cwd,
           env,
         });
-        ws.send(
-          JSON.stringify({
-            type: "output",
-            data: `🖼️  GUI Display ready: ${gui.data?.display} (VNC port: ${gui.data?.vncPort})\r\n`,
-          })
-        );
-        ws.send(
-          JSON.stringify({
-            type: "output",
-            data: `💡 Access GUI at: /gui/${ws.userId}\r\n\r\n`,
-          })
-        );
+        // Helper to send binary output
+        const sendOutput = (text: string) => {
+          const dataBuffer = Buffer.from(text, "utf8");
+          const buffer = Buffer.allocUnsafe(1 + dataBuffer.length);
+          buffer[0] = MSG_OUTPUT;
+          dataBuffer.copy(buffer, 1);
+          ws.send(buffer);
+        };
+
+        sendOutput(`🖼️  GUI Display ready: ${gui.data?.display} (VNC port: ${gui.data?.vncPort})\r\n`);
+        sendOutput(`💡 Access GUI at: /gui/${ws.userId}\r\n\r\n`);
         ptyProcess.onData((data) => {
-          ws.send(
-            JSON.stringify({
-              type: "output",
-              data,
-            })
-          );
+          sendOutput(data);
 
           // Clean ANSI codes for detection
           const cleanData = data.replace(/\x1b\[[0-9;]*m/g, "");
@@ -119,18 +122,8 @@ class TerminalWS {
             RoomManager.addPreview(ws.userId, detectedPort, token);
          
 
-            ws.send(
-              JSON.stringify({
-                type: "output",
-                data: `\n\n✅ Preview ready! Your app is running on port ${detectedPort}\n`,
-              })
-            );
-            ws.send(
-              JSON.stringify({
-                type: "output",
-                data: `PREVIEW:${detectedPort}:${token}\n`,
-              })
-            );
+            sendOutput(`\n\n✅ Preview ready! Your app is running on port ${detectedPort}\n`);
+            sendOutput(`PREVIEW:${detectedPort}:${token}\n`);
             console.log(
               `✅ Preview URL generated: port=${detectedPort} for user=${ws.userId}`
             );
@@ -138,11 +131,8 @@ class TerminalWS {
         });
         ptyProcess.onExit(() => {
           if (ws.readyState === WebSocket.OPEN) {
-            ws.send(
-              JSON.stringify({
-                type: "exit",
-              })
-            );
+            // Send binary exit: 0x02
+            ws.send(Buffer.from([MSG_EXIT]));
           }
         });
         
@@ -152,13 +142,32 @@ class TerminalWS {
         });
 
         ws.on("message", (msg: Buffer) => {
-          const data = JSON.parse(msg.toString());
-          if (data.type === "input") {
-            ptyProcess.write(data.data);
+          // Handle binary messages
+          if (msg.length > 0 && msg[0] <= 0x03) {
+            const type = msg[0];
+            if (type === MSG_INPUT) {
+              // Input: 0x01 + raw data
+              ptyProcess.write(msg.subarray(1));
+            } else if (type === MSG_RESIZE) {
+              // Resize: 0x02 + cols(2) + rows(2)
+              const cols = (msg[1] << 8) | msg[2];
+              const rows = (msg[3] << 8) | msg[4];
+              ptyProcess.resize(cols, rows);
+            } else if (type === MSG_STOP) {
+              // Stop: 0x03
+              ptyProcess.kill();
+            }
+            return;
           }
-          if (data.type === "resize") {
-            ptyProcess.resize(data.cols, data.rows);
-          }
+          // Fallback to JSON for start and other commands
+          try {
+            const data = JSON.parse(msg.toString());
+            if (data.type === "input") {
+              ptyProcess.write(data.data);
+            } else if (data.type === "resize") {
+              ptyProcess.resize(data.cols, data.rows);
+            }
+          } catch {}
         });
 
         ws.on("close", () => {

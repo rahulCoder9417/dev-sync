@@ -75,30 +75,30 @@ app.get("/gui/:userId", async (req, res) => {
   res.redirect(url);
 });
 //testing build server
-import httpProxy from "http-proxy";
+// import httpProxy from "http-proxy";
 
-export const devProxy = httpProxy.createProxyServer({
-  ws: true,
-  changeOrigin: true,
-  xfwd: true,
-});
-export function getPortFromHost(host: string) {
-  // example: u123-5173.dev.yourdomain.com
-  const match = host.match(/-(\d+)\./);
-  return match ? Number(match[1]) : null;
-}
+// export const devProxy = httpProxy.createProxyServer({
+//   ws: true,
+//   changeOrigin: true,
+//   xfwd: true,
+// });
+// export function getPortFromHost(host: string) {
+//   // example: u123-5173.dev.yourdomain.com
+//   const match = host.match(/-(\d+)\./);
+//   return match ? Number(match[1]) : null;
+// }
 
-app.use((req, res, next) => {
-  const host = req.headers.host;
-  if (!host?.includes(".dev.")) return next();
+// app.use((req, res, next) => {
+//   const host = req.headers.host;
+//   if (!host?.includes(".dev.")) return next();
 
-  const port = getPortFromHost(host);
-  if (!port) return res.status(400).send("Invalid dev preview host");
+//   const port = getPortFromHost(host);
+//   if (!port) return res.status(400).send("Invalid dev preview host");
 
-  devProxy.web(req, res, {
-    target: `http://127.0.0.1:${port}`,
-  });
-});
+//   devProxy.web(req, res, {
+//     target: `http://127.0.0.1:${port}`,
+//   });
+// });
 
 
 // ---- SECURE REVERSE PROXY (PRODUCTION BUILD PREVIEW) ----
