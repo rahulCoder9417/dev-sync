@@ -216,18 +216,11 @@ const Terminal: React.FC<TerminalProps> = ({
 
     if (setIframeUrl) setIframeUrl(url)
     else window.open(url, "_blank")
+   const previewHost = `${userId}-${p.port}.dev.example.dev`;
+  const nurl = `https://${previewHost}`;
+
+  window.open(nurl, "_blank");
   }
-  // const openPreview = (p: PortInfo) => {
-  //   const host = `${userId}-${p.port}.dev.dev-sync-ul1p.onrender.com`
-  //   const url = `http://${host}`
-  
-  //   if (setIframeUrl) {
-  //     setIframeUrl(url)
-  //   } else {
-  //     window.open(url, "_blank")
-  //   }
-  // }
-  
 
   return (
     <div className={`${className} h-full w-full flex flex-col`}>

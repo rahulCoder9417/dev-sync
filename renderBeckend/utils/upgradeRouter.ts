@@ -4,6 +4,7 @@ import fileSyncWS from "../ws/fileSyncHandler.js";
 import { getAuthData } from "./auth.js";
 import { verifyPreviewToken } from "./verifyToken.js";
 import http from "http";
+import { devProxy, getPortFromHost } from "../lib/db/dev/index.js";
 export async function handleUpgrade(request: any, socket: any, head: any) {
   const { pathname } = parse(request.url || "");
 
@@ -139,17 +140,24 @@ export async function handleUpgrade(request: any, socket: any, head: any) {
       proxyReq.end();
       return;
     } else {
-      // const host = request.headers.host;
-      // if (!host?.includes(".dev.")) return;
+        const host = request.headers.host;
 
-      // const port = getPortFromHost(host);
-      // if (!port) return socket.destroy();
+  if (!host || !host.includes(".dev.")) {
+    socket.destroy();
+    return;
+  }
 
-      // devProxy.ws(request, socket, head, {
-      //   target: `ws://127.0.0.1:${port}`,
-      // });
+  const port = getPortFromHost(host);
+  if (!port) {
+    socket.destroy();
+    return;
+  }
+
+  devProxy.ws(request, socket, head, {
+    target: `ws://127.0.0.1:${port}`,
+  });
       console.error(`Unknown WebSocket path: ${pathname}`);
-      socket.destroy();
+     
     }
   } catch (err) {
     console.error("WebSocket upgrade error:", err);
