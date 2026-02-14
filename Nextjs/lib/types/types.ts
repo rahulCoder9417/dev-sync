@@ -18,7 +18,7 @@ export interface ProjectPageMember{
     status?:"pending"|"accepted"|"rejected"
 
 }
-
+export type OneOrNone<T extends Record<string, boolean>> = | { [K in keyof T]: { [P in K]: true; } & { [P in Exclude<keyof T, K>]?: false; }; }[keyof T] | { [K in keyof T]?: false; };
 
 export interface User {
     id: string;

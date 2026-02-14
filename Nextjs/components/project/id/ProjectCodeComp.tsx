@@ -3,31 +3,30 @@ import React, { useEffect, useState, useRef } from 'react';
 import Header from '@/components/project/id/Header';
 import FileExplorer from '@/components/project/id/fileExplorer/FileExplorer';
 import CodeEditor from '@/components/project/id/CodeEditor';
-import Preview from '@/components/project/id/preview/ServerTerminalProps';
-import ChatBot from '@/components/project/id/ChatBot';
 import { useRouter } from "next/navigation";
 
-import { ChatMessage, FileNode, ProjectById, Tab, User } from '@/lib/types/types';
+import { ChatMessage, FileNode, OneOrNone, ProjectById, Tab, User } from '@/lib/types/types';
 import Loader from '@/components/main/Loader';
 import useCollab from '@/customHooks/useCollab';
 import { DeleteToast } from './fileExplorer/DeleteToast';
 import ChatComponent from '@/components/team/chatComponent';
 import MainTerminal from './preview/MainTerminal';
+import CodeSidebar from './CodeSidebar/CodeSidebar';
 
-export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
-  const [errorMarkers,setErrorMarkers] = useState<Record<string, boolean> | null>(null)
+export const ProjectCodeComp = ({ data }: { data: ProjectById["responseData"] }) => {
+  const [errorMarkers, setErrorMarkers] = useState<Record<string, boolean> | null>(null)
   const [files, setFiles] = useState<FileNode[]>(data?.files!);
-  const [terminalLoaded,setTerminalLoaded] = useState(false)
+  const [terminalLoaded, setTerminalLoaded] = useState(false)
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [canMakeChanges, setCanMakeChanges] = useState(true)
-  const [visibleSection, setVisibleSection] = useState<{file: boolean; code: boolean; chat: boolean; preview: boolean;}>({
+  const [visibleSection, setVisibleSection] = useState<{ file: boolean; code: boolean; chat: boolean; preview: boolean; }>({
     file: true,
     code: true,
     chat: false,
     preview: false
   });
   const [toggleOpen, setToggleOpen] = useState(false);
-  
+
   // Resizing states
   const [fileWidth, setFileWidth] = useState(15); // percentage
   const [codeWidth, setCodeWidth] = useState(35); // percentage
@@ -37,9 +36,21 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
   const isResizing = useRef<'file' | 'code' | 'chat' | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const {join,status,sendMessage,participantsRef,deletionMenu,setdeletionMenu,leave} = useCollab({wsUrl:process.env.NEXT_PUBLIC_WS_URL!,autoConnect:(data?.isOwner || data?.isTeamMember)})
+  const { join, status, sendMessage, participantsRef, deletionMenu, setdeletionMenu, leave } = useCollab({ wsUrl: process.env.NEXT_PUBLIC_WS_URL!, autoConnect: (data?.isOwner || data?.isTeamMember) })
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-
+  const [sideBarOptions, setSideBarOptions] = useState<OneOrNone<{
+    "explorer":boolean,
+    "search":boolean,
+    "git":boolean,
+    "debug":boolean,
+    "extension":boolean
+  }>>({
+    "explorer":true,
+    "search":false,
+    "git":false,
+    "debug":false,
+    "extension":false
+  })
   const toggleSection = (key: keyof typeof visibleSection) => {
     const currentlyVisible = Object.entries(visibleSection).filter(([_, v]) => v);
     const isSelected = visibleSection[key];
@@ -58,18 +69,18 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
     setVisibleSection(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleFileSelect = (file:{content:string} & Tab) => {
+  const handleFileSelect = (file: { content: string } & Tab) => {
     if (file.type === 'file') {
       setTabs(prevTabs => {
         const existingTab = prevTabs.find(tab => tab.id === file.id);
-      
+
         if (existingTab) {
           return prevTabs.map(tab => ({
             ...tab,
             isActive: tab.id === file.id
           }));
         }
-      
+
         const newTab: Tab = {
           id: file.id,
           name: file.name,
@@ -78,20 +89,20 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
           isActive: true,
           isDirty: false
         };
-      
+
         return [
           ...prevTabs.map(tab => ({ ...tab, isActive: false })),
           newTab
         ];
       });
-      
-   join(data?.id!,file.id)
+
+      join(data?.id!, file.id)
     }
   };
 
 
   const handleTabClose = (tabId: string) => {
-    
+
     const newTabs = tabs.filter(tab => tab.id !== tabId);
 
     if (newTabs.length > 0) {
@@ -101,21 +112,21 @@ export const  ProjectCodeComp = ({data}:{data:ProjectById["responseData"]}) => {
       if (wasActive) {
         const nextActiveIndex = Math.min(closedTabIndex, newTabs.length - 1);
         newTabs[nextActiveIndex].isActive = true;
-        join(data?.id!,newTabs[nextActiveIndex].id)
+        join(data?.id!, newTabs[nextActiveIndex].id)
       }
-    }else{
-      leave(data?.id!,tabId)
+    } else {
+      leave(data?.id!, tabId)
     }
 
     setTabs(newTabs);
   };
 
   const handleTabSelect = (t: Tab) => {
-    if(tabs.find(tab=>(tab.id === t.id && tab.isActive))){
+    if (tabs.find(tab => (tab.id === t.id && tab.isActive))) {
       return
     }
-  
-handleFileSelect(t)
+
+    handleFileSelect(t)
   };
 
   // Resize handlers
@@ -140,7 +151,7 @@ handleFileSelect(t)
     } else if (isResizing.current === 'code') {
       let totalLeft = 0;
       if (visibleSection.file) totalLeft += fileWidth;
-      
+
       const relativePercentage = percentage - totalLeft;
       const newCodeWidth = Math.min(Math.max(relativePercentage, 20), 60);
       setCodeWidth(newCodeWidth);
@@ -167,29 +178,29 @@ handleFileSelect(t)
   }, [fileWidth, codeWidth, chatWidth, visibleSection]);
 
 
-  useEffect(()=>{
-    if(data?.type==="PRIVATE" && !(data.isOwner || data.isTeamMember)){
+  useEffect(() => {
+    if (data?.type === "PRIVATE" && !(data.isOwner || data.isTeamMember)) {
       // route to dashboard
       router.push("/dashboard")
     }
-    setCanMakeChanges((data?.isOwner || data?.isTeamMember ) as boolean)
-    if(status === "connected" && data && (data.isOwner || data.isTeamMember)){
+    setCanMakeChanges((data?.isOwner || data?.isTeamMember) as boolean)
+    if (status === "connected" && data && (data.isOwner || data.isTeamMember)) {
       join(data.id)
-      
+
     }
-    return ()=>{
-      if(data?.id && (data.isOwner || data.isTeamMember))leave(data?.id!)
-      if(data?.id && tabs[0]?.id && (data.isOwner || data.isTeamMember))leave(data?.id!,tabs[0].id)
+    return () => {
+      if (data?.id && (data.isOwner || data.isTeamMember)) leave(data?.id!)
+      if (data?.id && tabs[0]?.id && (data.isOwner || data.isTeamMember)) leave(data?.id!, tabs[0].id)
     }
-  },[status])
-  if(!data)return <Loader/>
+  }, [status])
+  if (!data) return <Loader />
   return (
     <div className="h-screen bg-primary text-primary overflow-hidden w-full flex flex-col">
       {
         deletionMenu && (
           <DeleteToast
-          
-          confirm={()=>  sendMessage("vote_delete",data?.id!,deletionMenu.id,{fullName:deletionMenu.votingBy,fileName:deletionMenu.fileName})}
+
+            confirm={() => sendMessage("vote_delete", data?.id!, deletionMenu.id, { fullName: deletionMenu.votingBy, fileName: deletionMenu.fileName })}
             fileId={deletionMenu.id}
             fileName={deletionMenu.fileName}
             total={deletionMenu.required}
@@ -203,12 +214,17 @@ handleFileSelect(t)
       <Header projectName={data.name} users={data.team.members} participantsRef={Array.from(participantsRef.current.keys())} isMember={data.isTeamMember || data.isOwner} projectId={data.id} />
 
       <div ref={containerRef} className="flex-1 flex overflow-hidden">
+        {/* Main SideBar */}
+        <div className="max-md:w-0 w-12" >
+         <CodeSidebar sideBarOptions={sideBarOptions} setSideBarOptions={setSideBarOptions} />
+        </div>
+
         {visibleSection.file && (
           <>
             <div style={{ width: `${fileWidth}%`, minWidth: '200px' }} className="max-md:w-1/2">
-              <FileExplorer canMakeChanges={canMakeChanges} onTabClose={handleTabClose} errorMarkers={errorMarkers} setdeletionMenu={setdeletionMenu}  sendMessage={sendMessage} files={files} setFiles={setFiles} projectId={data.id} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />
+              <FileExplorer canMakeChanges={canMakeChanges} onTabClose={handleTabClose} errorMarkers={errorMarkers} setdeletionMenu={setdeletionMenu} sendMessage={sendMessage} files={files} setFiles={setFiles} projectId={data.id} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />
             </div>
-            <div 
+            <div
               onMouseDown={handleMouseDown('file')}
               className="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
             />
@@ -232,7 +248,7 @@ handleFileSelect(t)
               />
             </div>
             {(visibleSection.preview || visibleSection.chat) && (
-              <div 
+              <div
                 onMouseDown={handleMouseDown('code')}
                 className="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
               />
@@ -243,7 +259,7 @@ handleFileSelect(t)
         {visibleSection.preview && (
           <>
             <div style={{ width: `${previewWidth}%` }} className="max-md:w-1/2">
-              <MainTerminal projectName={data.name} setTerminalLoaded={setTerminalLoaded} terminalLoaded={terminalLoaded} projectId={data.id}/>
+              <MainTerminal projectName={data.name} setTerminalLoaded={setTerminalLoaded} terminalLoaded={terminalLoaded} projectId={data.id} />
             </div>
             {visibleSection.chat && (
               <div className="w-1 bg-gray-700 cursor-default" />
@@ -254,14 +270,14 @@ handleFileSelect(t)
         {(visibleSection.chat && data?.isTeamMember) && (
           <>
             {!visibleSection.preview && (
-              <div 
+              <div
                 onMouseDown={handleMouseDown('chat')}
                 className="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
               />
             )}
             <div style={{ width: visibleSection.preview ? `${chatWidth}%` : `${chatWidth}%`, minWidth: '300px' }} className="max-md:w-1/2 ">
               {/* no use of last message */}
-              <ChatComponent useInProjectPage={true} selectedChat={{type:"team",id:data.team.id!,name:data.name}} dmAndTeam={{teams:[{id:data.team.id!,type:"team",lastMessageRead:false,name:data.name,memberCount:data.team.members.length,projectId:data.id,lastMessageAt:new Date(),}],friends:[]}} />
+              <ChatComponent useInProjectPage={true} selectedChat={{ type: "team", id: data.team.id!, name: data.name }} dmAndTeam={{ teams: [{ id: data.team.id!, type: "team", lastMessageRead: false, name: data.name, memberCount: data.team.members.length, projectId: data.id, lastMessageAt: new Date(), }], friends: [] }} />
             </div>
           </>
         )}
@@ -272,7 +288,7 @@ handleFileSelect(t)
         <div className="relative">
           {toggleOpen && (
             <div className="absolute cursor-pointer bottom-14 right-0 flex flex-col items-end gap-2">
-              {(data?.isTeamMember ?["file", "preview", "chat"]:["file","preview"]).map((section) => (
+              {(data?.isTeamMember ? ["file", "preview", "chat"] : ["file", "preview"]).map((section) => (
                 <button
                   key={section}
                   onClick={() => toggleSection(section as keyof typeof visibleSection)}
