@@ -1,14 +1,14 @@
 "use client"
 import React, { useEffect, useState, useRef } from 'react';
 import Header from '@/components/project/id/Header';
-import FileExplorer from '@/components/project/id/fileExplorer/FileExplorer';
+import FileExplorer from '@/components/project/id/CodeSidebar/fileExplorer/FileExplorer';
 import CodeEditor from '@/components/project/id/CodeEditor';
 import { useRouter } from "next/navigation";
 
 import { ChatMessage, FileNode, OneOrNone, ProjectById, Tab, User } from '@/lib/types/types';
 import Loader from '@/components/main/Loader';
 import useCollab from '@/customHooks/useCollab';
-import { DeleteToast } from './fileExplorer/DeleteToast';
+import { DeleteToast } from './CodeSidebar/fileExplorer/DeleteToast';
 import ChatComponent from '@/components/team/chatComponent';
 import MainTerminal from './preview/MainTerminal';
 import CodeSidebar from './CodeSidebar/CodeSidebar';
@@ -219,11 +219,14 @@ export const ProjectCodeComp = ({ data }: { data: ProjectById["responseData"] })
          <CodeSidebar sideBarOptions={sideBarOptions} setSideBarOptions={setSideBarOptions} />
         </div>
 
-        {visibleSection.file && (
+        {visibleSection.file &&(Object.values(sideBarOptions).includes(true)) && (
           <>
             <div style={{ width: `${fileWidth}%`, minWidth: '200px' }} className="max-md:w-1/2">
-              <FileExplorer canMakeChanges={canMakeChanges} onTabClose={handleTabClose} errorMarkers={errorMarkers} setdeletionMenu={setdeletionMenu} sendMessage={sendMessage} files={files} setFiles={setFiles} projectId={data.id} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />
-            </div>
+            { 
+            sideBarOptions.explorer && <FileExplorer canMakeChanges={canMakeChanges} onTabClose={handleTabClose} errorMarkers={errorMarkers} setdeletionMenu={setdeletionMenu} sendMessage={sendMessage} files={files} setFiles={setFiles} projectId={data.id} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />
+            
+          } 
+           </div>
             <div
               onMouseDown={handleMouseDown('file')}
               className="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"

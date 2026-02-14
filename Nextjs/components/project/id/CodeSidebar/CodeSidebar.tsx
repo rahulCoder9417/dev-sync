@@ -57,11 +57,12 @@ const handleClick = useCallback(
 )
 
   return (
-    <div className="bg-secondary border-r-2 border-primary h-full flex gap-6  flex-col">
+    <div className="bg-secondary  relative border-r-2 border-primary h-full flex gap-6  flex-col">
+      <div className='inset-0 w-full h-full bg-gray-950/30 absolute '/>
       {options.map((option) => (
         <div
         onClick={()=>handleClick(option.value)}
-        className={` mt-4 ${sideBarOptions[option.value] ? 'bg-primary w-full py-3 rounded-lg  ' : ''}`} key={option.value}>
+        className={`z-10 mx-auto mt-4 ${sideBarOptions[option.value] ? 'bg-primary/90 w-[calc(100%-5px)] py-3 rounded-lg  ' : ''}`} key={option.value}>
               <option.icon className={`size-5 text-secondary mx-auto  hover:text-white cursor-pointer ${sideBarOptions?.[option.value] ? 'text-white!' : ''}`} />
         </div>
       ))}

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Circle, X } from 'lucide-react';
-import Collaborators from './fileExplorer/Collaborators';
+import Collaborators from './CodeSidebar/fileExplorer/Collaborators';
 
 const CodeTabHeader = ({tabs,errorMarkers,onTabSelect,onTabClose,setTabToClose,projectId}:any) => {
   return (
