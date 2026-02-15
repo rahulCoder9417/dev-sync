@@ -3,6 +3,8 @@ import { useCallback } from 'react';
 import * as Y from 'yjs';
 import { Tab, FileNode } from '@/lib/types/types';
 import { showToast } from "@/components/main/Toast";
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { setNewProjectFiles } from '@/lib/redux/features/projectFileSlice';
 
 export const saveNode = (tree: any, nodeId: string, content: string) => {
   return tree.map((node: any) => {
@@ -21,10 +23,12 @@ export const useEditorSave = (
   activeTabRef: React.MutableRefObject<Tab | null>,
   readOnly: boolean,
   setTabs: React.Dispatch<React.SetStateAction<Tab[]>>,
-  setFiles: React.Dispatch<React.SetStateAction<FileNode[]>>,
   sendMessage: (message: string, projectId: string, fileId: string | undefined, data?: any) => boolean,
   projectId: string
 ) => {
+  const dispatch = useAppDispatch();
+  const files = useAppSelector((state) => state.projectFile.files);
+  
   const handleSave = useCallback(async () => {
     const tab = activeTabRef.current;
     if (!tab || readOnly) return;
@@ -34,7 +38,8 @@ export const useEditorSave = (
       setTabs(prev => prev.map(t =>
         t.id === tab.id ? { ...t, content: newContent, isDirty: false } : t
       ));
-      setFiles(prev => saveNode(prev, tab.id, newContent));
+
+      dispatch(setNewProjectFiles(saveNode(files, tab.id, newContent)));
       const res: any = await fetch(`/api/projects/fileItem/updateContent`, {
         method: 'PUT',
         headers: {
@@ -50,7 +55,7 @@ export const useEditorSave = (
     } catch (e) {
       console.error("Save failed", e);
     }
-  }, [docRef, activeTabRef, readOnly, setTabs, setFiles, sendMessage, projectId]);
+  }, [docRef, activeTabRef, readOnly, setTabs, sendMessage, projectId]);
 
   return { handleSave };
 };

@@ -12,10 +12,12 @@ import { DeleteToast } from './CodeSidebar/fileExplorer/DeleteToast';
 import ChatComponent from '@/components/team/chatComponent';
 import MainTerminal from './preview/MainTerminal';
 import CodeSidebar from './CodeSidebar/CodeSidebar';
-
+import SearchSidebar from './CodeSidebar/SearchSidebar/SearchSidebar';
+import { useAppDispatch } from '@/lib/redux/hooks';
+import { deleteProjectFiles, setInitialProjectFiles } from '@/lib/redux/features/projectFileSlice';
 export const ProjectCodeComp = ({ data }: { data: ProjectById["responseData"] }) => {
   const [errorMarkers, setErrorMarkers] = useState<Record<string, boolean> | null>(null)
-  const [files, setFiles] = useState<FileNode[]>(data?.files!);
+  const dispatch = useAppDispatch();
   const [terminalLoaded, setTerminalLoaded] = useState(false)
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [canMakeChanges, setCanMakeChanges] = useState(true)
@@ -166,6 +168,13 @@ export const ProjectCodeComp = ({ data }: { data: ProjectById["responseData"] })
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
   };
+useEffect(() => {
+  if (data&& data.id)  dispatch(setInitialProjectFiles({ projectId: data?.id!, files: data?.files! }));
+
+  return () => {
+    dispatch(deleteProjectFiles())
+  }
+}, [data])
 
   useEffect(() => {
     document.addEventListener('mousemove', handleMouseMove);
@@ -222,10 +231,9 @@ export const ProjectCodeComp = ({ data }: { data: ProjectById["responseData"] })
         {visibleSection.file &&(Object.values(sideBarOptions).includes(true)) && (
           <>
             <div style={{ width: `${fileWidth}%`, minWidth: '200px' }} className="max-md:w-1/2">
-            { 
-            sideBarOptions.explorer && <FileExplorer canMakeChanges={canMakeChanges} onTabClose={handleTabClose} errorMarkers={errorMarkers} setdeletionMenu={setdeletionMenu} sendMessage={sendMessage} files={files} setFiles={setFiles} projectId={data.id} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />
-            
-          } 
+            {sideBarOptions.explorer && (<FileExplorer canMakeChanges={canMakeChanges} onTabClose={handleTabClose} errorMarkers={errorMarkers} setdeletionMenu={setdeletionMenu} sendMessage={sendMessage} projectId={data.id} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />)}
+            {sideBarOptions.search && <SearchSidebar />}
+          
            </div>
             <div
               onMouseDown={handleMouseDown('file')}
@@ -245,7 +253,6 @@ export const ProjectCodeComp = ({ data }: { data: ProjectById["responseData"] })
                 isTeam={data.isTeamMember!}
                 tabs={tabs}
                 setTabs={setTabs}
-                setFiles={setFiles}
                 onTabClose={handleTabClose}
                 onTabSelect={handleTabSelect}
               />

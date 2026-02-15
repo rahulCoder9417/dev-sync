@@ -8,10 +8,12 @@ import chatReducer from "./features/chatSlice";
 import collabCodeEditorUpdateReducer from "./features/collabCodeEditorUpdate";
 import onlineUserReducer from "./features/onlineUserSlice";
 import terminalOptionsReducer from "./features/terminalOptions";
+import projectFileReducer from "./features/projectFileSlice";
 export const store = configureStore({
   reducer: {
     terminalOptions: terminalOptionsReducer,
     user: userReducer,
+    projectFile: projectFileReducer,
     chatPopUp: chatPopUpReducer,
     chat: chatReducer,
     recentProjects:recentRedusers,

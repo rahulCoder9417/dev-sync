@@ -15,6 +15,7 @@ import { renameNodeInTree, removeNodeFromTree, addNodeToTree } from '@/lib/mainU
 import FileContextMenu from './FileContext';
 import { uploadToCloudinary } from '@/lib/mainUtils/cloudinary';
 import { getResourceType } from '@/lib/mainUtils/getResourseType';
+import { addFileNode, setNewProjectFiles } from '@/lib/redux/features/projectFileSlice';
 export const fileApiService = {
   async renameFile(nodeId: string, newName: string) {
     const res = await fetch(`/api/projects/fileItem/rename`, {
@@ -49,9 +50,7 @@ export const fileApiService = {
   }
 };
 interface FileExplorerProps {
-  files: FileNode[];
   canMakeChanges: boolean;
-  setFiles: React.Dispatch<React.SetStateAction<FileNode[]>>;
   errorMarkers: Record<string, boolean> | null;
   tabs: Tab[];
   onFileSelect: (file: any) => void;
@@ -64,8 +63,6 @@ interface FileExplorerProps {
 
 const FileExplorer: React.FC<FileExplorerProps> = ({
   canMakeChanges,
-  files,
-  setFiles,
   errorMarkers,
   tabs,
   onFileSelect,
@@ -75,13 +72,13 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   projectId,
   setTabs,
 }) => {
+  const files = useAppSelector(state => state.projectFile.files, shallowEqual);
   const [rootAction, setrootAction] = useState<{ type: string } | null>(null);
   const userInfo = useAppSelector(state => state.user, shallowEqual);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<any>(null);
   const [resourceTargetId, setResourceTargetId] = useState<string | null>(null);
-
   const [isFileAction, setIsFileAction] = useState<null | {
     id: string,
     type: string,
@@ -145,11 +142,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     };
 
     if (nodeId === null) {
-      if (type === "file") {
-        setFiles((prev: FileNode[]) => [...prev, newNode] as FileNode[]);
-      } else {
-        setFiles((prev: FileNode[]) => [newNode, ...prev] as FileNode[]);
-      }
+      dispatch(addFileNode(newNode))
       setrootAction(null);
     } else {
       dispatch(addFileOp({
@@ -318,7 +311,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       dispatch(consumeFileOp({ projectId }));
       setIsFileAction({ id: item.id, type: "" });
     });
-    setFiles(newTree);
+    dispatch(setNewProjectFiles(newTree));
   }, [fileOp]);
 
   // Close context menu on outside click
@@ -383,7 +376,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             handleNameConfirm={(name: string) => actionHandler(rootAction.type, null, name)}
           />
         )}
-        {files.map(node => (
+        {files?.map(node => (
           <TreeNodeMemo
             sendMessage={sendMessage}
             key={node.id}

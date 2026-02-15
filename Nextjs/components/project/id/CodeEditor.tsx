@@ -33,7 +33,6 @@ interface CodeEditorProps {
   errorMarkers: Record<string, boolean> | null;
   sendMessage: (message: string, projectId: string, fileId: string | undefined, data?: any) => boolean;
   setTabs: React.Dispatch<React.SetStateAction<Tab[]>>;
-  setFiles: React.Dispatch<React.SetStateAction<FileNode[]>>;
   onTabClose: (tabId: string) => void;
   onTabSelect: (tab: Tab) => void;
   projectId: string;
@@ -41,11 +40,12 @@ interface CodeEditorProps {
 
 const CodeEditor: React.FC<CodeEditorProps> = ({
   projectId, tabs, errorMarkers, setErrorMarkers,
-  sendMessage, setTabs, setFiles, onTabClose, onTabSelect, isTeam
+  sendMessage, setTabs, onTabClose, onTabSelect, isTeam
 }) => {
   // ============================================
   // State Management
   // ============================================
+  
   const [tabToClose, setTabToClose] = useState<string | null>(null);
   const [readOnly, setReadOnly] = useState(false);
   const [isFirstSync, setIsFirstSync] = useState<string | null>(null);
@@ -79,7 +79,6 @@ const [forceRenderEditor, setforceRenderEditor] = useState(false)//toggle to onl
     activeTabRef as React.MutableRefObject<Tab | null>,
     readOnly,
     setTabs,
-    setFiles,
     sendMessage,
     projectId
   );
@@ -112,7 +111,6 @@ const [forceRenderEditor, setforceRenderEditor] = useState(false)//toggle to onl
     updateRemoteDecorations,
     sendMessage,
     setTabs,
-    setFiles
   );
 
   // ============================================

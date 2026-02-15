@@ -211,8 +211,6 @@ export const getProjectById = async (projectId: string) => {
             type: true,
             content: true,
             parentId: true,
-            createdAt: true,
-            updatedAt: true,
           },
         },
       },

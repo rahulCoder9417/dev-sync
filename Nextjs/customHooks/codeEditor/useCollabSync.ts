@@ -8,6 +8,7 @@ import { Tab, FileNode } from '@/lib/types/types';
 import { saveNode } from './useEditorSave';
 import * as Y from 'yjs';
 import { showToast } from "@/components/main/Toast";
+import { setNewProjectFiles } from '@/lib/redux/features/projectFileSlice';
 
 export const useCollabSync = (
   projectId: string,
@@ -24,10 +25,9 @@ export const useCollabSync = (
   updateRemoteDecorations: any,
   sendMessage: (message: string, projectId: string, fileId: string | undefined, data?: any) => boolean,
   setTabs: React.Dispatch<React.SetStateAction<Tab[]>>,
-  setFiles: React.Dispatch<React.SetStateAction<FileNode[]>>
 ) => {
   const dispatch = useAppDispatch();
-
+  const files = useAppSelector((state) => state.projectFile.files);
   const updatesMap = useAppSelector(
     (state) => activeTab ? (state.collabCodeEditorUpdate.updates?.[activeTab.id] ?? []) : [],
     shallowEqual
@@ -44,8 +44,9 @@ export const useCollabSync = (
       setTabs(prev => prev.map(t =>
         t.id === item.fileId ? { ...t, content: item.content, isDirty: false } : t
       ));
-
-      setFiles(prev => saveNode(prev, item.fileId, item.content!))
+       dispatch(
+        setNewProjectFiles(saveNode(files,item.fileId, item.content!))
+      )
 
       if (item.fileId !== activeTab?.id) {
         const ydoc = docsRef.current.get(item.fileId);
@@ -57,7 +58,7 @@ export const useCollabSync = (
       }
       dispatch(consumeSaveFileOp({ projectId }))
     })
-  }, [savePending, activeTab?.id, docsRef, setTabs, setFiles, dispatch, projectId]);
+  }, [savePending, activeTab?.id, docsRef, setTabs, dispatch, projectId]);
 
   useEffect(() => {
     if (!updatesMap || updatesMap.length === 0) return;
