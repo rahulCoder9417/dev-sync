@@ -49,7 +49,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const [tabToClose, setTabToClose] = useState<string | null>(null);
   const [readOnly, setReadOnly] = useState(false);
   const [isFirstSync, setIsFirstSync] = useState<string | null>(null);
-const [forceRenderEditor, setforceRenderEditor] = useState(false)//toggle to only force render editor
+  const [forceRenderEditor, setforceRenderEditor] = useState(false)//toggle to only force render editor
   const activeTab = tabs.find(tab => tab.isActive);
   const dispatch = useAppDispatch();
 

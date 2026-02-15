@@ -5,6 +5,7 @@ import { Tab, FileNode } from '@/lib/types/types';
 import { showToast } from "@/components/main/Toast";
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { setNewProjectFiles } from '@/lib/redux/features/projectFileSlice';
+import { shallowEqual } from 'react-redux';
 
 export const saveNode = (tree: any, nodeId: string, content: string) => {
   return tree.map((node: any) => {
@@ -27,7 +28,7 @@ export const useEditorSave = (
   projectId: string
 ) => {
   const dispatch = useAppDispatch();
-  const files = useAppSelector((state) => state.projectFile.files);
+  const files = useAppSelector((state) => state.projectFile.files,shallowEqual);
   
   const handleSave = useCallback(async () => {
     const tab = activeTabRef.current;
@@ -38,7 +39,6 @@ export const useEditorSave = (
       setTabs(prev => prev.map(t =>
         t.id === tab.id ? { ...t, content: newContent, isDirty: false } : t
       ));
-
       dispatch(setNewProjectFiles(saveNode(files, tab.id, newContent)));
       const res: any = await fetch(`/api/projects/fileItem/updateContent`, {
         method: 'PUT',
@@ -55,7 +55,7 @@ export const useEditorSave = (
     } catch (e) {
       console.error("Save failed", e);
     }
-  }, [docRef, activeTabRef, readOnly, setTabs, sendMessage, projectId]);
+  }, [docRef, activeTabRef,files, readOnly, setTabs, sendMessage, projectId]);
 
   return { handleSave };
 };

@@ -308,10 +308,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         default:
           break;
       }
+      dispatch(setNewProjectFiles(newTree));
       dispatch(consumeFileOp({ projectId }));
       setIsFileAction({ id: item.id, type: "" });
     });
-    dispatch(setNewProjectFiles(newTree));
   }, [fileOp]);
 
   // Close context menu on outside click

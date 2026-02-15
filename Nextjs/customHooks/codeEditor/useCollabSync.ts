@@ -27,7 +27,7 @@ export const useCollabSync = (
   setTabs: React.Dispatch<React.SetStateAction<Tab[]>>,
 ) => {
   const dispatch = useAppDispatch();
-  const files = useAppSelector((state) => state.projectFile.files);
+  const files = useAppSelector((state) => state.projectFile.files,shallowEqual);
   const updatesMap = useAppSelector(
     (state) => activeTab ? (state.collabCodeEditorUpdate.updates?.[activeTab.id] ?? []) : [],
     shallowEqual
@@ -44,8 +44,9 @@ export const useCollabSync = (
       setTabs(prev => prev.map(t =>
         t.id === item.fileId ? { ...t, content: item.content, isDirty: false } : t
       ));
+      const newTree = saveNode(files,item.fileId, item.content!);
        dispatch(
-        setNewProjectFiles(saveNode(files,item.fileId, item.content!))
+        setNewProjectFiles(newTree)
       )
 
       if (item.fileId !== activeTab?.id) {

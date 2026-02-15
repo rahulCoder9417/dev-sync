@@ -160,6 +160,7 @@ const propsAreEqual = (prev: Props, next: Props) => {
     && prev.expandedFolders.size === next.expandedFolders.size
     && prev.errorMarkers?.[prev.node.id] == next.errorMarkers?.[next.node.id]
     && prev.depth === next.depth
+    && prev.node.content === next.node.content
     && prev.adminMenu === next.adminMenu
     && prev.node?.children === next.node?.children
     && prev.isFileAction?.id === next.isFileAction?.id

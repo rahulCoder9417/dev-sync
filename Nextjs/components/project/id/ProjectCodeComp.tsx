@@ -82,7 +82,6 @@ export const ProjectCodeComp = ({ data }: { data: ProjectById["responseData"] })
             isActive: tab.id === file.id
           }));
         }
-
         const newTab: Tab = {
           id: file.id,
           name: file.name,
