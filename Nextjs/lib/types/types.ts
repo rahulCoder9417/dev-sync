@@ -67,7 +67,7 @@ export interface User {
     export type FileNode = {
       id: string;
       name: string;
-      content?: string;
+      content: string;
       type: 'file' | 'folder';
       parentId: string | null;
       children?: FileNode[];

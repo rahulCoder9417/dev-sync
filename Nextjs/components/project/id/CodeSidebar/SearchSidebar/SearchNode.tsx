@@ -1,13 +1,18 @@
+import { showToast } from '@/components/main/Toast';
 import { getFileIcon } from '@/lib/mainUtils/icons'
+import { FileNode } from '@/lib/types/types';
 import { ChevronDown } from 'lucide-react'
 import React, { useState } from 'react'
 export interface SearchData{
   fileName:string;
   path:string;
   line:string[];
+  parentId:string | null;
+  id:string;
+  content?:string;
   searchVal?:string
 }
-const SearchNode = ({fileName,path,line,searchVal}:SearchData) => {
+const SearchNode = ({fileName,path,line,id,content,parentId,searchVal,handleFileSelect}:SearchData & {handleFileSelect: (file: FileNode) => void}) => {
   const [showFiles, setshowFiles] = useState<boolean>(true)
   const highlightText = (text: string) => {
     let highlight = searchVal!.toLowerCase()
@@ -26,7 +31,7 @@ const SearchNode = ({fileName,path,line,searchVal}:SearchData) => {
     );
   };
   const clickFile= ()=>{
-    //pass
+   handleFileSelect({id,name:fileName,content:content!,type:"file",parentId})
   }
   return (
     <div onClick={()=>clickFile()} className='flex flex-col px-2 py-1  cursor-pointer text-sm group'>
@@ -43,15 +48,15 @@ const SearchNode = ({fileName,path,line,searchVal}:SearchData) => {
       </div>
       <div className={`flex ${showFiles ? "":"hidden"} `}>
         <div className='w-2 shrink-0' />
-        <div className='border-l-2 border-secondary '>
+        <div className='border-l-2 border-secondary flex-1 min-w-0'>
           {line.map((item, index) => (
-            <div key={index}>
-              <div className="relative py-1 group/item inline-block">
-                <span className='ml-4 truncate hover:bg-primary w-full'>
+            <div className='' key={index}>
+              <div className="relative py-1 group/item ">
+                <span className='ml-4 truncate hover:bg-primary block '>
                   {highlightText(item)}
                 </span>
 
-                <div className="absolute left-[50%] ml-2 hidden group-hover/item:block bg-black z-10 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                <div className="absolute left-[20%] z-10 ml-2 hidden group-hover/item:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">
                   {item}
                 </div>
               </div>

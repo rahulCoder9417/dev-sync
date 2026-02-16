@@ -5,7 +5,7 @@ import { useAppSelector } from '@/lib/redux/hooks'
 import { SearchData } from './SearchNode'
 import { FileNode } from '@/lib/types/types'
 
-const SearchSidebar = () => {
+const SearchSidebar = ({handleFileSelect}: {handleFileSelect: (file: FileNode) => void}) => {
   const [searchValue, setSearchValue] = useState<string>("")
   const [searchData, setSearchData] = useState<SearchData[]>([])
   let files: FileNode[] = useAppSelector((state) => state.projectFile.files)
@@ -23,7 +23,7 @@ const SearchSidebar = () => {
     const mastchedLines = lines?.filter(line =>
       line.includes(searchVal)
     );
-    setSearchData((p: SearchData[]) => [...p, { fileName: file.name, path: parentPath + file.name, line: mastchedLines }])
+    setSearchData((p: SearchData[]) => [...p, { fileName: file.name,parentId:file.parentId,id:file.id, path: parentPath + file.name,content:file.content, line: mastchedLines }])
   }
 
   const searchFile = (file: FileNode[]) => {
@@ -43,7 +43,7 @@ const SearchSidebar = () => {
 
     <div className="bg-secondary border-r  border-primary h-full flex flex-col">
       <SearchHeader searchValue={searchValue} setSearchValue={setSearchValue} />
-      <SearchNodeTable searchData={searchData} searchValue={searchValue} />
+      <SearchNodeTable handleFileSelect={handleFileSelect} searchData={searchData} searchValue={searchValue} />
     </div>
   )
 }

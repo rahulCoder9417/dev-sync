@@ -71,7 +71,7 @@ export const ProjectCodeComp = ({ data }: { data: ProjectById["responseData"] })
     setVisibleSection(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleFileSelect = (file: { content: string } & Tab) => {
+  const handleFileSelect = (file: FileNode | Tab &{content:string}) => {
     if (file.type === 'file') {
       setTabs(prevTabs => {
         const existingTab = prevTabs.find(tab => tab.id === file.id);
@@ -231,7 +231,7 @@ useEffect(() => {
           <>
             <div style={{ width: `${fileWidth}%`, minWidth: '200px' }} className="max-md:w-1/2">
             {sideBarOptions.explorer && (<FileExplorer canMakeChanges={canMakeChanges} onTabClose={handleTabClose} errorMarkers={errorMarkers} setdeletionMenu={setdeletionMenu} sendMessage={sendMessage} projectId={data.id} tabs={tabs} setTabs={setTabs} onFileSelect={handleFileSelect} />)}
-            {sideBarOptions.search && <SearchSidebar />}
+            {sideBarOptions.search && <SearchSidebar handleFileSelect={handleFileSelect} />}
           
            </div>
             <div
