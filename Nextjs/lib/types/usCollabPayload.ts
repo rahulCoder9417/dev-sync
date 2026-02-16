@@ -11,6 +11,7 @@ export type UserInfo = {
   export type FileNode = {
     id: string;
     name: string;
+    content?:string;
     type: "file" | "folder";
     parentId: string;
     children: FileNode[];
