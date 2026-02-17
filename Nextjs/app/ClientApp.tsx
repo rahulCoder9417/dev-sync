@@ -10,6 +10,7 @@ import { getProjects } from "@/lib/actions/projects/getProject";
 import { clearRecentProjects, setRecentProjects } from "@/lib/redux/features/recentProjects";
 import { ChatPopup } from "@/components/main/ChatPopUp";
 import { useChatInitializer } from "@/lib/redux/chatInitializer";
+import { ShortcutProvider } from "@/components/main/Shortcut";
 
 
 export function ClientApp({ children }: { children: ReactNode }) {
@@ -66,6 +67,7 @@ useChatInitializer(isLoaded)
 
   return (
     <>
+      <ShortcutProvider>
       {children}
       <ChatPopup />
       <Toaster
@@ -80,6 +82,7 @@ useChatInitializer(isLoaded)
           },
         }}
       />
+      </ShortcutProvider>
     </>
   );
 }

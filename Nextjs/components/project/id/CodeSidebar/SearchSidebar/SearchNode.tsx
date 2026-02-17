@@ -12,9 +12,7 @@ export interface SearchData{
   content?:string;
   searchVal?:string
 }
-const SearchNode = ({fileName,path,line,id,content,parentId,searchVal,handleFileSelect}:SearchData & {handleFileSelect: (file: FileNode) => void}) => {
-  const [showFiles, setshowFiles] = useState<boolean>(true)
-  const highlightText = (text: string) => {
+export const highlightText = (text: string,searchVal:string) => {
     let highlight = searchVal!.toLowerCase()
     if (!highlight || !text) return text;
 
@@ -30,6 +28,9 @@ const SearchNode = ({fileName,path,line,id,content,parentId,searchVal,handleFile
       )
     );
   };
+const SearchNode = ({fileName,path,line,id,content,parentId,searchVal,handleFileSelect}:SearchData & {handleFileSelect: (file: FileNode) => void}) => {
+  const [showFiles, setshowFiles] = useState<boolean>(true)
+ 
   const clickFile= ()=>{
    handleFileSelect({id,name:fileName,content:content!,type:"file",parentId})
   }
@@ -53,7 +54,7 @@ const SearchNode = ({fileName,path,line,id,content,parentId,searchVal,handleFile
             <div className='' key={index}>
               <div className="relative py-1 group/item ">
                 <span className='ml-4 truncate hover:bg-primary block '>
-                  {highlightText(item)}
+                  {highlightText(item,searchVal!)}
                 </span>
 
                 <div className="absolute left-[20%] z-10 ml-2 hidden group-hover/item:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">

@@ -15,8 +15,9 @@ const SearchSidebar = ({handleFileSelect}: {handleFileSelect: (file: FileNode) =
       file.children?.forEach(child => {
         recursiveSearch(child, searchVal, parentPath + file.name )
       })
-      return
     }
+    
+    if(file.type==="folder") return
     const contentToLower =file.content?.toLowerCase()
     if(!contentToLower || !contentToLower.includes(searchVal))return
     const lines = contentToLower.split("\n");

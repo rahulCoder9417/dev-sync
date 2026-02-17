@@ -15,6 +15,9 @@ import CodeSidebar from './CodeSidebar/CodeSidebar';
 import SearchSidebar from './CodeSidebar/SearchSidebar/SearchSidebar';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { deleteProjectFiles, setInitialProjectFiles } from '@/lib/redux/features/projectFileSlice';
+import SearchPallete from './SearchPallete';
+import { useShortcut } from '@/components/main/Shortcut';
+import { showToast } from '@/components/main/Toast';
 export const ProjectCodeComp = ({ data }: { data: ProjectById["responseData"] }) => {
   const [errorMarkers, setErrorMarkers] = useState<Record<string, boolean> | null>(null)
   const dispatch = useAppDispatch();
@@ -37,7 +40,7 @@ export const ProjectCodeComp = ({ data }: { data: ProjectById["responseData"] })
   const router = useRouter()
   const isResizing = useRef<'file' | 'code' | 'chat' | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
+  const { openSearchPalette, setOpenSearchPalette } = useShortcut();
   const { join, status, sendMessage, participantsRef, deletionMenu, setdeletionMenu, leave } = useCollab({ wsUrl: process.env.NEXT_PUBLIC_WS_URL!, autoConnect: (data?.isOwner || data?.isTeamMember) })
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
   const [sideBarOptions, setSideBarOptions] = useState<OneOrNone<{
@@ -203,7 +206,7 @@ useEffect(() => {
   }, [status])
   if (!data) return <Loader />
   return (
-    <div className="h-screen bg-primary text-primary overflow-hidden w-full flex flex-col">
+    <div className="h-screen bg-primary text-primary  w-full flex flex-col overflow-hidden">
       {
         deletionMenu && (
           <DeleteToast
@@ -221,7 +224,12 @@ useEffect(() => {
       }
       <Header projectName={data.name} users={data.team.members} participantsRef={Array.from(participantsRef.current.keys())} isMember={data.isTeamMember || data.isOwner} projectId={data.id} />
 
-      <div ref={containerRef} className="flex-1 flex overflow-hidden">
+      <div ref={containerRef} className="flex-1 relative flex overflow-hidden">
+        {openSearchPalette && (
+          <div className="fixed inset-0 z-9999">
+            <SearchPallete handleFileSelect={handleFileSelect} openSearchPalette={openSearchPalette} setOpenSearchPalette={setOpenSearchPalette} />      
+          </div>
+        )}
         {/* Main SideBar */}
         <div className="max-md:w-0 w-12" >
          <CodeSidebar sideBarOptions={sideBarOptions} setSideBarOptions={setSideBarOptions} />

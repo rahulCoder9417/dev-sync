@@ -25,6 +25,8 @@ import { checkNotEditor } from '@/lib/mainUtils/codeEditor';
 
 // Import sub-components
 import { Save, XCircle } from "lucide-react";
+import { useShortcut } from "@/components/main/Shortcut";
+import { showToast } from "@/components/main/Toast";
 
 interface CodeEditorProps {
   isTeam: boolean;
@@ -278,7 +280,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   // ============================================
   const handleEditorMount: OnMount = (editor, monaco) => {
     if (!activeTab || typeof window === "undefined") return;
-    
+
     const ydoc = getOrCreateDoc(activeTab.id);
     docRef.current = ydoc;
     editorRef.current = editor;
