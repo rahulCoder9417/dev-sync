@@ -136,6 +136,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       type: type as "file" | "folder",
       projectId,
       parentId: nodeId,
+      content:"",
       createdAt: "",
       updatedAt: "",
       children: []
