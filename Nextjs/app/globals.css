@@ -206,7 +206,11 @@
       transform: translateY(0);
     }
   }
-  
+  .no-select {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
   .animate-fade-in {
     animation: fade-in 0.15s ease-out forwards;
   }

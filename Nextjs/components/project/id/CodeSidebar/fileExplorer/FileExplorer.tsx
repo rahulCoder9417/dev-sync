@@ -16,6 +16,9 @@ import FileContextMenu from './FileContext';
 import { uploadToCloudinary } from '@/lib/mainUtils/cloudinary';
 import { getResourceType } from '@/lib/mainUtils/getResourseType';
 import { addFileNode, setNewProjectFiles } from '@/lib/redux/features/projectFileSlice';
+import { createPortal } from 'react-dom';
+import { getFileIcon } from '@/lib/mainUtils/icons';
+import { number } from 'zod';
 export const fileApiService = {
   async renameFile(nodeId: string, newName: string) {
     const res = await fetch(`/api/projects/fileItem/rename`, {
@@ -335,7 +338,36 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       window.removeEventListener('click', handleClickOutside);
     };
   }, [contextMenu]);
+   //mouse drag for while
+    const [dragPos, setDragPos] = useState<{ x: number; y: number,name:string } >({x:0,y:0,name:""});
+    const mouseDownRef = React.useRef(false);
+    
+    function handleMouseDown(name:string) {
+      mouseDownRef.current = true;
+      setDragPos({ x: 0, y: 0, name });
+    }
+  
+    function handleMouseUp() {
+      mouseDownRef.current = false;
+      setDragPos({x:0,y:0,name:""});
+    }
+    useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if(!mouseDownRef.current)return
+      setDragPos((prev )=>({...prev,x:e.clientX+12,y:e.clientY+12}))
+    };
+    
 
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup",handleMouseUp)
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup",handleMouseUp)
+    };
+    }, []);
+
+    
   return (
     <div className="bg-secondary border-r border-primary h-full flex flex-col">
       <div className="flex items-center justify-between p-3 border-b border-primary">
@@ -379,6 +411,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         )}
         {files?.map(node => (
           <TreeNodeMemo
+            handleMouseDown={handleMouseDown}
+            handleMouseUp={handleMouseUp}
             sendMessage={sendMessage}
             key={node.id}
             node={node}
@@ -452,6 +486,35 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           setContextMenu(null);
         }}
       />
+        {mouseDownRef.current && dragPos.name!=="" && dragPos.x!==0 && dragPos.y!==0 && createPortal(
+        <div
+  className="
+    fixed
+    pointer-events-none
+    z-[9999]
+    bg-[#1e2235]
+    border
+    border-[#292f52]
+    rounded-lg
+    px-2
+    py-1
+    text-xs
+    text-white
+    flex
+    items-center
+    gap-2
+  "
+  style={{
+    top: dragPos.y,
+    left: dragPos.x,
+  }}
+>
+
+          {getFileIcon(dragPos.name)}
+          <span>{dragPos.name}</span>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
