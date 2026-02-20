@@ -139,7 +139,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       type: type as "file" | "folder",
       projectId,
       parentId: nodeId,
-      content:"",
+      content: "",
       createdAt: "",
       updatedAt: "",
       children: []
@@ -256,7 +256,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       };
     }
     const id = await actionHandler("file", nodeId!, obj.path)
-    if(!id){
+    if (!id) {
       showToast(false, "Error making file  ", "Please do a refresh");
       return
     }
@@ -338,36 +338,39 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       window.removeEventListener('click', handleClickOutside);
     };
   }, [contextMenu]);
-   //mouse drag for while
-    const [dragPos, setDragPos] = useState<{ x: number; y: number,name:string } >({x:0,y:0,name:""});
-    const mouseDownRef = React.useRef(false);
-    
-    function handleMouseDown(name:string) {
-      mouseDownRef.current = true;
-      setDragPos({ x: 0, y: 0, name });
-    }
-  
-    function handleMouseUp() {
-      mouseDownRef.current = false;
-      setDragPos({x:0,y:0,name:""});
-    }
-    useEffect(() => {
+  //mouse drag for while
+  const [currParent, setCurrParent] = useState<FileNode | null>(null)
+  const [dragPos, setDragPos] = useState<{ x: number; y: number, name: string }>({ x: 0, y: 0, name: "" });
+  const mouseDownRef = React.useRef(false);
+
+  function handleMouseDown(name: string) {
+    mouseDownRef.current = true;
+    setDragPos({ x: 0, y: 0, name });
+  }
+
+  function handleMouseUp() {
+
+    mouseDownRef.current = false;
+    setCurrParent(null)
+    setDragPos({ x: 0, y: 0, name: "" });
+  }
+  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if(!mouseDownRef.current)return
-      setDragPos((prev )=>({...prev,x:e.clientX+12,y:e.clientY+12}))
+      if (!mouseDownRef.current) return
+      setDragPos((prev) => ({ ...prev, x: e.clientX + 12, y: e.clientY + 12 }))
     };
-    
+
 
     window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup",handleMouseUp)
+    window.addEventListener("mouseup", handleMouseUp)
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup",handleMouseUp)
+      window.removeEventListener("mouseup", handleMouseUp)
     };
-    }, []);
+  }, []);
 
-    
+
   return (
     <div className="bg-secondary border-r border-primary h-full flex flex-col">
       <div className="flex items-center justify-between p-3 border-b border-primary">
@@ -411,12 +414,16 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         )}
         {files?.map(node => (
           <TreeNodeMemo
+            currParent={currParent}
+            dragPos={dragPos}
+            setCurrParent={setCurrParent}
             handleMouseDown={handleMouseDown}
             handleMouseUp={handleMouseUp}
             sendMessage={sendMessage}
             key={node.id}
             node={node}
             expandedFolders={expandedFolders}
+            setExpandedFolders={setExpandedFolders}
             canMakeChanges={canMakeChanges}
             depth={0}
             errorMarkers={errorMarkers}
@@ -486,9 +493,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           setContextMenu(null);
         }}
       />
-        {mouseDownRef.current && dragPos.name!=="" && dragPos.x!==0 && dragPos.y!==0 && createPortal(
+      {mouseDownRef.current && dragPos.name !== "" && dragPos.x !== 0 && dragPos.y !== 0 && createPortal(
         <div
-  className="
+          className="
     fixed
     pointer-events-none
     z-[9999]
@@ -504,11 +511,11 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     items-center
     gap-2
   "
-  style={{
-    top: dragPos.y,
-    left: dragPos.x,
-  }}
->
+          style={{
+            top: dragPos.y,
+            left: dragPos.x,
+          }}
+        >
 
           {getFileIcon(dragPos.name)}
           <span>{dragPos.name}</span>

@@ -1,5 +1,5 @@
 // TreeNode.tsx
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronRight, ChevronDown, Folder, MoreHorizontal } from 'lucide-react';
 import { getFileIcon } from '@/lib/mainUtils/icons';
 import Collaborators from './Collaborators';
@@ -14,14 +14,18 @@ import { createPortal } from 'react-dom';
 type Props = {
   node: FileNode;
   depth: number;
+  currParent: FileNode | null;
   canMakeChanges: boolean;
   expandedFolders: Set<string>;
   adminMenu: any;
+  dragPos: { x: number, y: number, name: string },
+  setCurrParent: React.Dispatch<React.SetStateAction<FileNode | null>>;
   setAdminMenu: any;
-  handleMouseDown: (name :string) => void;
+  handleMouseDown: (name: string) => void;
   handleMouseUp: () => void;
   sendMessage: any;
   onToggle: (id: string) => void;
+  setExpandedFolders: React.Dispatch<React.SetStateAction<Set<string>>>;
   actionHandler: (action: string, nodeId?: string, name?: string, oldName?: string) => void;
   onSelect: (node: FileNode) => void;
   errorMarkers: Record<string, boolean> | null;
@@ -31,7 +35,7 @@ type Props = {
   projectId: string;
 };
 
-const TreeNodeInner: React.FC<Props> = ({handleMouseDown, handleMouseUp,node, errorMarkers, sendMessage, depth, expandedFolders, adminMenu, setAdminMenu, onToggle, actionHandler, onSelect, setIsFileAction, isFileAction, onContextMenu, projectId, canMakeChanges }) => {
+const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, handleMouseDown, currParent, dragPos, setCurrParent, handleMouseUp, node, errorMarkers, sendMessage, depth, expandedFolders, adminMenu, setAdminMenu, onToggle, actionHandler, onSelect, setIsFileAction, isFileAction, onContextMenu, projectId, canMakeChanges }) => {
   const [action, setAction] = useState<null | string>(null)
   const [isUserAdmin, setIsUserAdmin] = useState<boolean>(false)
   const paddingLeft = depth * 16 + 8;
@@ -73,15 +77,35 @@ const TreeNodeInner: React.FC<Props> = ({handleMouseDown, handleMouseUp,node, er
     setAction(isFileAction.type)
   }, [isFileAction])
 
- 
 
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   return (
     <div key={node.id} id={node.id}>
       <div
-        className={`flex items-center  justify-between px-2 py-1 hover:bg-primary cursor-pointer text-sm group ${bg ? errorMarkers?.[node.id] ? 'bg-[#ff2929ca]' : 'bg-[#151728]' : ''}`}
+        className={`flex items-center  justify-between px-2 py-1 hover:bg-primary cursor-pointer text-sm group ${ bg ? errorMarkers?.[node.id] ? 'bg-[#ff2929ca]' : 'bg-[#151728]' : ''}`}
         style={{ paddingLeft }}
         onClick={handleClick}
+        onMouseEnter={() => {
+          if (node.type === "folder" && dragPos.name !== "") {
+            setCurrParent(node)
+          
+          timeoutRef.current = setTimeout(() => {
+            setExpandedFolders(prev => {
+              return prev.has(node.id) ? prev : prev.add(node.id)
+            })
+            timeoutRef.current = null;
+
+          }, 1500);}
+        }
+      }
+
+        onMouseLeave={() => () => {
+          if (node.type === "folder" && dragPos.name !== "") {
+            timeoutRef.current && clearTimeout(timeoutRef.current)
+            setCurrParent(null)
+          }
+        }}
         onContextMenu={handleContext}
       >
         {
@@ -92,12 +116,12 @@ const TreeNodeInner: React.FC<Props> = ({handleMouseDown, handleMouseUp,node, er
               <>
                 <div
                   className="flex no-select items-center space-x-2 flex-1 min-w-0"
-                  onMouseDown={()=>handleMouseDown(node.name)}
+                  onMouseDown={() => handleMouseDown(node.name)}
                   onMouseUp={handleMouseUp}
                 >
                   {node.type === 'folder' ? (
                     <>
-                      {isExpanded ? <ChevronDown className="w-4 h-4 text-secondary flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-secondary flex-shrink-0" />}
+                      {(isExpanded || currParent?.id === node.id) ? <ChevronDown className="w-4 h-4 text-secondary flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-secondary flex-shrink-0" />}
                       <Folder className="w-4 h-4 text-brand flex-shrink-0" />
                     </>
                   ) : (
@@ -129,7 +153,7 @@ const TreeNodeInner: React.FC<Props> = ({handleMouseDown, handleMouseUp,node, er
             )
         }
       </div>
-      {node.type === 'folder' && expandedFolders.has(node.id) && node.children && (
+      {node.type === 'folder' && (expandedFolders.has(node.id) || currParent?.id === node.id) && node.children && (
         <div className="relative">
           <span className="absolute top-0 h-full w-[1px] bg-[#292f52]" style={{ left: `${left}px` }} />
           {
@@ -139,6 +163,10 @@ const TreeNodeInner: React.FC<Props> = ({handleMouseDown, handleMouseUp,node, er
           }
           {node.children.map(child => (
             <TreeNodeMemo
+              setExpandedFolders={setExpandedFolders}
+              currParent={currParent}
+              dragPos={dragPos}
+              setCurrParent={setCurrParent}
               handleMouseDown={handleMouseDown}
               handleMouseUp={handleMouseUp}
               canMakeChanges={canMakeChanges}
@@ -161,7 +189,7 @@ const TreeNodeInner: React.FC<Props> = ({handleMouseDown, handleMouseUp,node, er
           ))}
         </div>
       )}
-    
+
     </div>
   );
 };
@@ -173,6 +201,8 @@ const propsAreEqual = (prev: Props, next: Props) => {
     && prev.expandedFolders.size === next.expandedFolders.size
     && prev.errorMarkers?.[prev.node.id] == next.errorMarkers?.[next.node.id]
     && prev.depth === next.depth
+    && prev.currParent === next.currParent
+    && prev.dragPos === next.dragPos
     && prev.node.content === next.node.content
     && prev.adminMenu === next.adminMenu
     && prev.node?.children === next.node?.children
