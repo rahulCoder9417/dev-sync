@@ -339,15 +339,13 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     };
   }, [contextMenu]);
   //mouse drag for while
-  const [currParent, setCurrParent] = useState<FileNode | null>(null)
+  const [currParent, setCurrParent] = useState<{id:string,name:string,parentId:string |null} | null>(null)
   const [dragPos, setDragPos] = useState<{ x: number; y: number, name: string }>({ x: 0, y: 0, name: "" });
   const mouseDownRef = React.useRef<boolean>(false);
 
   function handleMouseDown(name: string) {
-    setTimeout(() => {
       mouseDownRef.current = true;
       setDragPos({ x: 0, y: 0, name });
-    }, 0);
     
   }
 
@@ -424,6 +422,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             sendMessage={sendMessage}
             key={node.id}
             node={node}
+            parentDetails={null}
             expandedFolders={expandedFolders}
             setExpandedFolders={setExpandedFolders}
             canMakeChanges={canMakeChanges}

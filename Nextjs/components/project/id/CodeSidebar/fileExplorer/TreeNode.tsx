@@ -6,20 +6,20 @@ import Collaborators from './Collaborators';
 import { FileNode, Tab } from '@/lib/types/types';
 import InputBox from './InputBox';
 import ChnageAdmin from './ChnageAdmin';
-import { showToast } from '@/components/main/Toast';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { shallowEqual } from 'react-redux';
-import { createPortal } from 'react-dom';
+import { showToast } from '@/components/main/Toast';
 // Minimal props — primitives to make shallow compare meaningful
 type Props = {
   node: FileNode;
+  parentDetails: { id: string, name: string, parentId: string | null } | null;
   depth: number;
-  currParent: FileNode | null;
+  currParent: { id: string, name: string, parentId: string | null } | null;
   canMakeChanges: boolean;
   expandedFolders: Set<string>;
   adminMenu: any;
   dragPos: { x: number, y: number, name: string },
-  setCurrParent: React.Dispatch<React.SetStateAction<FileNode | null>>;
+  setCurrParent: React.Dispatch<React.SetStateAction<{ id: string, name: string, parentId: string | null } | null>>;
   setAdminMenu: any;
   handleMouseDown: (name: string) => void;
   handleMouseUp: () => void;
@@ -35,7 +35,7 @@ type Props = {
   projectId: string;
 };
 
-const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, handleMouseDown, currParent, dragPos, setCurrParent, handleMouseUp, node, errorMarkers, sendMessage, depth, expandedFolders, adminMenu, setAdminMenu, onToggle, actionHandler, onSelect, setIsFileAction, isFileAction, onContextMenu, projectId, canMakeChanges }) => {
+const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, handleMouseDown, currParent, dragPos, setCurrParent, handleMouseUp, node, errorMarkers, sendMessage, depth, expandedFolders, adminMenu, setAdminMenu, onToggle, actionHandler, onSelect, setIsFileAction, isFileAction, onContextMenu, projectId, canMakeChanges }) => {
   const [action, setAction] = useState<null | string>(null)
   const [isUserAdmin, setIsUserAdmin] = useState<boolean>(false)
   const paddingLeft = depth * 16 + 8;
@@ -83,31 +83,9 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, handleMouseDown, c
   return (
     <div key={node.id} id={node.id}>
       <div
-        className={`flex items-center  justify-between px-2 py-1 hover:bg-primary cursor-pointer text-sm group ${ bg ? errorMarkers?.[node.id] ? 'bg-[#ff2929ca]' : 'bg-[#151728]' : ''}`}
+        className={`flex items-center  justify-between px-2 py-1 ${ node.parentId === currParent?.id ? "" :"hover:bg-primary"} cursor-pointer text-sm group ${(bg || currParent?.id===node.id) ? errorMarkers?.[node.id] ? 'bg-[#ff2929ca]' : 'bg-[#151728]' : ''}`}
         style={{ paddingLeft }}
-        onClick={handleClick}
-        onMouseEnter={() => {
-          if (node.type === "folder" && dragPos.name !== "") {
-          setCurrParent(node)
-          timeoutRef.current = setTimeout(() => {
-            setExpandedFolders(prev => {
-              if (prev.has(node.id)) return prev;
-              return new Set([...prev, node.id]);
-            })
-            timeoutRef.current = null;
 
-          }, 1500);}
-        }
-      }
-
-        onMouseLeave={
-          () => {
-          if (node.type === "folder" && currParent?.id === node.id) {
-            timeoutRef.current && clearTimeout(timeoutRef.current)
-            setCurrParent(null)
-          }
-        }
-      }
         onContextMenu={handleContext}
       >
         {
@@ -117,13 +95,44 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, handleMouseDown, c
             (
               <>
                 <div
+                  onClick={handleClick}
+                  onMouseEnter={() => {
+                    if (dragPos.name === "") return
+                    if (node.type === "folder") {
+                      setCurrParent({ id: node.id, parentId: node.parentId, name: node.name })
+                      if (!expandedFolders.has(node.id)) {
+                        timeoutRef.current = setTimeout(() => {
+                          setExpandedFolders(prev => {
+                            if (prev.has(node.id)) return prev;
+                            return new Set([...prev, node.id]);
+                          })
+                          timeoutRef.current = null;
+
+                        }, 1500);
+                      }
+                    } else {
+                      if ( (currParent?.id != node.parentId)) {
+                        setCurrParent({ id: node.parentId || "root", parentId: parentDetails?.parentId || null, name: parentDetails?.name || "root" })
+                      }
+                    }
+                  }
+                  }
+
+                  onMouseLeave={
+                    () => {
+                      if (node.type === "folder" && currParent?.id === node.id) {
+                        timeoutRef.current && clearTimeout(timeoutRef.current)
+                        setCurrParent(null)
+                      }
+                    }
+                  }
                   className="flex no-select items-center space-x-2 flex-1 min-w-0"
                   onMouseDown={() => handleMouseDown(node.name)}
                   onMouseUp={handleMouseUp}
                 >
                   {node.type === 'folder' ? (
                     <>
-                      {(isExpanded ) ? <ChevronDown className="w-4 h-4 text-secondary flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-secondary flex-shrink-0" />}
+                      {(isExpanded) ? <ChevronDown className="w-4 h-4 text-secondary flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-secondary flex-shrink-0" />}
                       <Folder className="w-4 h-4 text-brand flex-shrink-0" />
                     </>
                   ) : (
@@ -156,7 +165,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, handleMouseDown, c
         }
       </div>
       {node.type === 'folder' && (expandedFolders.has(node.id)) && node.children && (
-        <div className="relative">
+        <div className={`relative ${currParent?.id === node.id && "bg-primary"} `}>
           <span className="absolute top-0 h-full w-[1px] bg-[#292f52]" style={{ left: `${left}px` }} />
           {
             (action === "file" || action === "folder") && (
@@ -165,6 +174,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, handleMouseDown, c
           }
           {node.children.map(child => (
             <TreeNodeMemo
+              parentDetails={{ id: node.id, name: node.name, parentId: node.parentId }}
               setExpandedFolders={setExpandedFolders}
               currParent={currParent}
               dragPos={dragPos}

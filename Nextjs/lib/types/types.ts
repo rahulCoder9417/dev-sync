@@ -70,6 +70,7 @@ export interface User {
       content: string;
       type: 'file' | 'folder';
       parentId: string | null;
+      parentDetails?:{id:string,name:string,parentId:string | null} | null;
       children?: FileNode[];
     }
     
