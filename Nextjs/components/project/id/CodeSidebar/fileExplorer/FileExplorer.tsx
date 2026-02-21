@@ -341,11 +341,14 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   //mouse drag for while
   const [currParent, setCurrParent] = useState<FileNode | null>(null)
   const [dragPos, setDragPos] = useState<{ x: number; y: number, name: string }>({ x: 0, y: 0, name: "" });
-  const mouseDownRef = React.useRef(false);
+  const mouseDownRef = React.useRef<boolean>(false);
 
   function handleMouseDown(name: string) {
-    mouseDownRef.current = true;
-    setDragPos({ x: 0, y: 0, name });
+    setTimeout(() => {
+      mouseDownRef.current = true;
+      setDragPos({ x: 0, y: 0, name });
+    }, 0);
+    
   }
 
   function handleMouseUp() {
@@ -369,8 +372,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       window.removeEventListener("mouseup", handleMouseUp)
     };
   }, []);
-
-
+  
   return (
     <div className="bg-secondary border-r border-primary h-full flex flex-col">
       <div className="flex items-center justify-between p-3 border-b border-primary">
@@ -446,8 +448,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
           setResourceTargetId(contextMenu?.nodeId ?? null);
           contextMenu.nodeId && setExpandedFolders((prev) => {
-            prev.has(contextMenu.nodeId) ? prev : prev.add(contextMenu.nodeId);
-            return prev
+            if (prev.has(contextMenu.nodeId)) return prev;
+            return new Set([...prev, contextMenu.nodeId]);
           })
 
           fileInputRef.current?.click();
@@ -458,8 +460,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           contextMenu.nodeId
             ? (setIsFileAction({ id: contextMenu.nodeId, type: "file" }),
               setExpandedFolders((prev) => {
-                prev.has(contextMenu.nodeId) ? prev : prev.add(contextMenu.nodeId);
-                return prev
+               if (prev.has(contextMenu.nodeId)) return prev;
+  return new Set([...prev, contextMenu.nodeId]);
               }))
             : setrootAction({ type: "file" });
           setContextMenu(null);
@@ -468,8 +470,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           contextMenu.nodeId
             ? (setIsFileAction({ id: contextMenu.nodeId, type: "folder" }),
               setExpandedFolders((prev) => {
-                prev.has(contextMenu.nodeId) ? prev : prev.add(contextMenu.nodeId);
-                return prev
+               if (prev.has(contextMenu.nodeId)) return prev;
+  return new Set([...prev, contextMenu.nodeId]);
               }))
             : setrootAction({ type: "folder" });
           setContextMenu(null);

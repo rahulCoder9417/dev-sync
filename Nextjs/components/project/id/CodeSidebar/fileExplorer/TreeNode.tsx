@@ -44,7 +44,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, handleMouseDown, c
   const [bg, setbg] = useState<boolean>(false)
   const user = useAppSelector((state) => state.user.id, shallowEqual)
   const collaboratorsMap = useAppSelector(
-    state => state.collabCodeUser.projects?.[projectId]?.[node.id] ?? [],
+    state => state.collabCodeUser?.projects?.[projectId]?.[node.id] ?? [],
     shallowEqual
   );
   useEffect(() => {
@@ -88,11 +88,11 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, handleMouseDown, c
         onClick={handleClick}
         onMouseEnter={() => {
           if (node.type === "folder" && dragPos.name !== "") {
-            setCurrParent(node)
-          
+          setCurrParent(node)
           timeoutRef.current = setTimeout(() => {
             setExpandedFolders(prev => {
-              return prev.has(node.id) ? prev : prev.add(node.id)
+              if (prev.has(node.id)) return prev;
+              return new Set([...prev, node.id]);
             })
             timeoutRef.current = null;
 
@@ -100,12 +100,14 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, handleMouseDown, c
         }
       }
 
-        onMouseLeave={() => () => {
-          if (node.type === "folder" && dragPos.name !== "") {
+        onMouseLeave={
+          () => {
+          if (node.type === "folder" && currParent?.id === node.id) {
             timeoutRef.current && clearTimeout(timeoutRef.current)
             setCurrParent(null)
           }
-        }}
+        }
+      }
         onContextMenu={handleContext}
       >
         {
@@ -121,7 +123,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, handleMouseDown, c
                 >
                   {node.type === 'folder' ? (
                     <>
-                      {(isExpanded || currParent?.id === node.id) ? <ChevronDown className="w-4 h-4 text-secondary flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-secondary flex-shrink-0" />}
+                      {(isExpanded ) ? <ChevronDown className="w-4 h-4 text-secondary flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-secondary flex-shrink-0" />}
                       <Folder className="w-4 h-4 text-brand flex-shrink-0" />
                     </>
                   ) : (
@@ -153,7 +155,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, handleMouseDown, c
             )
         }
       </div>
-      {node.type === 'folder' && (expandedFolders.has(node.id) || currParent?.id === node.id) && node.children && (
+      {node.type === 'folder' && (expandedFolders.has(node.id)) && node.children && (
         <div className="relative">
           <span className="absolute top-0 h-full w-[1px] bg-[#292f52]" style={{ left: `${left}px` }} />
           {
@@ -198,7 +200,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, handleMouseDown, c
 const propsAreEqual = (prev: Props, next: Props) => {
   return prev.node.id === next.node.id
     && prev.node.name === next.node.name
-    && prev.expandedFolders.size === next.expandedFolders.size
+    && prev.expandedFolders === next.expandedFolders
     && prev.errorMarkers?.[prev.node.id] == next.errorMarkers?.[next.node.id]
     && prev.depth === next.depth
     && prev.currParent === next.currParent
