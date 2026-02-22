@@ -340,20 +340,21 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     };
   }, [contextMenu]);
   //mouse drag for while
-  const [currParent, setCurrParent] = useState<{ id: string, name: string, parentId: string | null } | null>(null)
-  const [dragPos, setDragPos] = useState<{ x: number; y: number, name: string }>({ x: 0, y: 0, name: "" });
+  const [currParent, setCurrParent] = useState<{ id: string, name: string, parentId: string | null } | null>(null) 
+  const [dragPos, setDragPos] = useState<{ x: number; y: number,parentId:string | null, name: string ,id:string}>({ id:"",x: 0, y: 0, name: "",parentId:"" });
   const mouseDownRef = React.useRef<boolean>(false);
-  const [confirmModal, setConfirmModal] = useState<{ id: string, name: string, parentId: string | null } | null>(null)
-  function handleMouseDown(name: string) {
+  const [confirmModal, setConfirmModal] =useState<{ folderId: string,changePathId:string,changePathName:string,changePathParentId:string | null, folderName: string, folderParentId: string | null } | null>(null)
+
+  function handleMouseDown(name: string,id:string,parentId:string|null) {
     mouseDownRef.current = true;
-    setDragPos({ x: 0, y: 0, name });
+    setDragPos({ x: 0, y: 0, name,id, parentId});
   }
 
   function handleMouseUp() {
-    if (currParent) setConfirmModal(currParent)
+    if (currParent) setConfirmModal({folderId: currParent.id,changePathId:dragPos.id,changePathName:dragPos.name,changePathParentId:dragPos.parentId, folderName: currParent.name, folderParentId: currParent.parentId })
       mouseDownRef.current = false;
       setCurrParent(null)
-      setDragPos({ x: 0, y: 0, name: "" });
+      setDragPos({ x: 0, y: 0, name: "",id:"" ,parentId:""});
   }
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -373,7 +374,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
   return (
     <div className="bg-secondary border-r border-primary h-full flex flex-col">
-      {confirmModal && <ConfirmDialog message={`Are you sure you want to move ${dragPos.name} to ${confirmModal?.name }?`} onAccept={() => { setConfirmModal(null) }} onCancel={() => { setConfirmModal(null) }} />}
+      {confirmModal && <ConfirmDialog message={`Are you sure you want to move ${confirmModal.changePathName} to ${confirmModal?.folderName }?`} onAccept={() => { setConfirmModal(null) }} onCancel={() => { setConfirmModal(null) }} />}
       <div className="flex items-center justify-between p-3 border-b border-primary">
         {/* to take input for resourse */}
         <input

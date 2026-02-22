@@ -21,7 +21,7 @@ type Props = {
   dragPos: { x: number, y: number, name: string },
   setCurrParent: React.Dispatch<React.SetStateAction<{ id: string, name: string, parentId: string | null } | null>>;
   setAdminMenu: any;
-  handleMouseDown: (name: string) => void;
+  handleMouseDown: (name: string,id:string,parentId:string| null) => void;
   handleMouseUp: () => void;
   sendMessage: any;
   onToggle: (id: string) => void;
@@ -109,7 +109,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
                           })
                           timeoutRef.current = null;
 
-                        }, 1500);
+                        }, 1000);
                       }
                     } else {
                       if ( (currParent?.id != node.parentId)) {
@@ -128,7 +128,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
                     }
                   }
                   className="flex no-select items-center space-x-2 flex-1 min-w-0"
-                  onMouseDown={() => handleMouseDown(node.name)}
+                  onMouseDown={() => handleMouseDown(node.name,node.id,node.parentId)}
                   onMouseUp={handleMouseUp}
                 >
                   {node.type === 'folder' ? (
