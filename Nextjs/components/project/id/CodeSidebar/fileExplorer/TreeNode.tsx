@@ -102,6 +102,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
                       setCurrParent({ id: node.id, parentId: node.parentId, name: node.name })
                       if (!expandedFolders.has(node.id)) {
                         timeoutRef.current = setTimeout(() => {
+                          
                           setExpandedFolders(prev => {
                             if (prev.has(node.id)) return prev;
                             return new Set([...prev, node.id]);

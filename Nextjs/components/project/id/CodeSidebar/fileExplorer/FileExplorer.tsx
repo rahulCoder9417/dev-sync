@@ -19,6 +19,7 @@ import { addFileNode, setNewProjectFiles } from '@/lib/redux/features/projectFil
 import { createPortal } from 'react-dom';
 import { getFileIcon } from '@/lib/mainUtils/icons';
 import { number } from 'zod';
+import ConfirmDialog from '@/components/main/ConfirmationModal';
 export const fileApiService = {
   async renameFile(nodeId: string, newName: string) {
     const res = await fetch(`/api/projects/fileItem/rename`, {
@@ -339,21 +340,20 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     };
   }, [contextMenu]);
   //mouse drag for while
-  const [currParent, setCurrParent] = useState<{id:string,name:string,parentId:string |null} | null>(null)
+  const [currParent, setCurrParent] = useState<{ id: string, name: string, parentId: string | null } | null>(null)
   const [dragPos, setDragPos] = useState<{ x: number; y: number, name: string }>({ x: 0, y: 0, name: "" });
   const mouseDownRef = React.useRef<boolean>(false);
-
+  const [confirmModal, setConfirmModal] = useState<{ id: string, name: string, parentId: string | null } | null>(null)
   function handleMouseDown(name: string) {
-      mouseDownRef.current = true;
-      setDragPos({ x: 0, y: 0, name });
-    
+    mouseDownRef.current = true;
+    setDragPos({ x: 0, y: 0, name });
   }
 
   function handleMouseUp() {
-
-    mouseDownRef.current = false;
-    setCurrParent(null)
-    setDragPos({ x: 0, y: 0, name: "" });
+    if (currParent) setConfirmModal(currParent)
+      mouseDownRef.current = false;
+      setCurrParent(null)
+      setDragPos({ x: 0, y: 0, name: "" });
   }
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -370,9 +370,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       window.removeEventListener("mouseup", handleMouseUp)
     };
   }, []);
-  
+
   return (
     <div className="bg-secondary border-r border-primary h-full flex flex-col">
+      {confirmModal && <ConfirmDialog message={`Are you sure you want to move ${dragPos.name} to ${confirmModal?.name }?`} onAccept={() => { setConfirmModal(null) }} onCancel={() => { setConfirmModal(null) }} />}
       <div className="flex items-center justify-between p-3 border-b border-primary">
         {/* to take input for resourse */}
         <input
@@ -459,8 +460,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           contextMenu.nodeId
             ? (setIsFileAction({ id: contextMenu.nodeId, type: "file" }),
               setExpandedFolders((prev) => {
-               if (prev.has(contextMenu.nodeId)) return prev;
-  return new Set([...prev, contextMenu.nodeId]);
+                if (prev.has(contextMenu.nodeId)) return prev;
+                return new Set([...prev, contextMenu.nodeId]);
               }))
             : setrootAction({ type: "file" });
           setContextMenu(null);
@@ -469,8 +470,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           contextMenu.nodeId
             ? (setIsFileAction({ id: contextMenu.nodeId, type: "folder" }),
               setExpandedFolders((prev) => {
-               if (prev.has(contextMenu.nodeId)) return prev;
-  return new Set([...prev, contextMenu.nodeId]);
+                if (prev.has(contextMenu.nodeId)) return prev;
+                return new Set([...prev, contextMenu.nodeId]);
               }))
             : setrootAction({ type: "folder" });
           setContextMenu(null);
