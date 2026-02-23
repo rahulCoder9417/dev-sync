@@ -73,3 +73,8 @@ export interface User {
       children?: FileNode[];
     }
     
+    export type FileNodeWithChildren = Omit<FileNode, 'children'> & {
+      fileChildren: string[];
+      folderChildren: string[];
+    }
+    

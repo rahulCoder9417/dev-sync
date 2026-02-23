@@ -77,6 +77,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   setTabs,
 }) => {
   const files = useAppSelector(state => state.projectFile.files, shallowEqual);
+  
+  const folderRoots = useAppSelector(state => state.projectFile.folderRoot, shallowEqual);
+
+  const filesRoot = useAppSelector(state => state.projectFile.fileRoot, shallowEqual);
   const [rootAction, setrootAction] = useState<{ type: string } | null>(null);
   const userInfo = useAppSelector(state => state.user, shallowEqual);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -351,7 +355,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   }
 
   function handleMouseUp() {
-    if (currParent) setConfirmModal({folderId: currParent.id,changePathId:dragPos.id,changePathName:dragPos.name,changePathParentId:dragPos.parentId, folderName: currParent.name, folderParentId: currParent.parentId })
+    if (currParent && dragPos.name!==currParent.name) setConfirmModal({folderId: currParent.id,changePathId:dragPos.id,changePathName:dragPos.name,changePathParentId:dragPos.parentId, folderName: currParent.name, folderParentId: currParent.parentId })
       mouseDownRef.current = false;
       setCurrParent(null)
       setDragPos({ x: 0, y: 0, name: "",id:"" ,parentId:""});
@@ -414,7 +418,35 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             handleNameConfirm={(name: string) => actionHandler(rootAction.type, null, name)}
           />
         )}
-        {files?.map(node => (
+     
+                {folderRoots?.map(node => (
+          <TreeNodeMemo
+            currParent={currParent}
+            dragPos={dragPos}
+            setCurrParent={setCurrParent}
+            handleMouseDown={handleMouseDown}
+            handleMouseUp={handleMouseUp}
+            sendMessage={sendMessage}
+            key={node.id}
+            node={node}
+            parentDetails={null}
+            expandedFolders={expandedFolders}
+            setExpandedFolders={setExpandedFolders}
+            canMakeChanges={canMakeChanges}
+            depth={0}
+            errorMarkers={errorMarkers}
+            onToggle={toggleFolder}
+            setIsFileAction={setIsFileAction}
+            isFileAction={isFileAction}
+            onSelect={handleSelect}
+            adminMenu={adminMenu}
+            setAdminMenu={setAdminMenu}
+            actionHandler={actionHandler}
+            onContextMenu={handleContextMenu}
+            projectId={projectId}
+          />
+        ))}
+        {filesRoot?.map(node => (
           <TreeNodeMemo
             currParent={currParent}
             dragPos={dragPos}

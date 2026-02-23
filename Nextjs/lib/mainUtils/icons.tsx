@@ -23,6 +23,7 @@ import {  SiCplusplus,
   SiLua,
   SiSvelte,
   SiAstro, SiTypescript, SiNextdotjs, SiJson, SiYaml, SiVite, SiTailwindcss } from 'react-icons/si';
+import { Folder } from 'lucide-react';
 
 type IconInfo = {
   icon: IconType;
@@ -74,6 +75,7 @@ lua: { icon: SiLua, color: '#000080' },
   xls: { icon: FaFileExcel, color: 'green' },
   csv: { icon: FaFileCsv, color: '#36a2eb' },
   mp4: { icon: FaFileVideo, color: '#a428a2' },
+  folder:{icon:Folder ,color:'blue'},
   mp3: { icon: FaFileAudio, color: '#2b8a3e' },
   png: { icon: FaFileImage, color: 'orange' },
   jpg: { icon: FaFileImage, color: 'orange' },
@@ -85,6 +87,10 @@ lua: { icon: SiLua, color: '#000080' },
 };
 
 export const getFileIcon = (fileName: string): React.ReactNode => {
+  if(fileName.endsWith("/")) {
+    const { icon: Icon, color } = extensionToIconMap['folder'];
+    return <Icon color={color} size={16} />;
+  }
     const ext = fileName.split('.').pop()?.toLowerCase() || '';
   
     if (exactFileNameMap[fileName]) {

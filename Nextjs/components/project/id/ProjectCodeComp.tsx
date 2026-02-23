@@ -171,7 +171,7 @@ export const ProjectCodeComp = ({ data }: { data: ProjectById["responseData"] })
     document.body.style.userSelect = '';
   };
 useEffect(() => {
-  if (data&& data.id)  dispatch(setInitialProjectFiles({ projectId: data?.id!, files: data?.files! }));
+  if (data&& data.id)  dispatch(setInitialProjectFiles({ projectId: data?.id!, files: data?.files! ,fileRoot:data?.fileRoots,folderRoot:data?.folderRoots,map:data?.map}));
 
   return () => {
     dispatch(deleteProjectFiles())

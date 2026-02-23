@@ -4,6 +4,7 @@
 import db from "@/lib/db/prisma"
 import { middleWare } from "@/lib/mainUtils/beckendMiddleWare";
 import { Project } from "@/lib/types/projects";
+import { FileNode, FileNodeWithChildren } from "@/lib/types/types";
 function formatDate(date: Date) {
   const d = new Date(date)
   const year = d.getFullYear()
@@ -224,17 +225,13 @@ export const getProjectById = async (projectId: string) => {
 
     const teamMembers = project.team?.members ?? [];
     const isTeamMember = teamMembers.some((m) => m.userId === dbUser.id);
-    
-    
-    
     function buildFileTree(files: any[]) {
         const map = new Map<string, any>();
         const roots: any[] = [];
-      const folderRoots: any[] = [];
+        const folderRoots: any[] = [];
         for (const file of files) {
           map.set(file.id, { ...file, children: [] });
         }
-      
         for (const file of files) {
           if (file.parentId) {
             const parent = map.get(file.parentId);
@@ -251,10 +248,39 @@ export const getProjectById = async (projectId: string) => {
             }
           }
         }
-      
-        return [...folderRoots,...roots];
-      }
-      
+      return [...folderRoots,...roots];
+    }
+
+    const buildFile = (files: any[]) => {
+        const map:Record<string, FileNodeWithChildren> = {};
+        const fileRoots: FileNodeWithChildren[] = [];
+        const folderRoots: FileNodeWithChildren[] = [];
+        for (const file of files) {
+          let childs:Record<string, string[]> ={}
+          if(file.type==="folder"){
+            childs["fileChildren"] = []
+            childs["folderChildren"] = []
+          }
+          map[file.id] = {...file, ...childs };
+        }
+        for (const file of files) {
+          if (file.parentId) {
+            const parent = map[file.parentId];
+            if (parent) {
+              file.type==="folder"?
+              parent.folderChildren.push(file.id):
+              parent.fileChildren.push(file.id)
+            }
+          } else {
+            if(file.type==="folder"){
+              folderRoots.push(map[file.id]);
+            }else{
+              fileRoots.push(map[file.id]);
+            }
+          }
+        }
+      return {fileRoots,folderRoots,map};
+    }
     const responseData = {
       id:project.id,
       name: project.name,
@@ -269,6 +295,7 @@ export const getProjectById = async (projectId: string) => {
         members: teamMembers,
       },
       files: buildFileTree(project.files),
+      ...buildFile(project.files)
       
     };
 
