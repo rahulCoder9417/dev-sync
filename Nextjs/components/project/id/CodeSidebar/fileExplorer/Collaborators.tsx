@@ -3,34 +3,21 @@ import React, { useEffect, useMemo } from 'react';
 import { useAppSelector } from '@/lib/redux/hooks';
 import Avatar from '@/components/main/Avatar';
 import { shallowEqual } from 'react-redux';
-import { FileNode } from '@/lib/types/types';
 
 type User = { userId: string; fullName: string; avatar?: string };
-type Props = { projectId: string; fileId: string; setBg?: (prev: boolean) => void; child?: FileNode[] };
+type Props = { projectId: string; fileId: string; setBg?: (prev: boolean) => void };
 
-const Collaborators: React.FC<Props> = ({ projectId, fileId, setBg, child }) => {
+const Collaborators: React.FC<Props> = ({ projectId, fileId, setBg }) => {
   // Select collaborators for the project
   const collaboratorsMap = useAppSelector(
     state => state.collabCodeUser.projects?.[projectId] ?? {},
     shallowEqual
   );
 
-  // Helper: get users from file tree nodes
-  const childUsers: User[] = useMemo(() => {
-    if (!child) return [];
-    const users: User[] = [];
-    const traverse = (nodes: FileNode[]) => {
-      nodes.forEach(node => {
-        if (collaboratorsMap[node.id]) users.push(...collaboratorsMap[node.id]);
-        if (node.children) traverse(node.children);
-      });
-    };
-    traverse(child);
-    return users;
-  }, [child, collaboratorsMap]);
+  
 
   // Determine users to show
-  const usersToShow = collaboratorsMap[fileId] ? collaboratorsMap[fileId] : childUsers ?? [];
+  const usersToShow:User[] = collaboratorsMap[fileId] ? collaboratorsMap[fileId] : [];
 
   // Update background
   useEffect(() => {

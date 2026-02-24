@@ -166,7 +166,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
                     </div>
                     :
                     <div className="ml-auto shrink-0">
-                      {/* <Collaborators setBg={setbg} projectId={projectId} fileId={node.id} child={!isExpanded ? (node.f): undefined} /> */}
+                      <Collaborators setBg={setbg} projectId={projectId} fileId={node.id} />
                     </div>}
                 </div>
 
