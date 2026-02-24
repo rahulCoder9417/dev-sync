@@ -9,6 +9,7 @@ import { addFileOp, addSaveFileOp } from "@/lib/redux/features/collabCodeFileOp"
 import { updateCode } from "@/lib/redux/features/collabCodeEditorUpdate";
 import { parseRoomKey ,makeRoomKey} from "@/lib/mainUtils/roomParser";
 import { ServerPayload, UserInfo } from "@/lib/types/usCollabPayload";
+import { updatePresenceWithAncestors } from "@/lib/redux/thunk/updatePrescenseThunk";
 
 export type ClientMessage =
   | { action: "join"; projectId: string; fileId?: string | null }
@@ -195,7 +196,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
             case "user_joined":
               // tell user joined
               dispatch(
-                updatePresence({
+                updatePresenceWithAncestors({
                   projectId: payload.user.projectId!,
                   fileId: payload.user.fileId!,
                   userId: payload.user.userId,
@@ -210,7 +211,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
             case "user_left":
          //     tell user keft
               dispatch(
-                updatePresence({
+                updatePresenceWithAncestors({
                   projectId: payload.user.projectId!,
                   fileId: payload.user.fileId!,
                   userId: payload.user.userId,
@@ -225,7 +226,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
             case "joined":
               // tell you joined
               dispatch(
-                updatePresence({
+                updatePresenceWithAncestors({
                   projectId: payload.you.projectId!,
                   fileId: payload.you.fileId!,
                   userId: payload.you.userId,
@@ -241,7 +242,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
             case "left":
               // tell you left
               dispatch(
-                updatePresence({
+                updatePresenceWithAncestors({
                   projectId: payload.you.projectId!,
                   fileId: payload.you.fileId!,
                   userId: payload.you.userId,

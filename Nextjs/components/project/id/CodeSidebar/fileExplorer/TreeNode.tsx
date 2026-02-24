@@ -165,9 +165,10 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
                       <ChnageAdmin projectId={projectId} fileId={node.id} setAction={setAction} sendMessage={sendMessage} setAdminMenu={setAdminMenu} />
                     </div>
                     :
-                    <div className="ml-auto shrink-0">
-                      <Collaborators setBg={setbg} projectId={projectId} fileId={node.id} />
-                    </div>}
+                     (node.type === "file" || !isExpanded) && ( <div className="ml-auto shrink-0">
+                        <Collaborators setBg={setbg} projectId={projectId} fileId={node.id} />
+                      </div>)
+                      }
                 </div>
 
                 {canMakeChanges && <button

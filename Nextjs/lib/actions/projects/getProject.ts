@@ -293,11 +293,11 @@ export const getProjectById = async (projectId: string) => {
 
         const nextAncestors = [...parentAncestors, node.id];
 
-        for (const childId of node.folderChildren) {
+        for (const childId of node?.folderChildren || []) {
           computeAncestors(map[childId], nextAncestors);
         }
 
-        for (const childId of node.fileChildren) {
+        for (const childId of node?.fileChildren || []) {
           computeAncestors(map[childId], nextAncestors);
         }
       };
@@ -328,9 +328,9 @@ export const getProjectById = async (projectId: string) => {
       files: buildFileTree(project.files),
       ...buildFile(project.files),
     };
-
     return { responseData, status: 200 };
   } catch (error: any) {
+    console.log(error)
     return { error: "Something went wrong", status: 500 };
   }
 };

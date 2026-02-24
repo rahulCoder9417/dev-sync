@@ -1,7 +1,10 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface PresenceState {
-  projects: Record<string, Record<string , {userId:string,fullName:string,avatar:string}[]>>;
+  projects: Record<
+    string,
+    Record<string, { userId: string; fullName: string; avatar: string }[]>
+  >;
 }
 
 const initialState: PresenceState = {
@@ -13,6 +16,7 @@ interface UpdatePresencePayload {
   avatar: string;
   fullName: string;
   fileId: string;
+  ancestorId: string[];
   userId: string;
   action: "join" | "leave";
 }
@@ -22,8 +26,15 @@ const presenceSlice = createSlice({
   initialState,
   reducers: {
     updatePresence: (state, action: PayloadAction<UpdatePresencePayload>) => {
-      const { projectId, fileId, userId, avatar,fullName,action: userAction } = action.payload;
-      if(fileId === "" || !fileId)return
+      const {
+        projectId,
+        fileId,
+        userId,
+        avatar,
+        fullName,
+        action: userAction,
+      } = action.payload;
+      if (fileId === "" || !fileId) return;
       if (!state.projects[projectId]) {
         state.projects[projectId] = {};
       }
@@ -34,36 +45,52 @@ const presenceSlice = createSlice({
 
       let users = state.projects[projectId][fileId];
 
+
+      action.payload.ancestorId.forEach((ancestorId) => {
+        if (!state.projects[projectId][ancestorId]) {
+          state.projects[projectId][ancestorId] = [];
+        }
+        if (userAction === "join") {
+          if (!state.projects[projectId][ancestorId].some((user) => user.userId === userId)) {
+            state.projects[projectId][ancestorId].push({ userId, fullName, avatar });
+          }
+        } else if (userAction === "leave") {
+          state.projects[projectId][ancestorId] = state.projects[projectId][ancestorId].filter((user) => user.userId !== userId);
+          if (state.projects[projectId][ancestorId].length === 0) {
+            delete state.projects[projectId][ancestorId];
+          }
+        }
+      });
+
+      
       if (userAction === "join") {
-        if (!users.some(user => user.userId === userId)) {
-          users.push({userId,fullName,avatar});
+        if (!users.some((user) => user.userId === userId)) {
+          users.push({ userId, fullName, avatar });
         }
       } else if (userAction === "leave") {
-
         users = users.filter((user) => user.userId !== userId);
         if (users.length === 0) {
-            delete state.projects[projectId][fileId];
-          } else {
-            state.projects[projectId][fileId] = users;
-          }
+          delete state.projects[projectId][fileId];
+        } else {
+          state.projects[projectId][fileId] = users;
+        }
       }
     },
     changeAdmin: (state, action) => {
       const { projectId, fileId, userId } = action.payload;
       const arr = state.projects[projectId][fileId];
-    
+
       if (!arr) return;
-    
-      const idx = arr.findIndex(user => user.userId === userId);
+
+      const idx = arr.findIndex((user) => user.userId === userId);
       if (idx === -1) return;
-    
+
       const [userObj] = arr.splice(idx, 1);
-    
+
       arr.unshift(userObj);
-    }
-    
+    },
   },
 });
 
-export const { updatePresence,changeAdmin } = presenceSlice.actions;
+export const { updatePresence, changeAdmin } = presenceSlice.actions;
 export default presenceSlice.reducer;
