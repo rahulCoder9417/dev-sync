@@ -75,6 +75,7 @@ export interface User {
     
     export type FileNodeWithChildren = Omit<FileNode, 'children'> & {
       fileChildren: string[];
+      ancestorIds:string[]
       folderChildren: string[];
     }
     
