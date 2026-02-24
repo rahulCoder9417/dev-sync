@@ -27,3 +27,169 @@ Sends file events to Main Backend via WS
 Main Backend updates DB
 main Backend broadcasts UI updates
 Terminal changes become real DB changes and reflect in the UI.
+ 
+  ---
+  2. Tree Operation Utilities (core logic - highest risk)
+
+  ┌─────┬─────────────────────────┬───────────────────────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────────┐   
+  │  #  │       File & Line       │                               What to test                                │                  Current children usage                   │   
+  ├─────┼─────────────────────────┼───────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────┤   
+  │ 2.1 │ treeOperations.ts:16    │ Rename - recursive traversal uses node.children to recurse into           │ if (node.children) → recurse                              │   
+  │     │                         │ subfolders                                                                │                                                           │   
+  ├─────┼─────────────────────────┼───────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────┤   
+  │ 2.2 │ treeOperations.ts:39-44 │ Delete - removeNodeFromTree recurses via node.children                    │ node.children → recurse                                   │   
+  ├─────┼─────────────────────────┼───────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────┤   
+  │ 2.3 │ treeOperations.ts:64-70 │ Create/Add - addNodeToTree reads node.children ?? [] then prepends        │ node.children ?? [], then returns { ...node, children:    │   
+  │     │                         │ folders or appends files                                                  │ updatedChildren }                                         │   
+  ├─────┼─────────────────────────┼───────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────┤   
+  │ 2.4 │ fileOp.ts:8-9           │ Save content - saveNode recurses via node.children                        │ node.children → recurse                                   │   
+  └─────┴─────────────────────────┴───────────────────────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────┘   
+
+  Test scenarios:
+  - Create a file at root level
+  - Create a file inside a nested folder (2-3 levels deep)
+  - Create a folder at root level
+  - Create a folder inside another folder
+  - Rename a file at any depth
+  - Rename a folder
+  - Delete a file at any depth
+  - Delete a folder (should remove it from parent's folderChildren)
+  - Save content to a deeply nested file
+  - Verify folders appear before files after creation (current sort order: folders first)
+
+  ---
+  3. TreeNode Component (rendering)
+
+  ┌─────┬──────────────────┬────────────────────────────────────────────────────────────────────────────┬─────────────────────────────────────────────────┐
+  │  #  │     Location     │                                What to test                                │                  Current usage                  │
+  ├─────┼──────────────────┼────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────┤
+  │ 3.1 │ TreeNode.tsx:154 │ Collaborators receive node.children as child prop when folder is collapsed │ child={!isExpanded ? node.children : undefined} │
+  ├─────┼──────────────────┼────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────┤
+  │ 3.2 │ TreeNode.tsx:168 │ Expanded folder renders children with node.children && guard               │ node.children && (...)                          │
+  ├─────┼──────────────────┼────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────┤
+  │ 3.3 │ TreeNode.tsx:176 │ Children rendering: node.children.map(child => <TreeNodeMemo .../>)        │ Direct .map() on children array                 │
+  ├─────┼──────────────────┼────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────┤
+  │ 3.4 │ TreeNode.tsx:221 │ Memo equality check: prev.node?.children === next.node?.children           │ Reference equality on children                  │
+  └─────┴──────────────────┴────────────────────────────────────────────────────────────────────────────┴─────────────────────────────────────────────────┘
+
+  Test scenarios:
+  - Expand/collapse a folder - children should render/hide correctly
+  - Since children are now IDs, you'll need a lookup mechanism (flat map or selector) to resolve IDs to actual FileNode objects for rendering
+  - Verify memo equality still works (reference check on folderChildren/fileChildren arrays)
+  - Collaborator avatars show on collapsed folders (they traverse children recursively)
+
+  ---
+  4. Collaborators Component (recursive traversal)
+
+  ┌─────┬─────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────┐
+  │  #  │        Location         │                                     What to test                                      │
+  ├─────┼─────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤
+  │ 4.1 │ Collaborators.tsx:22-28 │ traverse() recursively walks node.children to find collaborators in collapsed folders │
+  └─────┴─────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────┘
+
+  Test scenarios:
+  - Collapse a folder containing files with active collaborators - avatars should bubble up
+  - Deeply nested collaborators should still show on ancestor folders
+
+  ---
+  5. FileExplorer Component (file operations processor)
+
+  ┌─────┬──────────────────────────┬──────────────────────────────────────────────────────────┐
+  │  #  │         Location         │                       What to test                       │
+  ├─────┼──────────────────────────┼──────────────────────────────────────────────────────────┤
+  │ 5.1 │ FileExplorer.tsx:137-147 │ handleCreate constructs new node with children: []       │
+  ├─────┼──────────────────────────┼──────────────────────────────────────────────────────────┤
+  │ 5.2 │ FileExplorer.tsx:291-319 │ useEffect processes queued file ops and calls tree utils │
+  └─────┴──────────────────────────┴──────────────────────────────────────────────────────────┘
+
+  Test scenarios:
+  - Create file via context menu (root and nested)
+  - Create folder via context menu
+  - Rename file/folder
+  - Delete file/folder (via voting mechanism)
+  - Save file content (auto-save and manual)
+  - Resource upload (creates file + saves content)
+
+  ---
+  6. Redux State (projectFileSlice)
+
+  ┌─────┬───────────────────────────┬────────────────────────────────────────────┐
+  │  #  │         Location          │                What to test                │
+  ├─────┼───────────────────────────┼────────────────────────────────────────────┤
+  │ 6.1 │ projectFileSlice.ts:23-26 │ addFileNode adds to root state.files array │
+  ├─────┼───────────────────────────┼────────────────────────────────────────────┤
+  │ 6.2 │ projectFileSlice.ts:12-14 │ setInitialProjectFiles loads from backend  │
+  └─────┴───────────────────────────┴────────────────────────────────────────────┘
+
+  Test scenarios:
+  - Initial page load - files load correctly from API
+  - Root-level file/folder creation via addFileNode
+
+  ---
+  7. Search Functionality
+
+  ┌─────┬─────────────────────────┬────────────────────────────────────────────────────────────────────────────┐
+  │  #  │        Location         │                                What to test                                │
+  ├─────┼─────────────────────────┼────────────────────────────────────────────────────────────────────────────┤
+  │ 7.1 │ SearchPallete.tsx:24-35 │ recursiveSearch traverses file.children?.forEach(...) for file name search │
+  ├─────┼─────────────────────────┼────────────────────────────────────────────────────────────────────────────┤
+  │ 7.2 │ SearchSidebar.tsx:13-28 │ recursiveSearch traverses file.children?.forEach(...) for content search   │
+  └─────┴─────────────────────────┴────────────────────────────────────────────────────────────────────────────┘
+
+  Test scenarios:
+  - Search for a file by name (Ctrl+P palette) - should find files in nested folders
+  - Search for content in SearchSidebar - should find matches in nested files
+  - Search results should show correct file path
+
+  ---
+  8. WebSocket / Collaboration
+
+  ┌─────┬───────────────────────┬──────────────────────────────────────────────────────────────────────────┐
+  │  #  │       Location        │                               What to test                               │
+  ├─────┼───────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+  │ 8.1 │ useCollab.ts:184-193  │ fileOp broadcast dispatches addFileOp with newNode (which is a FileNode) │
+  ├─────┼───────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+  │ 8.2 │ collabCodeFileOp.ts:6 │ FileNode type imported from usCollabPayload.ts                           │
+  └─────┴───────────────────────┴──────────────────────────────────────────────────────────────────────────┘
+
+  Test scenarios:
+  - User A creates a file → User B sees it appear in their tree
+  - User A creates a folder → User B sees it appear
+  - User A renames a file → User B's tree updates
+  - User A deletes a file → User B's tree removes it
+  - User A saves content → User B gets updated content
+
+  ---
+  9. API Routes (Backend)
+
+  ┌─────┬────────────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │  #  │        Location        │                                            What to test                                             │
+  ├─────┼────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 9.1 │ create/route.ts:190    │ Response returns {...newFileItem, children:[]}                                                      │
+  ├─────┼────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 9.2 │ Backend getProjectById │ Must return files with new structure (or you must transform flat DB rows into tree with new fields) │
+  └─────┴────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  Test scenarios:
+  - Create API returns correct shape
+  - Project load API returns files with folderChildren, fileChildren, ancestorId
+  - Delete API still works (it uses DB parentId, not children)
+
+  ---
+  10. Drag and Drop (File Moving)
+
+  ┌──────┬──────────────────────────┬─────────────────────────────────────────────────────┐
+  │  #   │         Location         │                    What to test                     │
+  ├──────┼──────────────────────────┼─────────────────────────────────────────────────────┤
+  │ 10.1 │ FileExplorer.tsx:348-358 │ Drag tracking uses parentId (should be fine)        │
+  ├──────┼──────────────────────────┼─────────────────────────────────────────────────────┤
+  │ 10.2 │ TreeNode.tsx:99-128      │ onMouseEnter/onMouseLeave for drag hover on folders │
+  └──────┴──────────────────────────┴─────────────────────────────────────────────────────┘
+
+  Test scenarios:
+  - Drag a file into a folder - after move, the file should appear in target folder's fileChildren
+  - Drag a folder into another folder - should update folderChildren
+  - ancestorId should be correctly updated when moving items
+  - Confirm modal shows correct names
+
+  ---

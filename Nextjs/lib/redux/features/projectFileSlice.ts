@@ -23,6 +23,27 @@ const fileNodeSlice = createSlice({
       state.projectId = "";
       state.files = [];
     },
+    renameNode(state,action:{payload:{newName:string,nodeId:string}}){
+      let node = state.map?.[action.payload.nodeId]
+      if(!node)return
+      node.name = action.payload.newName
+      if(node.parentId!==null)return
+      if (node.type==="file") {
+        state.fileRoot = state.fileRoot?.map((item)=>{
+          if(item.id===node.id){
+            return {...item,name:action.payload.newName}
+          }
+          return item
+        })
+      }else{
+        state.folderRoot = state.folderRoot?.map((item)=>{
+          if(item.id===node.id){
+            return {...item,name:action.payload.newName}
+          }
+          return item
+        })
+      }
+    },
     setNewProjectFiles(state, action: { payload: FileNode[] }) {
       state.files = action.payload;
     },
@@ -38,6 +59,7 @@ export default fileNodeSlice.reducer;
 export const {
   setInitialProjectFiles,
   deleteProjectFiles,
+  renameNode,
   addFileNode,
   setNewProjectFiles,
 } = fileNodeSlice.actions;

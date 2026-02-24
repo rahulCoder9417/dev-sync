@@ -15,7 +15,7 @@ import { renameNodeInTree, removeNodeFromTree, addNodeToTree } from '@/lib/mainU
 import FileContextMenu from './FileContext';
 import { uploadToCloudinary } from '@/lib/mainUtils/cloudinary';
 import { getResourceType } from '@/lib/mainUtils/getResourseType';
-import { addFileNode, setNewProjectFiles } from '@/lib/redux/features/projectFileSlice';
+import { addFileNode, renameNode, setNewProjectFiles } from '@/lib/redux/features/projectFileSlice';
 import { createPortal } from 'react-dom';
 import { getFileIcon } from '@/lib/mainUtils/icons';
 import { number } from 'zod';
@@ -299,7 +299,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     fileOp?.forEach((item: any) => {
       switch (item.type) {
         case "rename":
-          newTree = renameNodeInTree(newTree, item.id, item.name!, tabs);
+          dispatch(renameNode({ newName: item.name, nodeId: item.id }));
+          //newTree = renameNodeInTree(newTree, item.id, item.name!, tabs);
           break;
         case "create":
           newTree = addNodeToTree(newTree, item.id, item.newNode);
@@ -317,7 +318,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         default:
           break;
       }
-      dispatch(setNewProjectFiles(newTree));
+    //  dispatch(setNewProjectFiles(newTree));
       dispatch(consumeFileOp({ projectId }));
       setIsFileAction({ id: item.id, type: "" });
     });
