@@ -1,3 +1,4 @@
+import { showToast } from "@/components/main/Toast";
 import { FileNode, FileNodeWithChildren } from "@/lib/types/types";
 import { createSlice } from "@reduxjs/toolkit";
 interface ProjectFilesState {
@@ -91,9 +92,39 @@ const fileNodeSlice = createSlice({
       for (const id of idsToDelete) {
         delete state.map[id];
       }
-
-     
     },
+    createNode(state, action: { payload: { newNode: FileNodeWithChildren } }) {
+      if (!state.map) return;
+      const newNode = action.payload.newNode;
+      if (!newNode) return;
+      
+      if(!newNode.ancestorIds)  newNode.ancestorIds = [];
+      if(!newNode.fileChildren) newNode.fileChildren = [];
+      if(!newNode.folderChildren) newNode.folderChildren = [];
+      
+      state.map[newNode.id] = newNode;
+
+      if (newNode.parentId === null) {
+        if (newNode.type === "file") {
+          state.fileRoot?.push(newNode);
+        } else {
+          state.folderRoot?.push(newNode);
+        }
+        return;
+      }
+
+      const parent = state.map[newNode.parentId];
+      if (!parent) return;
+
+      if (newNode.type === "file") {
+       if (!parent.fileChildren ) parent.fileChildren = [];
+        parent.fileChildren.push(newNode.id);
+      } else {
+        if (!parent.folderChildren ) parent.folderChildren = [];
+        parent.folderChildren.push(newNode.id);
+      }
+    },
+    
   },
 });
 export default fileNodeSlice.reducer;
@@ -101,5 +132,6 @@ export const {
   setInitialProjectFiles,
   deleteProjectFiles,
   renameNode,
+  createNode,
   deleteNode,
 } = fileNodeSlice.actions;

@@ -50,7 +50,6 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
   );
 
    const selectNodes = useMemo(makeSelectNodesByIds, []);
-  const map = useAppSelector((state) => state.projectFile.map);
   const nodeChildrenFilesIds = useAppSelector(
     (state) => state.projectFile.map?.[node.id]?.fileChildren ?? []
   );
@@ -60,7 +59,6 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
 
   const nodeChildrenFiles = useAppSelector((state) =>
     selectNodes(state, nodeChildrenFilesIds ?? []))
-
   const nodeChildrenFolders = useAppSelector((state) =>
     selectNodes(state, nodeChildrenFoldersIds ?? []))
   useEffect(() => {
@@ -81,7 +79,6 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
 
   const handactions = async (name: string) => {
     await actionHandler(action!, node.id, name, node.name)
-    // action==="rename" && (node.name=name)
     setIsFileAction(null)
     setAction(null)
   }

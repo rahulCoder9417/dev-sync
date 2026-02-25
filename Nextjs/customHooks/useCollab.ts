@@ -1,15 +1,22 @@
-"use client"
+"use client";
 import { showToast } from "@/components/main/Toast";
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useRef, useState, useCallback } from "react";
 
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { changeAdmin, updatePresence } from "@/lib/redux/features/collabCodeUserState";
-import { addFileOp, addSaveFileOp } from "@/lib/redux/features/collabCodeFileOp";
+import {
+  changeAdmin,
+  updatePresence,
+} from "@/lib/redux/features/collabCodeUserState";
+import {
+  addFileOp,
+  addSaveFileOp,
+} from "@/lib/redux/features/collabCodeFileOp";
 import { updateCode } from "@/lib/redux/features/collabCodeEditorUpdate";
-import { parseRoomKey ,makeRoomKey} from "@/lib/mainUtils/roomParser";
+import { parseRoomKey, makeRoomKey } from "@/lib/mainUtils/roomParser";
 import { ServerPayload, UserInfo } from "@/lib/types/usCollabPayload";
 import { updatePresenceWithAncestors } from "@/lib/redux/thunk/updatePrescenseThunk";
+import { createNodeWithAncestors } from "@/lib/redux/thunk/createNodeThunk";
 
 export type ClientMessage =
   | { action: "join"; projectId: string; fileId?: string | null }
@@ -50,7 +57,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectAttempts = useRef(0);
   const manualClose = useRef(false);
- //clerk setup in jwt template
+  //clerk setup in jwt template
   const { getToken } = useAuth();
 
   // ---------- utils + setup ----------
@@ -66,7 +73,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
       return;
     }
     // attach token as query param per server upgrade handler
-    let u = wsUrl+"/ws/file" + `?token=${token}`;
+    let u = wsUrl + "/ws/file" + `?token=${token}`;
     return u;
   }, [wsUrl, getToken]);
 
@@ -98,26 +105,26 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   fileId: payload.fileId,
                   type: payload.updateType,
                   data: payload.data,
-                })
+                }),
               );
               break;
             case "YjsCodeChangesFirstSync":
               dispatch(
                 updateCode({
                   fileId: payload.fileId,
-                  type:"YjsCodeChangesFirstSync",
+                  type: "YjsCodeChangesFirstSync",
                   data: payload.data,
-                })
+                }),
               );
               break;
-              //cursor ,scroll and selection
+            //cursor ,scroll and selection
             case "awareness":
               dispatch(
                 updateCode({
                   fileId: payload.fileId,
                   type: payload.type,
                   data: payload.data,
-                })
+                }),
               );
               break;
             case "fileSave":
@@ -127,29 +134,29 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   projectId: payload.projectId,
                   fileId: payload.fileId,
                   content: payload.content,
-                })
+                }),
               );
               break;
             case "sync":
-              //when a user recive this ,then it send its yjs doc to =>to 
+              //when a user recive this ,then it send its yjs doc to =>to
               dispatch(
                 updateCode({
                   fileId: payload.fileId,
                   type: "sync",
                   data: payload.to,
-                })
+                }),
               );
               break;
             case "file_deleted":
               setTimeout(() => {
-                setdeletionMenu(null)
-              }, 50)
+                setdeletionMenu(null);
+              }, 50);
               showToast(
                 true,
                 " File deleted by ->" +
                   payload.deletedBy +
                   "-> on file ->" +
-                  payload.fileName
+                  payload.fileName,
               );
               dispatch(
                 addFileOp({
@@ -157,7 +164,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   name: payload.fileName,
                   id: payload.fileId,
                   projectId: payload.projectId,
-                })
+                }),
               );
               break;
             case "voting":
@@ -180,18 +187,31 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   " done by ->" +
                   payload.from.fullName +
                   "on file ->" +
-                  payload.fileName
+                  payload.fileName,
               );
-              dispatch(
-                addFileOp({
-                  type: payload.action,
-                  content:payload.content,
-                  name: payload.fileName,
-                  id: payload.fileId,
-                  newNode: payload.newNode,
-                  projectId: payload.projectId,
-                })
-              );
+
+              if (payload.action === "create") {
+                dispatch(
+                  createNodeWithAncestors({
+                    type: payload.action,
+                    name: payload.fileName!,
+                    id: payload.fileId,
+                    newNode: payload.newNode!,
+                    projectId: payload.projectId,
+                  }),
+                );
+              } else {
+                dispatch(
+                  addFileOp({
+                    type: payload.action,
+                    content: payload.content,
+                    name: payload.fileName,
+                    id: payload.fileId,
+                    projectId: payload.projectId,
+                  }),
+                );
+              }
+
               break;
             case "user_joined":
               // tell user joined
@@ -203,13 +223,14 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   avatar: payload.user.avatar || "",
                   fullName: payload.user.fullName,
                   action: "join",
-                })
+                }),
               );
-              !payload.room.includes(":") && participantsRef.current.set(payload.user.userId,payload.user);
+              !payload.room.includes(":") &&
+                participantsRef.current.set(payload.user.userId, payload.user);
               break;
 
             case "user_left":
-         //     tell user keft
+              //     tell user keft
               dispatch(
                 updatePresenceWithAncestors({
                   projectId: payload.user.projectId!,
@@ -218,9 +239,10 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   avatar: payload.user.avatar || "",
                   fullName: payload.user.fullName,
                   action: "leave",
-                })
+                }),
               );
-              !payload.room.includes(":") && participantsRef.current.delete(payload.user.userId);
+              !payload.room.includes(":") &&
+                participantsRef.current.delete(payload.user.userId);
               break;
 
             case "joined":
@@ -233,10 +255,11 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   avatar: payload.you.avatar || "",
                   fullName: payload.you.fullName || "",
                   action: "join",
-                })
+                }),
               );
-              
-              !payload.room.includes(":") && participantsRef.current.set(payload.you.userId,payload.you);
+
+              !payload.room.includes(":") &&
+                participantsRef.current.set(payload.you.userId, payload.you);
               break;
 
             case "left":
@@ -249,10 +272,10 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   avatar: payload.you.avatar || "",
                   fullName: payload.you.fullName,
                   action: "leave",
-                })
+                }),
               );
               !payload.room.includes(":")
-                ? (participantsRef.current.delete(payload.you.userId))
+                ? participantsRef.current.delete(payload.you.userId)
                 : null;
               break;
             case "changeAdmin":
@@ -262,7 +285,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   projectId: payload.projectId,
                   fileId: payload.fileId,
                   userId: payload.userId,
-                })
+                }),
               );
               break;
             case "error":
@@ -288,7 +311,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
         performUpdates();
       }, 0);
     },
-    [dispatch, onEvent, pushMsg]
+    [dispatch, onEvent, pushMsg],
   );
 
   const flushPayloads = useCallback(() => {
@@ -330,7 +353,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
         }, 0);
       }
     },
-    [flushPayloads]
+    [flushPayloads],
   );
 
   // ----------------- WebSocket lifecycle -----------------
@@ -342,7 +365,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
       wsRef.current = ws;
       ws.onopen = () => {
         console.log("WebSocket connection opened");
-        setReadyState(true)
+        setReadyState(true);
         setStatus("connected");
       };
 
@@ -350,7 +373,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
 
       ws.onerror = (ev) => {
         console.error("[collab] ws error", ev);
-        setReadyState(false)
+        setReadyState(false);
         setStatus("error");
         reconnectAttempts.current += 1;
       };
@@ -358,7 +381,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
       ws.onclose = (ev) => {
         console.log("WebSocket connection closed");
         wsRef.current = null;
-        setReadyState(false)
+        setReadyState(false);
         if (manualClose.current) {
           setStatus("closed");
           return;
@@ -366,7 +389,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
 
         // attempt reconnect
         if (reconnectAttempts.current > maxReconnectAttempts) {
-          setReadyState(false)
+          setReadyState(false);
           setStatus("closed");
           showToast(false, "max reconnect attempts reached", ev.reason);
           console.warn("[collab] max reconnect attempts reached");
@@ -377,7 +400,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
         // exponential backoff + jitter
         const backoff = Math.min(
           30000,
-          500 * Math.pow(1.8, reconnectAttempts.current)
+          500 * Math.pow(1.8, reconnectAttempts.current),
         );
         const jitter = Math.floor(Math.random() * 300);
         setTimeout(() => {
@@ -387,7 +410,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
     } catch (err) {
       console.error("[collab] connect failed", err);
       setStatus("error");
-      setReadyState(false)
+      setReadyState(false);
     }
   }, [buildWsUrl, handleServer, maxReconnectAttempts]);
 
@@ -403,7 +426,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
       wsRef.current = null;
     }
     setStatus("closed");
-    setReadyState(false)
+    setReadyState(false);
   }, []);
 
   useEffect(() => {
@@ -431,12 +454,12 @@ export default function useCollab(opts: UseCollabOptions = {}) {
   }, [autoConnect, buildWsUrl, connect]);
 
   // helpers for app-level messages
-  const reSend = useRef(0) //max 5 if ws is not open it will only send 5 times
+  const reSend = useRef(0); //max 5 if ws is not open it will only send 5 times
   const send = useCallback((msg: ClientMessage) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      reSend.current++
-      if(reSend.current>5){
-        showToast(false,"[collab] trying to send but socket not open");
+      reSend.current++;
+      if (reSend.current > 5) {
+        showToast(false, "[collab] trying to send but socket not open");
         return false;
       }
       console.warn("[collab] trying to send but socket not open");
@@ -445,7 +468,7 @@ export default function useCollab(opts: UseCollabOptions = {}) {
       }, 2000);
       return false;
     }
-     
+
     try {
       wsRef.current.send(JSON.stringify(msg));
       return true;
@@ -462,15 +485,18 @@ export default function useCollab(opts: UseCollabOptions = {}) {
 
   // flush function uses `send`
   const flushPending = useCallback(() => {
-    if (!wsRef.current || (wsRef.current.readyState !== WebSocket.OPEN && !readyState)) {
+    if (
+      !wsRef.current ||
+      (wsRef.current.readyState !== WebSocket.OPEN && !readyState)
+    ) {
       setTimeout(() => {
         flushPending();
       }, 0);
-      return} ;
+      return;
+    }
 
     // process leaves first
     for (const key of Array.from(pendingLeavesRef.current)) {
-    
       const { projectId, fileId } = parseRoomKey(key);
       const ok = send({ action: "leave", projectId, fileId: fileId ?? null });
       if (ok) pendingLeavesRef.current.delete(key);
@@ -478,7 +504,6 @@ export default function useCollab(opts: UseCollabOptions = {}) {
     }
     // then joins
     for (const key of Array.from(pendingJoinsRef.current)) {
-
       const { projectId, fileId } = parseRoomKey(key);
       const ok = send({ action: "join", projectId, fileId: fileId ?? null });
       if (ok) pendingJoinsRef.current.delete(key);
@@ -498,11 +523,10 @@ export default function useCollab(opts: UseCollabOptions = {}) {
 
   // flush queued sends when socket becomes connected
   useEffect(() => {
-    if (status === "connected" ) {
+    if (status === "connected") {
       let a = flushPending();
-     
     }
-  }, [status, flushPending,readyState]);
+  }, [status, flushPending, readyState]);
 
   const join = useCallback((projectId: string, fileId?: string | null) => {
     const key = makeRoomKey(projectId, fileId);
@@ -523,15 +547,10 @@ export default function useCollab(opts: UseCollabOptions = {}) {
   }, []);
 
   const sendMessage = useCallback(
-    (
-      message: string,
-      projectId: string,
-      fileId?: string ,
-      data?: any
-    ) => {
+    (message: string, projectId: string, fileId?: string, data?: any) => {
       return send({ action: message, projectId, fileId, ...data });
     },
-    [send]
+    [send],
   );
 
   const clearMessages = useCallback(() => setMessages([]), []);

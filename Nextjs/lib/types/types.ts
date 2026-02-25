@@ -78,4 +78,5 @@ export interface User {
       ancestorIds:string[]
       folderChildren: string[];
     }
+    export type FileNodeWithChildrenAndMeta = FileNodeWithChildren &{projectId: string,createdAt: string,updatedAt: string } 
     

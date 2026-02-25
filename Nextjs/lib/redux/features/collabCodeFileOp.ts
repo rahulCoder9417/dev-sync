@@ -1,9 +1,10 @@
+import { FileNodeWithChildrenAndMeta } from "@/lib/types/types";
 import { FileNode } from "@/lib/types/usCollabPayload";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface PresenceState {
     projects: Record<
       string, 
-      { type: string; name?: string; newNode?: FileNode; id: string,content?:string }[]
+      { type: string; name?: string; newNode?: FileNodeWithChildrenAndMeta; id: string ,content?:string }[]
     >;
     fileSaveProjects:Record<string,{projectId:string,fileId:string,content:string}[]>;
   }
@@ -16,7 +17,7 @@ const initialState: PresenceState = {
 };
 
 interface UpdateFileOpPayload {
-    type:string,name?:string,newNode?:FileNode,id:string
+    type:string,name?:string,newNode?:FileNodeWithChildrenAndMeta,id:string
     projectId:string
     content?:string
     }

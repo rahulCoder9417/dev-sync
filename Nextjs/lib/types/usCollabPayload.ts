@@ -1,3 +1,5 @@
+import { FileNodeWithChildrenAndMeta } from "./types";
+
 // Base types
 export type UserInfo = {
     userId: string;
@@ -66,7 +68,7 @@ export type UserJoinedBroadcast = {
     projectId: string;
     fileId: string;
     action: "create" | "rename";
-    newNode?: FileNode;
+    newNode?: FileNodeWithChildrenAndMeta;
     fileName?: string;
     fullName?: string;
     content?: string;
