@@ -238,8 +238,8 @@ Distributed under the **MIT License**. See `LICENSE` for more information.
 ## 📞 Contact
 
 **Your Name**  
-*   Portfolio: [Your Portfolio Link](https://portfolio-flame-mu-74.vercel.app/)
-*   LinkedIn: [Your LinkedIn Profile](https://www.linkedin.com/in/rahul-kumar-511054360/)
+*   Portfolio: [ Portfolio Link](https://portfolio-flame-mu-74.vercel.app/)
+*   LinkedIn: [ LinkedIn Profile](https://www.linkedin.com/in/rahul-kumar-511054360/)
 *   Email: rahulkum94l94@gmail.com
 
 <p align="right">(<a href="#top">back to top</a>)</p>
