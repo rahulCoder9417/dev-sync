@@ -4,7 +4,6 @@ import * as Y from 'yjs';
 import { Tab, FileNode } from '@/lib/types/types';
 import { showToast } from "@/components/main/Toast";
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { setNewProjectFiles } from '@/lib/redux/features/projectFileSlice';
 import { shallowEqual } from 'react-redux';
 
 export const saveNode = (tree: any, nodeId: string, content: string) => {
@@ -39,7 +38,7 @@ export const useEditorSave = (
       setTabs(prev => prev.map(t =>
         t.id === tab.id ? { ...t, content: newContent, isDirty: false } : t
       ));
-      dispatch(setNewProjectFiles(saveNode(files, tab.id, newContent)));
+     // dispatch(setNewProjectFiles(saveNode(files, tab.id, newContent)));
       const res: any = await fetch(`/api/projects/fileItem/updateContent`, {
         method: 'PUT',
         headers: {

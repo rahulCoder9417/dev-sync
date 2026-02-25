@@ -8,7 +8,6 @@ import { Tab, FileNode } from '@/lib/types/types';
 import { saveNode } from './useEditorSave';
 import * as Y from 'yjs';
 import { showToast } from "@/components/main/Toast";
-import { setNewProjectFiles } from '@/lib/redux/features/projectFileSlice';
 
 export const useCollabSync = (
   projectId: string,
@@ -45,9 +44,9 @@ export const useCollabSync = (
         t.id === item.fileId ? { ...t, content: item.content, isDirty: false } : t
       ));
       const newTree = saveNode(files,item.fileId, item.content!);
-       dispatch(
-        setNewProjectFiles(newTree)
-      )
+      //  dispatch(
+      //   setNewProjectFiles(newTree)
+      // )
 
       if (item.fileId !== activeTab?.id) {
         const ydoc = docsRef.current.get(item.fileId);

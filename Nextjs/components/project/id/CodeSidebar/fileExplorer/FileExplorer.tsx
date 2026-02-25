@@ -15,7 +15,7 @@ import { renameNodeInTree, removeNodeFromTree, addNodeToTree } from '@/lib/mainU
 import FileContextMenu from './FileContext';
 import { uploadToCloudinary } from '@/lib/mainUtils/cloudinary';
 import { getResourceType } from '@/lib/mainUtils/getResourseType';
-import { addFileNode, renameNode, setNewProjectFiles } from '@/lib/redux/features/projectFileSlice';
+import {  deleteNode, renameNode,  } from '@/lib/redux/features/projectFileSlice';
 import { createPortal } from 'react-dom';
 import { getFileIcon } from '@/lib/mainUtils/icons';
 import { number } from 'zod';
@@ -151,7 +151,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     };
 
     if (nodeId === null) {
-      dispatch(addFileNode(newNode))
+    //  dispatch(addFileNode(newNode))
       setrootAction(null);
     } else {
       dispatch(addFileOp({
@@ -307,7 +307,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           break;
         case "delete":
           onTabClose(item.id);
-          newTree = removeNodeFromTree(newTree, item.id)[0];
+          dispatch(deleteNode({ nodeId: item.id }));
           break;
         case "save":
           setTabs(prev => prev.map(t =>
@@ -318,7 +318,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         default:
           break;
       }
-    //  dispatch(setNewProjectFiles(newTree));
+    // dispatch(setNewProjectFiles(newTree));
       dispatch(consumeFileOp({ projectId }));
       setIsFileAction({ id: item.id, type: "" });
     });

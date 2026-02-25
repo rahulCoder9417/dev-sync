@@ -8,6 +8,7 @@ interface ProjectFilesState {
   map?: Record<string, FileNodeWithChildren>;
 }
 const initialState: ProjectFilesState = {} as ProjectFilesState; //only one projectId at a time
+
 const fileNodeSlice = createSlice({
   name: "projectFiles",
   initialState,
@@ -23,35 +24,75 @@ const fileNodeSlice = createSlice({
       state.projectId = "";
       state.files = [];
     },
-    renameNode(state,action:{payload:{newName:string,nodeId:string}}){
-      let node = state.map?.[action.payload.nodeId]
-      if(!node)return
-      node.name = action.payload.newName
-      if(node.parentId!==null)return
-      if (node.type==="file") {
-        state.fileRoot = state.fileRoot?.map((item)=>{
-          if(item.id===node.id){
-            return {...item,name:action.payload.newName}
+
+    renameNode(
+      state,
+      action: { payload: { newName: string; nodeId: string } },
+    ) {
+      let node = state.map?.[action.payload.nodeId];
+      if (!node) return;
+      node.name = action.payload.newName;
+      if (node.parentId !== null) return;
+      if (node.type === "file") {
+        state.fileRoot = state.fileRoot?.map((item) => {
+          if (item.id === node.id) {
+            return { ...item, name: action.payload.newName };
           }
-          return item
-        })
-      }else{
-        state.folderRoot = state.folderRoot?.map((item)=>{
-          if(item.id===node.id){
-            return {...item,name:action.payload.newName}
+          return item;
+        });
+      } else {
+        state.folderRoot = state.folderRoot?.map((item) => {
+          if (item.id === node.id) {
+            return { ...item, name: action.payload.newName };
           }
-          return item
-        })
+          return item;
+        });
       }
     },
-    setNewProjectFiles(state, action: { payload: FileNode[] }) {
-      state.files = action.payload;
-    },
-    addFileNode(state, action: { payload: FileNode }) {
-      state.files =
-        action.payload.type === "file"
-          ? [...state.files, action.payload]
-          : [action.payload, ...state.files];
+
+    deleteNode(state, action: { payload: { nodeId: string } }) {
+      const node = state.map?.[action.payload.nodeId];
+      if (!node || !state.map) return;
+
+      const idsToDelete: string[] = [];
+      const stack = [node.id];
+      while (stack.length) {
+        const currentId = stack.pop()!;
+        idsToDelete.push(currentId);
+
+        const currentNode = state.map[currentId];
+        if (!currentNode) continue;
+
+        if (currentNode.type === "folder") {
+          stack.push(...currentNode.folderChildren);
+          stack.push(...currentNode.fileChildren);
+        }
+      }
+
+      if (node.parentId) {
+        const parent = state.map[node.parentId];
+        if (parent) {
+          parent.fileChildren = parent.fileChildren.filter(
+            (id) => id !== node.id,
+          );
+          parent.folderChildren = parent.folderChildren.filter(
+            (id) => id !== node.id,
+          );
+        }
+      }
+
+      if (node.parentId === null) {
+        state.fileRoot = state.fileRoot?.filter((item) => item.id !== node.id);
+        state.folderRoot = state.folderRoot?.filter(
+          (item) => item.id !== node.id,
+        );
+      }
+
+      for (const id of idsToDelete) {
+        delete state.map[id];
+      }
+
+     
     },
   },
 });
@@ -60,6 +101,5 @@ export const {
   setInitialProjectFiles,
   deleteProjectFiles,
   renameNode,
-  addFileNode,
-  setNewProjectFiles,
+  deleteNode,
 } = fileNodeSlice.actions;
