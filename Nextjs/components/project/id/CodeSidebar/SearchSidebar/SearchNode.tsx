@@ -41,7 +41,7 @@ const SearchNode = ({fileName,path,line,id,content,parentId,searchVal,handleFile
           <ChevronDown className={`w-4 h-4 ${showFiles ? 'rotate-0' : '-rotate-90'}`} />
         </button>
         <span className='shrink-0'>{getFileIcon("a.tsx")}</span>
-        <span className='truncate'>{fileName}  {path}</span>
+        <span className='truncate'>{fileName} </span><span className='truncate text-muted'> {path}</span>
         <span className="w-6 h-6 flex items-center justify-center text-xs bg-blue-300 rounded-full text-black">{line.length}</span>
         <div className="absolute top-5 left-[50%] ml-2 hidden group-hover/item:block bg-black z-10 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
                   {path}
