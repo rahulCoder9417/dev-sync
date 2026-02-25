@@ -1,5 +1,4 @@
 import { FileNodeWithChildrenAndMeta } from "@/lib/types/types";
-import { FileNode } from "@/lib/types/usCollabPayload";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface PresenceState {
     projects: Record<

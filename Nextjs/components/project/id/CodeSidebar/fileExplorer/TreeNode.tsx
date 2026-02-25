@@ -28,7 +28,7 @@ type Props = {
   onToggle: (id: string) => void;
   setExpandedFolders: React.Dispatch<React.SetStateAction<Set<string>>>;
   actionHandler: (action: string, nodeId?: string, name?: string, oldName?: string) => void;
-  onSelect: (node: FileNode) => void;
+  onSelect: (node: FileNodeWithChildren) => void;
   errorMarkers: Record<string, boolean> | null;
   setIsFileAction: (action: { id: string, type: string } | null) => void;
   isFileAction: { id: string, type: string } | null;

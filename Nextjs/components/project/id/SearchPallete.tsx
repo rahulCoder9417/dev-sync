@@ -3,13 +3,14 @@ import { getFileIcon } from "@/lib/mainUtils/icons"
 import { useAppSelector } from "@/lib/redux/hooks"
 import React, { useEffect, useRef, useState } from "react"
 import { highlightText, SearchData } from "./CodeSidebar/SearchSidebar/SearchNode"
-import { FileNode, FileNodeWithChildren } from "@/lib/types/types"
+import {  FileNode, FileNodeWithChildren } from "@/lib/types/types"
 import { showToast } from "@/components/main/Toast"
 
 type Props = {
   openSearchPalette: boolean
   setOpenSearchPalette: (value: boolean) => void
-  handleFileSelect:(file:FileNode)=>void
+  handleFileSelect:(file:FileNode
+  )=>void
 }
 
 const SearchPallete = ({

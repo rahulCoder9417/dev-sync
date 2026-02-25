@@ -3,10 +3,9 @@ import { FileNode, FileNodeWithChildren } from "@/lib/types/types";
 import { createSlice } from "@reduxjs/toolkit";
 interface ProjectFilesState {
   projectId: string;
-  files: FileNode[];
-  fileRoot?: FileNodeWithChildren[];
-  folderRoot?: FileNodeWithChildren[];
-  map?: Record<string, FileNodeWithChildren>;
+  fileRoot: FileNodeWithChildren[];
+  folderRoot: FileNodeWithChildren[];
+  map: Record<string, FileNodeWithChildren>;
 }
 const initialState: ProjectFilesState = {} as ProjectFilesState; //only one projectId at a time
 
@@ -16,14 +15,15 @@ const fileNodeSlice = createSlice({
   reducers: {
     setInitialProjectFiles(state, action: { payload: ProjectFilesState }) {
       state.projectId = action.payload.projectId;
-      state.files = action.payload.files;
       state.map = action.payload.map;
       state.fileRoot = action.payload.fileRoot;
       state.folderRoot = action.payload.folderRoot;
     },
     deleteProjectFiles(state) {
       state.projectId = "";
-      state.files = [];
+      state.map = {};
+      state.fileRoot = [];
+      state.folderRoot = [];
     },
 
     renameNode(

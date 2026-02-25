@@ -74,8 +74,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   projectId,
   setTabs,
 }) => {
-  const files = useAppSelector(state => state.projectFile.files, shallowEqual);
-
   const folderRoots = useAppSelector(state => state.projectFile.folderRoot, shallowEqual);
 
   const filesRoot = useAppSelector(state => state.projectFile.fileRoot, shallowEqual);
@@ -215,7 +213,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     return id
   }, [canMakeChanges]);
 
-  const handleSelect = useCallback((node: FileNode) => {
+  const handleSelect = useCallback((node: FileNodeWithChildren) => {
     onFileSelect(node);
   }, [onFileSelect]);
 
@@ -305,7 +303,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   useEffect(() => {
     if (!fileOp || Object.keys(fileOp)?.length === 0) return;
 
-    let newTree = files;
     fileOp?.forEach((item: any) => {
       switch (item.type) {
         case "rename":

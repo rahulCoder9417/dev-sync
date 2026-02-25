@@ -230,32 +230,7 @@ export const getProjectById = async (projectId: string) => {
 
     const teamMembers = project.team?.members ?? [];
     const isTeamMember = teamMembers.some((m) => m.userId === dbUser.id);
-    function buildFileTree(files: any[]) {
-      const map = new Map<string, any>();
-      const roots: any[] = [];
-      const folderRoots: any[] = [];
-      for (const file of files) {
-        map.set(file.id, { ...file, children: [] });
-      }
-      for (const file of files) {
-        if (file.parentId) {
-          const parent = map.get(file.parentId);
-          if (parent) {
-            map.get(file.id).type === "folder"
-              ? parent.children.unshift(map.get(file.id))
-              : parent.children.push(map.get(file.id));
-          }
-        } else {
-          if (file.type === "folder") {
-            folderRoots.push(map.get(file.id));
-          } else {
-            roots.push(map.get(file.id));
-          }
-        }
-      }
-      return [...folderRoots, ...roots];
-    }
-
+  
     const buildFile = (files: any[]) => {
       const map: Record<string, FileNodeWithChildren> = {};
       const fileRoots: FileNodeWithChildren[] = [];
@@ -325,7 +300,6 @@ export const getProjectById = async (projectId: string) => {
         name: project.team?.name,
         members: teamMembers,
       },
-      files: buildFileTree(project.files),
       ...buildFile(project.files),
     };
     return { responseData, status: 200 };

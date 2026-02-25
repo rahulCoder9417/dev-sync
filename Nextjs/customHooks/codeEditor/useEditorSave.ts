@@ -17,7 +17,6 @@ export const useEditorSave = (
   projectId: string
 ) => {
   const dispatch = useAppDispatch();
-  const files = useAppSelector((state) => state.projectFile.files,shallowEqual);
   
   const handleSave = useCallback(async () => {
     const tab = activeTabRef.current;
@@ -44,7 +43,7 @@ export const useEditorSave = (
     } catch (e) {
       console.error("Save failed", e);
     }
-  }, [docRef, activeTabRef,files, readOnly, setTabs, sendMessage, projectId]);
+  }, [docRef, activeTabRef, readOnly, setTabs, sendMessage, projectId]);
 
   return { handleSave };
 };
