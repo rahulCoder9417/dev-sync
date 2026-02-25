@@ -5,10 +5,9 @@ import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { consumeUpdate } from "@/lib/redux/features/collabCodeEditorUpdate";
 import { consumeSaveFileOp } from "@/lib/redux/features/collabCodeFileOp";
 import { Tab, FileNode } from '@/lib/types/types';
-import { saveNode } from './useEditorSave';
 import * as Y from 'yjs';
 import { showToast } from "@/components/main/Toast";
-import { setNewProjectFiles } from '@/lib/redux/features/projectFileSlice';
+import { saveContent } from '@/lib/redux/features/projectFileSlice';
 
 export const useCollabSync = (
   projectId: string,
@@ -27,7 +26,6 @@ export const useCollabSync = (
   setTabs: React.Dispatch<React.SetStateAction<Tab[]>>,
 ) => {
   const dispatch = useAppDispatch();
-  const files = useAppSelector((state) => state.projectFile.files,shallowEqual);
   const updatesMap = useAppSelector(
     (state) => activeTab ? (state.collabCodeEditorUpdate.updates?.[activeTab.id] ?? []) : [],
     shallowEqual
@@ -44,10 +42,7 @@ export const useCollabSync = (
       setTabs(prev => prev.map(t =>
         t.id === item.fileId ? { ...t, content: item.content, isDirty: false } : t
       ));
-      const newTree = saveNode(files,item.fileId, item.content!);
-       dispatch(
-        setNewProjectFiles(newTree)
-      )
+      dispatch(saveContent({ id: item.fileId, content: item.content }));
 
       if (item.fileId !== activeTab?.id) {
         const ydoc = docsRef.current.get(item.fileId);

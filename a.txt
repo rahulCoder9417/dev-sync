@@ -27,3 +27,4 @@ Sends file events to Main Backend via WS
 Main Backend updates DB
 main Backend broadcasts UI updates
 Terminal changes become real DB changes and reflect in the UI.
+ 

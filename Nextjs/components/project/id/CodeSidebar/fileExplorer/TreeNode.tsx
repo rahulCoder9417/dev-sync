@@ -1,17 +1,18 @@
 // TreeNode.tsx
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight, ChevronDown, Folder, MoreHorizontal } from 'lucide-react';
 import { getFileIcon } from '@/lib/mainUtils/icons';
 import Collaborators from './Collaborators';
-import { FileNode, Tab } from '@/lib/types/types';
+import { FileNode, FileNodeWithChildren, Tab } from '@/lib/types/types';
 import InputBox from './InputBox';
 import ChnageAdmin from './ChnageAdmin';
 import { useAppSelector } from '@/lib/redux/hooks';
-import { shallowEqual } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { showToast } from '@/components/main/Toast';
+import { makeSelectNodesByIds } from '@/lib/redux/selector/childNodeSelector';
 // Minimal props — primitives to make shallow compare meaningful
 type Props = {
-  node: FileNode;
+  node: FileNodeWithChildren;
   parentDetails: { id: string, name: string, parentId: string | null } | null;
   depth: number;
   currParent: { id: string, name: string, parentId: string | null } | null;
@@ -27,7 +28,7 @@ type Props = {
   onToggle: (id: string) => void;
   setExpandedFolders: React.Dispatch<React.SetStateAction<Set<string>>>;
   actionHandler: (action: string, nodeId?: string, name?: string, oldName?: string) => void;
-  onSelect: (node: FileNode) => void;
+  onSelect: (node: FileNodeWithChildren) => void;
   errorMarkers: Record<string, boolean> | null;
   setIsFileAction: (action: { id: string, type: string } | null) => void;
   isFileAction: { id: string, type: string } | null;
@@ -47,6 +48,19 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
     state => state.collabCodeUser?.projects?.[projectId]?.[node.id] ?? [],
     shallowEqual
   );
+
+   const selectNodes = useMemo(makeSelectNodesByIds, []);
+  const nodeChildrenFilesIds = useAppSelector(
+    (state) => state.projectFile.map?.[node.id]?.fileChildren ?? []
+  );
+  const nodeChildrenFoldersIds = useAppSelector(
+    (state) => state.projectFile.map?.[node.id]?.folderChildren ?? []
+  );
+
+  const nodeChildrenFiles = useAppSelector((state) =>
+    selectNodes(state, nodeChildrenFilesIds ?? []))
+  const nodeChildrenFolders = useAppSelector((state) =>
+    selectNodes(state, nodeChildrenFoldersIds ?? []))
   useEffect(() => {
     if (!collaboratorsMap || collaboratorsMap.length === 0) return
     setIsUserAdmin(collaboratorsMap[0].userId === user && collaboratorsMap.length > 1)
@@ -59,14 +73,12 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
   }, [node, onSelect, onToggle, action]);
 
   const handleContext = useCallback((e: React.MouseEvent) => {
-
     if (action || !canMakeChanges) return
     onContextMenu(e, node.type, node.parentId ?? null, node.id, node.name, isUserAdmin);
   }, [onContextMenu, isUserAdmin, node]);
 
   const handactions = async (name: string) => {
-    await actionHandler(action!, node.id, name, node.name)
-    // action==="rename" && (node.name=name)
+    actionHandler(action!, node.id, name, node.name)
     setIsFileAction(null)
     setAction(null)
   }
@@ -133,26 +145,27 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
                 >
                   {node.type === 'folder' ? (
                     <>
-                      {(isExpanded) ? <ChevronDown className="w-4 h-4 text-secondary flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-secondary flex-shrink-0" />}
-                      <Folder className="w-4 h-4 text-brand flex-shrink-0" />
+                      {(isExpanded) ? <ChevronDown className="w-4 h-4 text-secondary shrink-0" /> : <ChevronRight className="w-4 h-4 text-secondary shrink-0" />}
+                      <Folder className="w-4 h-4 text-brand shrink-0" />
                     </>
                   ) : (
                     <>
-                      <div className="w-4 flex-shrink-0" />
-                      <span className="flex-shrink-0">{getFileIcon(node.name)}</span>
+                      <div className="w-4 shrink-0" />
+                      <span className="shrink-0">{getFileIcon(node.name)}</span>
                     </>
                   )}
 
                   <span className="text-primary truncate flex-1 min-w-0">{node.type === 'folder' ? node.name.slice(0, -1) : node.name}</span>
 
                   {(adminMenu && adminMenu === node.id) ?
-                    <div className="ml-auto flex-shrink-0">
+                    <div className="ml-auto shrink-0">
                       <ChnageAdmin projectId={projectId} fileId={node.id} setAction={setAction} sendMessage={sendMessage} setAdminMenu={setAdminMenu} />
                     </div>
                     :
-                    <div className="ml-auto flex-shrink-0">
-                      <Collaborators setBg={setbg} projectId={projectId} fileId={node.id} child={!isExpanded ? node.children : undefined} />
-                    </div>}
+                     (node.type === "file" || !isExpanded) && ( <div className="ml-auto shrink-0">
+                        <Collaborators setBg={setbg} projectId={projectId} fileId={node.id} />
+                      </div>)
+                      }
                 </div>
 
                 {canMakeChanges && <button
@@ -165,15 +178,42 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
             )
         }
       </div>
-      {node.type === 'folder' && (expandedFolders.has(node.id)) && node.children && (
+      {node.type === 'folder' && (expandedFolders.has(node.id)) && ( node.folderChildren || node.fileChildren) && (
         <div className={`relative ${currParent?.id === node.id && "bg-primary"} `}>
-          <span className="absolute top-0 h-full w-[1px] bg-[#292f52]" style={{ left: `${left}px` }} />
+          <span className="absolute top-0 h-full w-px bg-[#292f52]" style={{ left: `${left}px` }} />
           {
             (action === "file" || action === "folder") && (
               <InputBox id={node.id} type={action} Name={""} setAction={setAction} handleNameConfirm={(name: string) => handactions(name)} />
             )
           }
-          {node.children.map(child => (
+          {nodeChildrenFolders.map(child => (
+            <TreeNodeMemo
+              parentDetails={{ id: node.id, name: node.name, parentId: node.parentId }}
+              setExpandedFolders={setExpandedFolders}
+              currParent={currParent}
+              dragPos={dragPos}
+              setCurrParent={setCurrParent}
+              handleMouseDown={handleMouseDown}
+              handleMouseUp={handleMouseUp}
+              canMakeChanges={canMakeChanges}
+              key={child.id + child.name}
+              sendMessage={sendMessage}
+              node={child}
+              errorMarkers={errorMarkers}
+              adminMenu={adminMenu}
+              setAdminMenu={setAdminMenu}
+              expandedFolders={expandedFolders}
+              depth={depth + 1}
+              onToggle={onToggle}
+              actionHandler={actionHandler}
+              onSelect={onSelect}
+              setIsFileAction={setIsFileAction}
+              isFileAction={isFileAction}
+              onContextMenu={onContextMenu}
+              projectId={projectId}
+            />
+          ))}
+          {nodeChildrenFiles.map(child => (
             <TreeNodeMemo
               parentDetails={{ id: node.id, name: node.name, parentId: node.parentId }}
               setExpandedFolders={setExpandedFolders}
@@ -218,7 +258,9 @@ const propsAreEqual = (prev: Props, next: Props) => {
     && prev.dragPos === next.dragPos
     && prev.node.content === next.node.content
     && prev.adminMenu === next.adminMenu
-    && prev.node?.children === next.node?.children
+    && prev.node?.folderChildren === next.node?.folderChildren
+    && prev.node?.fileChildren === next.node?.fileChildren
+
     && prev.isFileAction?.id === next.isFileAction?.id
 };
 

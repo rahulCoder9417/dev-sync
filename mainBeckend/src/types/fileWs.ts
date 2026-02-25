@@ -15,7 +15,11 @@ export type FileNode = {
   parentId: string;
   children: string[];
 };
-
+export type FileNodeWithChildren = Omit<FileNode, 'children'> & {
+      fileChildren: string[];
+      ancestorIds:string[]
+      folderChildren: string[];
+    }
 export type CursorPosition = {
   line: number;
   column: number;
@@ -55,7 +59,7 @@ export type FileOpMessage = {
   type?: "create" | "rename";
   fileName: string;
   content?: string;
-  newNode?: FileNode;
+  newNode?: FileNodeWithChildren;
   fullName?: string;
   avatar?: string;
 };
@@ -183,7 +187,7 @@ export type FileOpBroadcast = {
   projectId: string;
   fileId: string;
   action: "create" | "rename";
-  newNode?: FileNode;
+  newNode?: FileNodeWithChildren;
   fileName?: string;
   fullName?: string;
   content?: string;

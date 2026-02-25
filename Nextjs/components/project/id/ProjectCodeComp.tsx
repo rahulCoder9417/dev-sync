@@ -5,7 +5,7 @@ import FileExplorer from '@/components/project/id/CodeSidebar/fileExplorer/FileE
 import CodeEditor from '@/components/project/id/CodeEditor';
 import { useRouter } from "next/navigation";
 
-import { ChatMessage, FileNode, OneOrNone, ProjectById, Tab, User } from '@/lib/types/types';
+import { ChatMessage, FileNode, FileNodeWithChildren, OneOrNone, ProjectById, Tab, User } from '@/lib/types/types';
 import Loader from '@/components/main/Loader';
 import useCollab from '@/customHooks/useCollab';
 import { DeleteToast } from './CodeSidebar/fileExplorer/DeleteToast';
@@ -171,7 +171,7 @@ export const ProjectCodeComp = ({ data }: { data: ProjectById["responseData"] })
     document.body.style.userSelect = '';
   };
 useEffect(() => {
-  if (data&& data.id)  dispatch(setInitialProjectFiles({ projectId: data?.id!, files: data?.files! }));
+  if (data&& data.id)  dispatch(setInitialProjectFiles({ projectId: data?.id,fileRoot:data?.fileRoots,folderRoot:data?.folderRoots,map:data?.map}));
 
   return () => {
     dispatch(deleteProjectFiles())

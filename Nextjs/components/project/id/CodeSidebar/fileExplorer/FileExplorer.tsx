@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import TreeNodeMemo from './TreeNode';
-import { Tab, FileNode } from '@/lib/types/types';
+import { Tab, FileNode, FileNodeWithChildren } from '@/lib/types/types';
 import { showToast } from '@/components/main/Toast';
 import InputBox from './InputBox';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
@@ -10,16 +10,14 @@ import { addFileOp, consumeFileOp } from '@/lib/redux/features/collabCodeFileOp'
 import { shallowEqual } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import cuid from "cuid";
-import { saveNode } from '@/lib/mainUtils/fileOp';
-import { renameNodeInTree, removeNodeFromTree, addNodeToTree } from '@/lib/mainUtils/treeOperations';
 import FileContextMenu from './FileContext';
-import { uploadToCloudinary } from '@/lib/mainUtils/cloudinary';
 import { getResourceType } from '@/lib/mainUtils/getResourseType';
-import { addFileNode, setNewProjectFiles } from '@/lib/redux/features/projectFileSlice';
+import { createNode, deleteNode, renameNode, saveContent, } from '@/lib/redux/features/projectFileSlice';
 import { createPortal } from 'react-dom';
 import { getFileIcon } from '@/lib/mainUtils/icons';
 import { number } from 'zod';
 import ConfirmDialog from '@/components/main/ConfirmationModal';
+import { createNodeWithAncestors } from '@/lib/redux/thunk/createNodeThunk';
 export const fileApiService = {
   async renameFile(nodeId: string, newName: string) {
     const res = await fetch(`/api/projects/fileItem/rename`, {
@@ -76,7 +74,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   projectId,
   setTabs,
 }) => {
-  const files = useAppSelector(state => state.projectFile.files, shallowEqual);
+  const folderRoots = useAppSelector(state => state.projectFile.folderRoot, shallowEqual);
+
+  const filesRoot = useAppSelector(state => state.projectFile.fileRoot, shallowEqual);
   const [rootAction, setrootAction] = useState<{ type: string } | null>(null);
   const userInfo = useAppSelector(state => state.user, shallowEqual);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -134,7 +134,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
   const handleCreate = async (type: string, nodeId: string, name: string) => {
     let id = cuid();
-    let newNode = {
+    let newNode: FileNodeWithChildren & { projectId: string, createdAt: string, updatedAt: string } = {
       id,
       name,
       type: type as "file" | "folder",
@@ -143,14 +143,18 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       content: "",
       createdAt: "",
       updatedAt: "",
-      children: []
+      fileChildren: [],
+      folderChildren: [],
+      ancestorIds: [],
     };
 
     if (nodeId === null) {
-      dispatch(addFileNode(newNode))
-      setrootAction(null);
+      setTimeout(() => {
+        dispatch(createNode({ newNode }));
+        setrootAction(null);
+      }, 0);
     } else {
-      dispatch(addFileOp({
+      dispatch(createNodeWithAncestors({
         type: "create",
         name: name,
         id: nodeId,
@@ -161,10 +165,18 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
     try {
       const res = await fileApiService.createFile(id, type, name, projectId, nodeId);
+      const { children, ...rest } = res.data;
+
+      const newObj = {
+        ...rest,
+        fileChildren: [],
+        folderChildren: [],
+        ancestorIds: [],
+      };
       sendMessage("fileOp", projectId, nodeId, {
         type: "create",
         fileName: name,
-        newNode: res.data
+        newNode: newObj
       });
     } catch (error: any) {
       showToast(false, "Error creating node -> " + error.message, "Node removed");
@@ -181,7 +193,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     action: string,
     nodeId?: string | null,
     name?: string,
-    oldName?: string
+    oldName?: string,
   ) => {
     if (!canMakeChanges) return;
     let id;
@@ -201,7 +213,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     return id
   }, [canMakeChanges]);
 
-  const handleSelect = useCallback((node: FileNode) => {
+  const handleSelect = useCallback((node: FileNodeWithChildren) => {
     onFileSelect(node);
   }, [onFileSelect]);
 
@@ -256,7 +268,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         content: `Upload failed: ${uploadRes.error}`,
       };
     }
-    const id = await actionHandler("file", nodeId!, obj.path)
+    const id = await actionHandler("file", nodeId!, obj.path, undefined,)
     if (!id) {
       showToast(false, "Error making file  ", "Please do a refresh");
       return
@@ -291,29 +303,28 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   useEffect(() => {
     if (!fileOp || Object.keys(fileOp)?.length === 0) return;
 
-    let newTree = files;
     fileOp?.forEach((item: any) => {
       switch (item.type) {
         case "rename":
-          newTree = renameNodeInTree(newTree, item.id, item.name!, tabs);
+          dispatch(renameNode({ newName: item.name, nodeId: item.id }));
           break;
         case "create":
-          newTree = addNodeToTree(newTree, item.id, item.newNode);
+          dispatch(createNode({ newNode: item.newNode }));
           break;
         case "delete":
           onTabClose(item.id);
-          newTree = removeNodeFromTree(newTree, item.id)[0];
+          dispatch(deleteNode({ nodeId: item.id }));
           break;
         case "save":
           setTabs(prev => prev.map(t =>
             t.id === item.id ? { ...t, content: item.content, isDirty: false } : t
           ));
-          newTree = saveNode(newTree, item.id, item.content!);
+          dispatch(saveContent({ id: item.id, content: item.content }));
           break;
         default:
           break;
       }
-      dispatch(setNewProjectFiles(newTree));
+      // dispatch(setNewProjectFiles(newTree));
       dispatch(consumeFileOp({ projectId }));
       setIsFileAction({ id: item.id, type: "" });
     });
@@ -340,21 +351,21 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     };
   }, [contextMenu]);
   //mouse drag for while
-  const [currParent, setCurrParent] = useState<{ id: string, name: string, parentId: string | null } | null>(null) 
-  const [dragPos, setDragPos] = useState<{ x: number; y: number,parentId:string | null, name: string ,id:string}>({ id:"",x: 0, y: 0, name: "",parentId:"" });
+  const [currParent, setCurrParent] = useState<{ id: string, name: string, parentId: string | null } | null>(null)
+  const [dragPos, setDragPos] = useState<{ x: number; y: number, parentId: string | null, name: string, id: string }>({ id: "", x: 0, y: 0, name: "", parentId: "" });
   const mouseDownRef = React.useRef<boolean>(false);
-  const [confirmModal, setConfirmModal] =useState<{ folderId: string,changePathId:string,changePathName:string,changePathParentId:string | null, folderName: string, folderParentId: string | null } | null>(null)
+  const [confirmModal, setConfirmModal] = useState<{ folderId: string, changePathId: string, changePathName: string, changePathParentId: string | null, folderName: string, folderParentId: string | null } | null>(null)
 
-  function handleMouseDown(name: string,id:string,parentId:string|null) {
+  function handleMouseDown(name: string, id: string, parentId: string | null) {
     mouseDownRef.current = true;
-    setDragPos({ x: 0, y: 0, name,id, parentId});
+    setDragPos({ x: 0, y: 0, name, id, parentId });
   }
 
   function handleMouseUp() {
-    if (currParent) setConfirmModal({folderId: currParent.id,changePathId:dragPos.id,changePathName:dragPos.name,changePathParentId:dragPos.parentId, folderName: currParent.name, folderParentId: currParent.parentId })
-      mouseDownRef.current = false;
-      setCurrParent(null)
-      setDragPos({ x: 0, y: 0, name: "",id:"" ,parentId:""});
+    if (currParent && dragPos.name !== currParent.name) setConfirmModal({ folderId: currParent.id, changePathId: dragPos.id, changePathName: dragPos.name, changePathParentId: dragPos.parentId, folderName: currParent.name, folderParentId: currParent.parentId })
+    mouseDownRef.current = false;
+    setCurrParent(null)
+    setDragPos({ x: 0, y: 0, name: "", id: "", parentId: "" });
   }
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -374,7 +385,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
   return (
     <div className="bg-secondary border-r border-primary h-full flex flex-col">
-      {confirmModal && <ConfirmDialog message={`Are you sure you want to move ${confirmModal.changePathName} to ${confirmModal?.folderName }?`} onAccept={() => { setConfirmModal(null) }} onCancel={() => { setConfirmModal(null) }} />}
+      {confirmModal && <ConfirmDialog message={`Are you sure you want to move ${confirmModal.changePathName} to ${confirmModal?.folderName}?`} onAccept={() => { setConfirmModal(null) }} onCancel={() => { setConfirmModal(null) }} />}
       <div className="flex items-center justify-between p-3 border-b border-primary">
         {/* to take input for resourse */}
         <input
@@ -414,7 +425,35 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             handleNameConfirm={(name: string) => actionHandler(rootAction.type, null, name)}
           />
         )}
-        {files?.map(node => (
+
+        {folderRoots?.map(node => (
+          <TreeNodeMemo
+            currParent={currParent}
+            dragPos={dragPos}
+            setCurrParent={setCurrParent}
+            handleMouseDown={handleMouseDown}
+            handleMouseUp={handleMouseUp}
+            sendMessage={sendMessage}
+            key={node.id}
+            node={node}
+            parentDetails={null}
+            expandedFolders={expandedFolders}
+            setExpandedFolders={setExpandedFolders}
+            canMakeChanges={canMakeChanges}
+            depth={0}
+            errorMarkers={errorMarkers}
+            onToggle={toggleFolder}
+            setIsFileAction={setIsFileAction}
+            isFileAction={isFileAction}
+            onSelect={handleSelect}
+            adminMenu={adminMenu}
+            setAdminMenu={setAdminMenu}
+            actionHandler={actionHandler}
+            onContextMenu={handleContextMenu}
+            projectId={projectId}
+          />
+        ))}
+        {filesRoot?.map(node => (
           <TreeNodeMemo
             currParent={currParent}
             dragPos={dragPos}

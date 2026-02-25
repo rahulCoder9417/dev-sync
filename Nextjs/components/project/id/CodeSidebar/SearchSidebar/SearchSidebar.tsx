@@ -1,23 +1,18 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import SearchHeader from './SearchHeader'
 import SearchNodeTable from './SearchNodeTable'
 import { useAppSelector } from '@/lib/redux/hooks'
 import { SearchData } from './SearchNode'
-import { FileNode } from '@/lib/types/types'
+import { FileNode, FileNodeWithChildren } from '@/lib/types/types'
 
 const SearchSidebar = ({handleFileSelect}: {handleFileSelect: (file: FileNode) => void}) => {
   const [searchValue, setSearchValue] = useState<string>("")
   const [searchData, setSearchData] = useState<SearchData[]>([])
-  let files: FileNode[] = useAppSelector((state) => state.projectFile.files)
+  let map: Record<string, FileNodeWithChildren>|undefined = useAppSelector((state) => state.projectFile.map)
+  let fileRoot = useAppSelector((state)=>state.projectFile.fileRoot)
+  let folderRoot = useAppSelector((state)=>state.projectFile.folderRoot)
 
-  const recursiveSearch = (file: FileNode, searchVal: string, parentPath: string) => {
-    if (file.type === "folder" ) {
-      file.children?.forEach(child => {
-        recursiveSearch(child, searchVal, parentPath + file.name )
-      })
-    }
-    
-    if(file.type==="folder") return
+  const fileSearch = (file:FileNodeWithChildren,searchVal:string,parentPath:string)=>{
     const contentToLower =file.content?.toLowerCase()
     if(!contentToLower || !contentToLower.includes(searchVal))return
     const lines = contentToLower.split("\n");
@@ -27,17 +22,35 @@ const SearchSidebar = ({handleFileSelect}: {handleFileSelect: (file: FileNode) =
     setSearchData((p: SearchData[]) => [...p, { fileName: file.name,parentId:file.parentId,id:file.id, path: parentPath + file.name,content:file.content, line: mastchedLines }])
   }
 
-  const searchFile = (file: FileNode[]) => {
-    if (searchValue === "") return
-    for (const i of file) {
-      recursiveSearch(i,searchValue.toLowerCase(),"")
+  const folderRecSearch = (file: FileNodeWithChildren, searchVal: string, parentPath: string) => {
+       if(file.folderChildren.length>0){
+        file.folderChildren.forEach((i)=>{
+          let fileNode = map?.[i]
+          if(!fileNode)return
+          folderRecSearch(fileNode,searchVal,parentPath+file.name)
+        })
+       }
+       file.fileChildren.forEach((i)=>{
+        let fileNode = map?.[i]
+        if(!fileNode)return
+        fileSearch(fileNode,searchVal,parentPath+file.name)
+       })
     }
-  }
+
+  const searchFile = useCallback((fileRoot: FileNodeWithChildren[] | undefined,folderRoot:FileNodeWithChildren[] | undefined) => {
+    if (searchValue === "") return
+    let newS = searchValue.toLowerCase()
+    fileRoot?.forEach((i)=>{
+      fileSearch(i,newS,"")
+    })
+    folderRoot?.forEach(i => {
+      folderRecSearch(i,newS,"")
+    });
+  },[searchValue])
 
   useEffect(() => {
     setSearchData([])
-    searchFile(files)
-   
+    searchFile(fileRoot,folderRoot)
   }, [searchValue])
 
   return (
