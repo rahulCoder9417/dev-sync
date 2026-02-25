@@ -10,12 +10,9 @@ import { addFileOp, consumeFileOp } from '@/lib/redux/features/collabCodeFileOp'
 import { shallowEqual } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import cuid from "cuid";
-import { saveNode } from '@/lib/mainUtils/fileOp';
-import { renameNodeInTree, removeNodeFromTree, addNodeToTree } from '@/lib/mainUtils/treeOperations';
 import FileContextMenu from './FileContext';
-import { uploadToCloudinary } from '@/lib/mainUtils/cloudinary';
 import { getResourceType } from '@/lib/mainUtils/getResourseType';
-import { createNode, deleteNode, renameNode, } from '@/lib/redux/features/projectFileSlice';
+import { createNode, deleteNode, renameNode, saveContent, } from '@/lib/redux/features/projectFileSlice';
 import { createPortal } from 'react-dom';
 import { getFileIcon } from '@/lib/mainUtils/icons';
 import { number } from 'zod';
@@ -325,7 +322,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           setTabs(prev => prev.map(t =>
             t.id === item.id ? { ...t, content: item.content, isDirty: false } : t
           ));
-          newTree = saveNode(newTree, item.id, item.content!);
+          dispatch(saveContent({ id: item.id, content: item.content }));
           break;
         default:
           break;

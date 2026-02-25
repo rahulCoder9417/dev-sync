@@ -5,18 +5,8 @@ import { Tab, FileNode } from '@/lib/types/types';
 import { showToast } from "@/components/main/Toast";
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { shallowEqual } from 'react-redux';
+import { saveContent } from '@/lib/redux/features/projectFileSlice';
 
-export const saveNode = (tree: any, nodeId: string, content: string) => {
-  return tree.map((node: any) => {
-    if (node.id === nodeId) {
-      return { ...node, content };
-    }
-    if (node.children) {
-      return { ...node, children: saveNode(node.children, nodeId, content) };
-    }
-    return node;
-  });
-};
 
 export const useEditorSave = (
   docRef: React.MutableRefObject<Y.Doc>,
@@ -38,7 +28,7 @@ export const useEditorSave = (
       setTabs(prev => prev.map(t =>
         t.id === tab.id ? { ...t, content: newContent, isDirty: false } : t
       ));
-     // dispatch(setNewProjectFiles(saveNode(files, tab.id, newContent)));
+     dispatch(saveContent({ id: tab.id, content: newContent }));
       const res: any = await fetch(`/api/projects/fileItem/updateContent`, {
         method: 'PUT',
         headers: {

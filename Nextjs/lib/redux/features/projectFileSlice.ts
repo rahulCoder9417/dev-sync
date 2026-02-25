@@ -97,11 +97,11 @@ const fileNodeSlice = createSlice({
       if (!state.map) return;
       const newNode = action.payload.newNode;
       if (!newNode) return;
-      
-      if(!newNode.ancestorIds)  newNode.ancestorIds = [];
-      if(!newNode.fileChildren) newNode.fileChildren = [];
-      if(!newNode.folderChildren) newNode.folderChildren = [];
-      
+
+      if (!newNode.ancestorIds) newNode.ancestorIds = [];
+      if (!newNode.fileChildren) newNode.fileChildren = [];
+      if (!newNode.folderChildren) newNode.folderChildren = [];
+
       state.map[newNode.id] = newNode;
 
       if (newNode.parentId === null) {
@@ -117,14 +117,28 @@ const fileNodeSlice = createSlice({
       if (!parent) return;
 
       if (newNode.type === "file") {
-       if (!parent.fileChildren ) parent.fileChildren = [];
+        if (!parent.fileChildren) parent.fileChildren = [];
         parent.fileChildren.push(newNode.id);
       } else {
-        if (!parent.folderChildren ) parent.folderChildren = [];
+        if (!parent.folderChildren) parent.folderChildren = [];
         parent.folderChildren.push(newNode.id);
       }
     },
-    
+    saveContent(state, action: { payload: { id: string; content: string } }) {
+      if (!state.map) return;
+      state.map[action.payload.id].content = action.payload.content;
+      if (state.map[action.payload.id].parentId === null)
+        state.fileRoot = state.fileRoot?.map((i) => {
+          if (i.id === action.payload.id) {
+            return {
+              ...i,
+              content: action.payload.content,
+            };
+          } else {
+            return i;
+          }
+        });
+    },
   },
 });
 export default fileNodeSlice.reducer;
@@ -134,4 +148,5 @@ export const {
   renameNode,
   createNode,
   deleteNode,
+  saveContent
 } = fileNodeSlice.actions;
