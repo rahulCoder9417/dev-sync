@@ -78,7 +78,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
   }, [onContextMenu, isUserAdmin, node]);
 
   const handactions = async (name: string) => {
-    await actionHandler(action!, node.id, name, node.name)
+    actionHandler(action!, node.id, name, node.name)
     setIsFileAction(null)
     setAction(null)
   }
