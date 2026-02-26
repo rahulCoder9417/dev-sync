@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import cuid from "cuid";
 import FileContextMenu from './FileContext';
 import { getResourceType } from '@/lib/mainUtils/getResourseType';
-import { createNode, deleteNode, renameNode, saveContent, } from '@/lib/redux/features/projectFileSlice';
+import { createNode, deleteNode, moveNode, renameNode, saveContent, } from '@/lib/redux/features/projectFileSlice';
 import { createPortal } from 'react-dom';
 import { getFileIcon } from '@/lib/mainUtils/icons';
 import { number } from 'zod';
@@ -362,7 +362,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   }
 
   function handleMouseUp() {
-    if (currParent && dragPos.name !== currParent.name) setConfirmModal({ folderId: currParent.id, changePathId: dragPos.id, changePathName: dragPos.name, changePathParentId: dragPos.parentId, folderName: currParent.name, folderParentId: currParent.parentId })
+    if (currParent && (dragPos.parentId !== currParent.id)) setConfirmModal({ folderId: currParent.id, changePathId: dragPos.id, changePathName: dragPos.name, changePathParentId: dragPos.parentId, folderName: currParent.name, folderParentId: currParent.parentId })
     mouseDownRef.current = false;
     setCurrParent(null)
     setDragPos({ x: 0, y: 0, name: "", id: "", parentId: "" });
@@ -385,7 +385,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
   return (
     <div className="bg-secondary border-r border-primary h-full flex flex-col">
-      {confirmModal && <ConfirmDialog message={`Are you sure you want to move ${confirmModal.changePathName} to ${confirmModal?.folderName}?`} onAccept={() => { setConfirmModal(null) }} onCancel={() => { setConfirmModal(null) }} />}
+      {confirmModal && <ConfirmDialog message={`Are you sure you want to move ${confirmModal.changePathName} to ${confirmModal?.folderName}?`} onAccept={() => { dispatch(moveNode({nodeId: confirmModal.changePathId, newParentId: confirmModal.folderId}));setConfirmModal(null) }} onCancel={() => { setConfirmModal(null) }} />}
       <div className="flex items-center justify-between p-3 border-b border-primary">
         {/* to take input for resourse */}
         <input
