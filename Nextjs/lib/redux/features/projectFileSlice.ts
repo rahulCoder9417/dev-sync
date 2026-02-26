@@ -8,7 +8,12 @@ interface ProjectFilesState {
   map: Record<string, FileNodeWithChildren>;
 }
 const initialState: ProjectFilesState = {} as ProjectFilesState; //only one projectId at a time
+const changeParentChildrenForMove = (map:Record<string, FileNodeWithChildren>,node:FileNodeWithChildren,newParentId:string | null)=>{
+  map[node.id].parentId = newParentId;
+  
+  if(node.type==="file")return
 
+}
 const fileNodeSlice = createSlice({
   name: "projectFiles",
   initialState,
@@ -139,6 +144,19 @@ const fileNodeSlice = createSlice({
           }
         });
     },
+    moveNode(state,action:{payload:{nodeId:string,newParentId:string | null}}){
+      let node =  state.map[action.payload.nodeId]
+      if(!node || node.parentId === action.payload.newParentId) return;
+      if(action.payload.newParentId === null){
+        if(node.type === "file"){
+          state.fileRoot?.push(node)
+        }else{
+          state.folderRoot?.push(node)
+
+        }
+      }
+      
+    }
   },
 });
 export default fileNodeSlice.reducer;

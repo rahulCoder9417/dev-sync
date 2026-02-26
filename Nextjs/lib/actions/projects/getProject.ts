@@ -3,6 +3,7 @@
 
 import db from "@/lib/db/prisma";
 import { middleWare } from "@/lib/mainUtils/beckendMiddleWare";
+import { createComputeAncestors } from "@/lib/mainUtils/treeOperations";
 import { Project } from "@/lib/types/projects";
 import { FileNode, FileNodeWithChildren } from "@/lib/types/types";
 function formatDate(date: Date) {
@@ -260,22 +261,7 @@ export const getProjectById = async (projectId: string) => {
           }
         }
       }
-      const computeAncestors = (
-        node: FileNodeWithChildren,
-        parentAncestors: string[],
-      ) => {
-        node.ancestorIds = parentAncestors;
-
-        const nextAncestors = [...parentAncestors, node.id];
-
-        for (const childId of node?.folderChildren || []) {
-          computeAncestors(map[childId], nextAncestors);
-        }
-
-        for (const childId of node?.fileChildren || []) {
-          computeAncestors(map[childId], nextAncestors);
-        }
-      };
+     const computeAncestors = createComputeAncestors(map);
 
       // Run for all roots
       for (const root of folderRoots) {
