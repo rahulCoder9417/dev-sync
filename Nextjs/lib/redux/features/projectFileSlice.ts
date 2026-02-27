@@ -181,8 +181,7 @@ const fileNodeSlice = createSlice({
         state.fileRoot = state.fileRoot.filter((n) => n.id !== nodeId);
         state.folderRoot = state.folderRoot.filter((n) => n.id !== nodeId);
       }
-
-      if (newParentId === null) {
+      if (newParentId === null || newParentId === "root") {
         if (node.type === "file") {
           state.fileRoot.push(node);
         } else {
@@ -202,7 +201,7 @@ const fileNodeSlice = createSlice({
       node.parentId = newParentId;
 
       const computeAncestors = createComputeAncestors(state.map);
-      const newAncestors = newParentId
+      const newAncestors = (newParentId && newParentId !== "root")
         ? [...state.map[newParentId].ancestorIds, newParentId]
         : [];
 

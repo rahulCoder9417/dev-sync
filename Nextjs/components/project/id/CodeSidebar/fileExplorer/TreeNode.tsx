@@ -124,7 +124,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
                         }, 1000);
                       }
                     } else {
-                      if ( (currParent?.id != node.parentId)) {
+                      if ( (currParent?.id !== node.parentId)) {
                         setCurrParent({ id: node.parentId || "root", parentId: parentDetails?.parentId || null, name: parentDetails?.name || "root" })
                       }
                     }
@@ -180,7 +180,7 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
       </div>
       {node.type === 'folder' && (expandedFolders.has(node.id)) && ( node.folderChildren || node.fileChildren) && (
         <div className={`relative ${currParent?.id === node.id && "bg-primary"} `}>
-          <span className="absolute top-0 h-full w-px bg-[#292f52]" style={{ left: `${left}px` }} />
+          <span className="absolute z-999 top-0 h-full w-px bg-[#292f52]" style={{ left: `${left}px` }} />
           {
             (action === "file" || action === "folder") && (
               <InputBox id={node.id} type={action} Name={""} setAction={setAction} handleNameConfirm={(name: string) => handactions(name)} />
