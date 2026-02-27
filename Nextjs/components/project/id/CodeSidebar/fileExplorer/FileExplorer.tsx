@@ -12,12 +12,13 @@ import { Button } from '@/components/ui/button';
 import cuid from "cuid";
 import FileContextMenu from './FileContext';
 import { getResourceType } from '@/lib/mainUtils/getResourseType';
-import { createNode, deleteNode, moveNode, renameNode, saveContent, } from '@/lib/redux/features/projectFileSlice';
+import { createNode, deleteNode, renameNode, saveContent, } from '@/lib/redux/features/projectFileSlice';
 import { createPortal } from 'react-dom';
 import { getFileIcon } from '@/lib/mainUtils/icons';
 import { number } from 'zod';
 import ConfirmDialog from '@/components/main/ConfirmationModal';
 import { createNodeWithAncestors } from '@/lib/redux/thunk/createNodeThunk';
+import { moveNode } from '@/lib/redux/thunk/moveFileThunk';
 export const fileApiService = {
   async renameFile(nodeId: string, newName: string) {
     const res = await fetch(`/api/projects/fileItem/rename`, {
@@ -371,10 +372,15 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     setDragPos({ x: 0, y: 0, name: "", id: "", parentId: "" });
   }, [currParent, dragPos])
 
-  const handleMoveFile = useCallback((nodeId: string, newParentId: string | null) => {
-    dispatch(moveNode({ nodeId, newParentId }));
+  const handleMoveFile = useCallback(async (nodeId: string, newParentId: string | null) => {
     setConfirmModal(null)
-    sendMessage("fileMove",projectId,"",{moveId:nodeId,moveToId:newParentId})
+    const result = await dispatch(moveNode({ nodeId, newParentId }));
+    if (moveNode.fulfilled.match(result)) {
+      sendMessage("fileMove", projectId, "", { moveId: nodeId, moveToId: newParentId })
+    } else {
+      showToast(false, result.payload as string);
+      return
+    }
   }, [])
 
   useEffect(() => {
@@ -382,8 +388,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       if (!mouseDownRef.current) return
       setDragPos((prev) => ({ ...prev, x: e.clientX + 12, y: e.clientY + 12 }))
     };
-
-
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp)
 

@@ -17,7 +17,7 @@ import { parseRoomKey, makeRoomKey } from "@/lib/mainUtils/roomParser";
 import { ServerPayload, UserInfo } from "@/lib/types/usCollabPayload";
 import { updatePresenceWithAncestors } from "@/lib/redux/thunk/updatePrescenseThunk";
 import { createNodeWithAncestors } from "@/lib/redux/thunk/createNodeThunk";
-import { moveNode } from "@/lib/redux/features/projectFileSlice";
+import { moveNode } from "@/lib/redux/thunk/moveFileThunk";
 
 export type ClientMessage =
   | { action: "join"; projectId: string; fileId?: string | null }

@@ -151,62 +151,60 @@ const fileNodeSlice = createSlice({
           }
         });
     },
-    moveNode(
-      state,
-      action: { payload: { nodeId: string; newParentId: string | null } },
-    ) {
-      const { nodeId, newParentId } = action.payload;
-      const node = state.map[nodeId];
-      if (!node) return;
+   _moveNodeInternal(
+  state,
+  action: { payload: { nodeId: string; newParentId: string | null } },
+) {
+  const { nodeId, newParentId } = action.payload;
+  const node = state.map[nodeId];
+  if (!node) return;
 
-      if (nodeId === newParentId) return;
+  const oldParentId = node.parentId;
 
-      if (newParentId && node.ancestorIds.includes(newParentId)) return;
+  if (oldParentId) {
+    const oldParent = state.map[oldParentId];
+    if (oldParent) {
+      oldParent.fileChildren = oldParent.fileChildren.filter(
+        (id) => id !== nodeId,
+      );
+      oldParent.folderChildren = oldParent.folderChildren.filter(
+        (id) => id !== nodeId,
+      );
+    }
+  }
 
-      const oldParentId = node.parentId;
+  if (oldParentId === null) {
+    state.fileRoot = state.fileRoot.filter((n) => n.id !== nodeId);
+    state.folderRoot = state.folderRoot.filter((n) => n.id !== nodeId);
+  }
 
-      if (oldParentId) {
-        const oldParent = state.map[oldParentId];
-        if (oldParent) {
-          oldParent.fileChildren = oldParent.fileChildren.filter(
-            (id) => id !== nodeId,
-          );
-          oldParent.folderChildren = oldParent.folderChildren.filter(
-            (id) => id !== nodeId,
-          );
-        }
-      }
+  if (newParentId === null || newParentId === "root") {
+    if (node.type === "file") {
+      state.fileRoot.push(node);
+    } else {
+      state.folderRoot.push(node);
+    }
+  } else {
+    const newParent = state.map[newParentId];
+    if (!newParent) return;
 
-      if (oldParentId === null) {
-        state.fileRoot = state.fileRoot.filter((n) => n.id !== nodeId);
-        state.folderRoot = state.folderRoot.filter((n) => n.id !== nodeId);
-      }
-      if (newParentId === null || newParentId === "root") {
-        if (node.type === "file") {
-          state.fileRoot.push(node);
-        } else {
-          state.folderRoot.push(node);
-        }
-      } else {
-        const newParent = state.map[newParentId];
-        if (!newParent || newParent.type !== "folder") return;
+    if (node.type === "file") {
+      newParent.fileChildren.push(nodeId);
+    } else {
+      newParent.folderChildren.push(nodeId);
+    }
+  }
 
-        if (node.type === "file") {
-          newParent.fileChildren.push(nodeId);
-        } else {
-          newParent.folderChildren.push(nodeId);
-        }
-      }
+  node.parentId = newParentId;
 
-      node.parentId = newParentId;
+  const computeAncestors = createComputeAncestors(state.map);
+  const newAncestors =
+    newParentId && newParentId !== "root"
+      ? [...state.map[newParentId].ancestorIds, newParentId]
+      : [];
 
-      const computeAncestors = createComputeAncestors(state.map);
-      const newAncestors = (newParentId && newParentId !== "root")
-        ? [...state.map[newParentId].ancestorIds, newParentId]
-        : [];
-
-      computeAncestors(node, newAncestors);
-    },
+  computeAncestors(node, newAncestors);
+},
   },
 });
 export default fileNodeSlice.reducer;
@@ -217,5 +215,5 @@ export const {
   createNode,
   deleteNode,
   saveContent,
-  moveNode,
+  _moveNodeInternal,
 } = fileNodeSlice.actions;
