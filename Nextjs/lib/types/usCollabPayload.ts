@@ -160,8 +160,16 @@ export type UserJoinedBroadcast = {
     message: string;
     fileName: string;
   };
+  export type FileMove = {
+  type: "fileMove";
+  projectId: string;
+  moveId: string;
+  moveToId: string | null;
+  from: UserInfo;
+};
   
   export type ServerPayload =
+    | FileMove
     | UserJoinedBroadcast
     | YouJoinedBroadcast
     | UserLeftBroadcast

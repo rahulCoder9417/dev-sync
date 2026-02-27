@@ -356,17 +356,27 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   const mouseDownRef = React.useRef<boolean>(false);
   const [confirmModal, setConfirmModal] = useState<{ folderId: string, changePathId: string, changePathName: string, changePathParentId: string | null, folderName: string, folderParentId: string | null } | null>(null)
 
-  function handleMouseDown(name: string, id: string, parentId: string | null) {
-    mouseDownRef.current = true;
-    setDragPos({ x: 0, y: 0, name, id, parentId });
-  }
+  const handleMouseDown = useCallback(
+    (name: string, id: string, parentId: string | null) => {
+      mouseDownRef.current = true;
+      setDragPos({ x: 0, y: 0, name, id, parentId });
+    }
+    , [mouseDownRef.current]
+  )
 
-  function handleMouseUp() {
+  const handleMouseUp = useCallback(() => {
     if (currParent && (dragPos.parentId !== currParent.id)) setConfirmModal({ folderId: currParent.id, changePathId: dragPos.id, changePathName: dragPos.name, changePathParentId: dragPos.parentId, folderName: currParent.name, folderParentId: currParent.parentId })
     mouseDownRef.current = false;
     setCurrParent(null)
     setDragPos({ x: 0, y: 0, name: "", id: "", parentId: "" });
-  }
+  }, [currParent, dragPos])
+
+  const handleMoveFile = useCallback((nodeId: string, newParentId: string | null) => {
+    dispatch(moveNode({ nodeId, newParentId }));
+    setConfirmModal(null)
+    sendMessage("fileMove",projectId,"",{moveId:nodeId,moveToId:newParentId})
+  }, [])
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!mouseDownRef.current) return
@@ -385,7 +395,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
   return (
     <div className="bg-secondary border-r border-primary h-full flex flex-col">
-      {confirmModal && <ConfirmDialog message={`Are you sure you want to move ${confirmModal.changePathName} to ${confirmModal?.folderName}?`} onAccept={() => { dispatch(moveNode({nodeId: confirmModal.changePathId, newParentId: confirmModal.folderId}));setConfirmModal(null) }} onCancel={() => { setConfirmModal(null) }} />}
+      {confirmModal && <ConfirmDialog message={`Are you sure you want to move ${confirmModal.changePathName} to ${confirmModal?.folderName}?`} onAccept={() => handleMoveFile(confirmModal.changePathId, confirmModal.folderId)} onCancel={() => { setConfirmModal(null) }} />}
       <div className="flex items-center justify-between p-3 border-b border-primary">
         {/* to take input for resourse */}
         <input
