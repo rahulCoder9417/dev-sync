@@ -50,7 +50,22 @@ export const fileApiService = {
       throw new Error(res.error);
     }
     return res;
-  }
+  },
+
+  async moveFile(
+    moveId: string,
+    moveToId: string | null
+  ) {
+    const res = await fetch(`/api/projects/fileItem/move`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ moveId, moveToId:((moveId && moveToId!=="root") ? moveToId : null) }),
+    }).then(res => res.json());
+    if (res.success !== true) {
+      throw new Error(res.error);
+    }
+    return res;
+  },
 };
 interface FileExplorerProps {
   canMakeChanges: boolean;
@@ -372,11 +387,20 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     setDragPos({ x: 0, y: 0, name: "", id: "", parentId: "" });
   }, [currParent, dragPos])
 
-  const handleMoveFile = useCallback(async (nodeId: string, newParentId: string | null) => {
+  const handleMoveFile = useCallback(async (nodeId: string, newParentId: string | null , oldParentId: string | null) => {
     setConfirmModal(null)
     const result = await dispatch(moveNode({ nodeId, newParentId }));
     if (moveNode.fulfilled.match(result)) {
-      sendMessage("fileMove", projectId, "", { moveId: nodeId, moveToId: newParentId })
+      try {
+        const res = await fileApiService.moveFile(nodeId, newParentId)
+        showToast(true, "File moved successfully");
+        if (res.success !== true) throw new Error(res.error)
+        sendMessage("fileMove", projectId, "", { moveId: nodeId, moveToId: newParentId })
+      } catch (error) {
+        showToast(false, "Error moving file  -> " + error, "Please do a refresh");
+        const result = await dispatch(moveNode({ nodeId, newParentId: oldParentId }));
+        return
+      }
     } else {
       showToast(false, result.payload as string);
       return
@@ -399,7 +423,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
   return (
     <div className="bg-secondary border-r border-primary h-full flex flex-col">
-      {confirmModal && <ConfirmDialog message={`Are you sure you want to move ${confirmModal.changePathName} to ${confirmModal?.folderName}?`} onAccept={() => handleMoveFile(confirmModal.changePathId, confirmModal.folderId)} onCancel={() => { setConfirmModal(null) }} />}
+      {confirmModal && <ConfirmDialog message={`Are you sure you want to move ${confirmModal.changePathName} to ${confirmModal?.folderName}?`} onAccept={() => handleMoveFile(confirmModal.changePathId, confirmModal.folderId,dragPos.parentId)} onCancel={() => { setConfirmModal(null) }} />}
       <div className="flex items-center justify-between p-3 border-b border-primary">
         {/* to take input for resourse */}
         <input
