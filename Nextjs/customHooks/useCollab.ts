@@ -17,6 +17,7 @@ import { parseRoomKey, makeRoomKey } from "@/lib/mainUtils/roomParser";
 import { ServerPayload, UserInfo } from "@/lib/types/usCollabPayload";
 import { updatePresenceWithAncestors } from "@/lib/redux/thunk/updatePrescenseThunk";
 import { createNodeWithAncestors } from "@/lib/redux/thunk/createNodeThunk";
+import { moveNode } from "@/lib/redux/thunk/moveFileThunk";
 
 export type ClientMessage =
   | { action: "join"; projectId: string; fileId?: string | null }
@@ -213,6 +214,14 @@ export default function useCollab(opts: UseCollabOptions = {}) {
               }
 
               break;
+            case "fileMove":
+              showToast(
+                true,
+                " File moved done by ->" +
+                  payload.from.fullName
+              );
+              dispatch(moveNode({ nodeId: payload.moveId, newParentId: payload.moveToId }));
+              break
             case "user_joined":
               // tell user joined
               dispatch(

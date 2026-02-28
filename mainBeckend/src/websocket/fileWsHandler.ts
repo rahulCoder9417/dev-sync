@@ -3,7 +3,7 @@ import {  BaseWsHandler } from "./baseWsHandler.js";
 import { deleteFileOrFolder } from "../lib/action/fileitem/deleteFile.js";
 import RoomManager from "../utils/roomManagerFile.js";
 import makeRoomId from "../utils/makeRoomId.js";
-import { sendFileCreated, sendFileDeleted, sendFileRenamed, sendFileUpdated } from "../services/renderSyncClient.js";
+import { sendFileCreated, sendFileDeleted, sendFileMove, sendFileRenamed, sendFileUpdated } from "../services/renderSyncClient.js";
 import { ExtWebSocket } from "../types/ws.js";
 import { ClientMessage } from "../types/fileWs.js";
 
@@ -55,6 +55,9 @@ export class FileWsHandler extends BaseWsHandler {
 
     try {
       switch (parsed.action) {
+        case "fileMove":
+          this.handleFileMove(ws,parsed)
+          break
         case "join":
           this.handleJoinRoom(ws, parsed);
           break;
@@ -151,6 +154,40 @@ export class FileWsHandler extends BaseWsHandler {
       },
       ws
     );
+  }
+
+  private handleFileMove(ws:ExtWebSocket,parsed:ClientMessage){
+     if(!parsed || typeof parsed !== "object" || parsed.action!=="fileMove") {
+      ws.send(JSON.stringify({ error: "invalid_message" }));
+      return;
+    }
+    const {projectId,moveId,moveToId} = parsed
+    const room = projectId;
+    if (!room || typeof room !== "string") {
+      ws.send(JSON.stringify({ error: "room_required" }));
+      return;
+    }
+     this.room.broadcastToRoom(
+      room,
+      {
+        type: "fileMove",
+        room,
+        from: {
+          userId: ws.userId,
+          username: ws.username,
+          fullName: ws.fullName,
+        },
+        projectId: projectId,
+        moveId,
+        moveToId,
+      },
+      ws
+    );
+    sendFileMove({
+      projectId,
+      moveNode:moveId,
+      moveToNode:moveToId,
+    })
   }
 
   private handleFileSave(ws: ExtWebSocket, parsed: ClientMessage) {

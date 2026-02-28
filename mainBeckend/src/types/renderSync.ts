@@ -3,6 +3,12 @@
 
 export type RenderFileEvent =
   | {
+    type: "file:move";
+    projectId: string;
+    moveNode: string;
+    moveToNode: string | null;
+  }
+  | {
       type: "file:create";
       projectId: string;
       fileFolderId: string;

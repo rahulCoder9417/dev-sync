@@ -139,8 +139,16 @@ export type AwarenessMessage = {
   selection?: SelectionRange;
 };
 
+export type FileMoveMessage = {
+  action: "fileMove";
+  projectId: string;
+  moveId: string;
+  moveToId: string | null;
+};
+
 // Union type for all client messages
 export type ClientMessage =
+  | FileMoveMessage
   | JoinMessage
   | LeaveMessage
   | FileOpMessage
@@ -273,11 +281,19 @@ export type ErrorBroadcast = {
   fileName: string;
 };
 
+export type FileMove = {
+  type: "fileMove";
+  projectId: string;
+  moveId: string;
+  moveToId: string | null;
+  from: UserInfo;
+};
 export type ServerBroadcast =
   | UserJoinedBroadcast
   | YouJoinedBroadcast
   | UserLeftBroadcast
   | YouLeftBroadcast
+  | FileMove
   | FileOpBroadcast
   | VotingBroadcast
   | FileDeletedBroadcast

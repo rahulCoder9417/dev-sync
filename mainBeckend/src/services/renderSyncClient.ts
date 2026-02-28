@@ -100,6 +100,19 @@ export function sendFileCreated(args: {
   renderSyncClient.send(ev);
 }
 
+export function sendFileMove(args: {
+  projectId: string;
+  moveNode: string;
+  moveToNode: string;
+}) {
+  const ev: RenderFileEvent = {
+    type: "file:move",
+    projectId: args.projectId,
+    moveNode: args.moveNode,
+    moveToNode: args.moveToNode,
+  } as RenderFileEvent;
+  renderSyncClient.send(ev);
+}
 export function sendFileUpdated(args: {
   projectId: string;
       fileFolderId: string;
