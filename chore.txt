@@ -1,0 +1,1 @@
+1 ) for drag and drop the file node moving ,the part of code is written in render beckend ,test it ,file:move

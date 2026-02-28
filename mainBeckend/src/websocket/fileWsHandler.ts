@@ -3,7 +3,7 @@ import {  BaseWsHandler } from "./baseWsHandler.js";
 import { deleteFileOrFolder } from "../lib/action/fileitem/deleteFile.js";
 import RoomManager from "../utils/roomManagerFile.js";
 import makeRoomId from "../utils/makeRoomId.js";
-import { sendFileCreated, sendFileDeleted, sendFileRenamed, sendFileUpdated } from "../services/renderSyncClient.js";
+import { sendFileCreated, sendFileDeleted, sendFileMove, sendFileRenamed, sendFileUpdated } from "../services/renderSyncClient.js";
 import { ExtWebSocket } from "../types/ws.js";
 import { ClientMessage } from "../types/fileWs.js";
 
@@ -183,8 +183,11 @@ export class FileWsHandler extends BaseWsHandler {
       },
       ws
     );
-    //todo send fileUpdate
-
+    sendFileMove({
+      projectId,
+      moveNode:moveId,
+      moveToNode:moveToId,
+    })
   }
 
   private handleFileSave(ws: ExtWebSocket, parsed: ClientMessage) {
