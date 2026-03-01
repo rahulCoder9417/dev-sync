@@ -34,7 +34,7 @@ app.get("/health", (req, res) => {
 
 
 
-app.use("/projects", express.static("/usr/src/app/projects"));
+app.use("/projects", express.static(config.projectRoot));
 
 // ---- SERVE noVNC STATIC FILES ----
 app.use("/novnc", express.static("/usr/share/novnc"));

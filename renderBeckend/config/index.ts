@@ -1,5 +1,9 @@
 import { ServerConfig } from "../types.js";
-
+import dotenv from "dotenv";
+import path from "path";
+dotenv.config({
+  path: path.resolve(process.cwd(), ".env"),
+});
 /**
  * Centralized configuration with validation and defaults
  */
@@ -27,7 +31,7 @@ class Config {
       port: parseInt(process.env.PORT || "3002", 10),
       projectRoot: process.env.PROJECT_ROOT || "/usr/src/app/projects",
       novncPath: process.env.NOVNC_PATH || "/usr/share/novnc",
-      
+      isGarib: process.env.IS_GARIB==="true",
       cors: {
         origin: process.env.CORS_ORIGIN?.split(",") || ["http://localhost:3000"],
         credentials: true,
@@ -88,7 +92,7 @@ class Config {
   get gui() { return this.config.gui; }
   get terminal() { return this.config.terminal; }
   get proxy() { return this.config.proxy; }
-
+  get isGarib() { return this.config.isGarib; }
   // Full config for special cases
   getAll(): Readonly<ServerConfig> {
     return Object.freeze({ ...this.config });

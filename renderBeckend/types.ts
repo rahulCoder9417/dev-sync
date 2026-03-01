@@ -58,6 +58,7 @@ export interface Session {
 export interface ServerConfig {
   port: number;
   projectRoot: string;
+  isGarib: boolean;
   novncPath: string;
   cors: {
     origin: string | string[];

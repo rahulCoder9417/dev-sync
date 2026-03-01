@@ -77,7 +77,7 @@ const IGNORED = new Set(["node_modules", "dist", "build", ".next", "out"]);
 export class FileSyncWS {
   private wss: WebSocketServer;
   private heartbeatInterval: NodeJS.Timeout | null = null;
-  private PROJECT_ROOT = "/usr/src/app/projects";
+  
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
@@ -95,7 +95,6 @@ export class FileSyncWS {
   }
 
   private async handleEvent(ev: RenderFileEvent) {
-    const projectDir = this.PROJECT_ROOT;
 
     switch (ev.type) {
       // Disappearance events happen instantly.

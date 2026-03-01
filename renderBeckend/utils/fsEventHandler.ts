@@ -11,7 +11,6 @@ import { getRealProjectDir } from "./getProjectDir.js";
 /**
  * Convert absolute path → project-relative path
  */
-const PROJECT_ROOT = "/usr/src/app/projects";
 // ---------------- FILE CREATE ----------------
 
 

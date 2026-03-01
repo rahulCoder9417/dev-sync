@@ -23,7 +23,11 @@ export class VNCSessionService {
       }
 
       // Create new session
-      console.log(`🎬 Creating new GUI session for user=${userId}`);
+      console.log(`🎬 Creating new GUI session for user=${userId} ${process.env.GARIB==="true"} `);
+      if(process.env.GARIB==="true"){
+        console.log(`Terminating new GUI session cause garib for user=${userId}`);
+        return{success:false,data:undefined}
+      }
       const session = await this.createSession(userId);
       
       this.activeSessions.set(userId, session);
