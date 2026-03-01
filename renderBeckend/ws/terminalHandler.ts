@@ -69,10 +69,17 @@ class TerminalWS {
         }
         this.projectTerminalCount.set(ws.projectId, count + 1);
         // Set environment with DISPLAY variable
-        let env = { ...process.env, DISPLAY: gui.data?.display };
-        const shell = process.platform === "win32" ? "powershell.exe" : "bash";
-
-        const ptyProcess: IPty = spawn(shell, [], {
+        let env = {
+          ...process.env,
+          DISPLAY: gui.data?.display,
+          TERM: "xterm-256color",
+        };
+        const shell = process.platform === "win32" ? "wsl.exe" : "bash";
+        const args =
+          process.platform === "win32"
+            ? ["-d", "Ubuntu"] 
+            : [];
+        const ptyProcess: IPty = spawn(shell, args, {
           name: "xterm-256color",
           cols: 80,
           rows: 25,
