@@ -206,7 +206,7 @@ const Terminal: React.FC<TerminalProps> = ({
     return () => el.removeEventListener("transitionend", handler)
   }, [showGUI])
 
-  const API_URL = "https" + process.env.NEXT_PUBLIC_WS_URL_TERMINAL
+  const API_URL = process.env.NODE_ENV === "development" ? "http" : "https" + process.env.NEXT_PUBLIC_WS_URL_TERMINAL
   const guiURL = `${API_URL}/gui/${encodeURIComponent(userId || "")}`
 
   const openPreview = (p: PortInfo) => {

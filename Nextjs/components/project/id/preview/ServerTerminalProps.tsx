@@ -20,7 +20,7 @@ const ServerTerminalProps = ({ projectId,terminalLoaded ,setTerminalLoaded,proje
       setdiskStorageSet("connecting");
       try {
         const res = await fetch(
-          `https${process.env.NEXT_PUBLIC_WS_URL_TERMINAL}/api/terminal/saveFile`,
+          `${process.env.NODE_ENV === "development" ? "http" : "https"}${process.env.NEXT_PUBLIC_WS_URL_TERMINAL}/api/terminal/saveFile`,
           {
             method: "POST",
             headers: {

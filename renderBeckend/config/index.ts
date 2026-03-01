@@ -24,7 +24,7 @@ class Config {
     const customResolution = process.env.XVFB_RESOLUTION;
 
     return {
-      port: parseInt(process.env.PORT || "3001", 10),
+      port: parseInt(process.env.PORT || "3002", 10),
       projectRoot: process.env.PROJECT_ROOT || "/usr/src/app/projects",
       novncPath: process.env.NOVNC_PATH || "/usr/share/novnc",
       

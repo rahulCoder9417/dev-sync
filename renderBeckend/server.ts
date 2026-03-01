@@ -9,7 +9,6 @@ import { authenticatePreview, createPreviewProxy } from "./utils/previewPort.js"
 import session from "express-session";
 import { verifyPreviewToken } from "./utils/verifyToken.js";
 import { createProxyMiddleware } from "http-proxy-middleware";
-import { testDev } from "./lib/db/dev/index.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -21,7 +20,6 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 }));
-testDev(app);
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));

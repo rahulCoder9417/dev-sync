@@ -2,7 +2,6 @@ import { WebSocketServer, WebSocket } from "ws";
 import { ExtendedWebSocket } from "../types.js";
 import { IncomingMessage } from "http";
 import RoomManager from "../utils/roomManager.js";
-//@ts-ignore
 import { spawn, IPty } from "node-pty";
 import path from "path";
 import crypto from "crypto";

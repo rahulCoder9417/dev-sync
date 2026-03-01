@@ -66,7 +66,7 @@ export default function useTerminal(opts: {
     if (!wsUrl) throw new Error("NEXT_PUBLIC_WS_URL_TERMINAL not set");
     if (!token) throw new Error("No auth token available");
     const t = terminalIdRef.current;
-    return `wss${wsUrl}/ws/terminal?token=${token}&terminalId=${t}&projectId=${projectId}`;
+    return `${process.env.NODE_ENV === "development" ? "ws" : "wss"}${wsUrl}/ws/terminal?token=${token}&terminalId=${t}&projectId=${projectId}`;
   }, [wsUrl, projectId, getToken]);
 
   const connectingRef = useRef(false);
