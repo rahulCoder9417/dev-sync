@@ -216,7 +216,7 @@ class TerminalWS {
       "connection",
       async (ws: WebSocket, req: IncomingMessage) => {
         const url = new URL(req.url, "http://localhost");
-        const [, , encodedUserId] = url.pathname.split("/");
+        const [, , encodedUserId] = url.pathname.split(path.sep);
         const userId = decodeURIComponent(encodedUserId || "");
 
         const session = RoomManager.getUserSession(userId);

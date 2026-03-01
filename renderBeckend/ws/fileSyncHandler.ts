@@ -68,6 +68,7 @@ type OutGoingFileBroadcast =
   | {
       type: "create";
       projectId: string;
+      nodeType: "file" | "folder";
       fileFolderId: string;
       parentId: string;
       fileName: string;
@@ -85,7 +86,7 @@ export class FileSyncWS {
   }
 
   private isIgnored(rel: string) {
-    const first = rel.split("/").filter(Boolean)[0];
+    const first = rel.split(path.sep).filter(Boolean)[0];
     return first && IGNORED.has(first);
   }
 

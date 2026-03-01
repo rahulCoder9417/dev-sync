@@ -6,6 +6,7 @@ import makeRoomId from "../utils/makeRoomId.js";
 import { sendFileCreated, sendFileDeleted, sendFileMove, sendFileRenamed, sendFileUpdated } from "../services/renderSyncClient.js";
 import { ExtWebSocket } from "../types/ws.js";
 import { ClientMessage } from "../types/fileWs.js";
+import path from "path";
 
 export class FileWsHandler extends BaseWsHandler {
   private fileVotes: Map<string, Set<string>> = new Map();
@@ -556,7 +557,7 @@ public handleCreate(projectId:string,fileId:string,fileName:string,parentId:stri
       newNode: {
         id: fileId,
         name: fileName,
-        type:fileName.endsWith("/") ?"folder" : "file",
+        type:fileName.endsWith(path.sep) ?"folder" : "file",
         children: [],
         parentId:parentId,
       },

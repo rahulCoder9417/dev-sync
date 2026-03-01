@@ -20,7 +20,7 @@ export async function handleFileCreate(
   projectId: string
 ) {
 
-  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath) +"/") || null;
+  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath) +path.sep) || null;
   
   const id =cuid()
   const content = await fs.readFile(absPath, "utf8");
@@ -29,8 +29,9 @@ export async function handleFileCreate(
     type:"create",
     projectId,
     fileFolderId: id || null,
+    nodeType: "file",
     parentId: parentId || null,
-    fileName: absPath.split("/")[absPath.split("/").length - 1] ,
+    fileName: absPath.split(path.sep)[absPath.split(path.sep).length - 1] ,
   })
   fileSyncWS.sendFileEvent({
     type:"save",
@@ -42,7 +43,7 @@ export async function handleFileCreate(
     const newFileItem = await db.fileItem.create({
     data: {
       id,
-      name:absPath.split("/")[absPath.split("/").length - 1],
+      name:absPath.split(path.sep)[absPath.split(path.sep).length - 1],
       type:"file",
       content: content,
       projectId,
@@ -65,21 +66,22 @@ export async function handleFolderCreate(
   projectId: string
 ) {
 
-  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath) +"/") || null;
+  const parentId = await FilePathCrud.getFileIdByPath(projectId, path.dirname(absPath) +path.sep) || null;
   const id =cuid()
-  FilePathCrud.setFilePath(projectId, id, absPath + "/")
+  FilePathCrud.setFilePath(projectId, id, absPath + path.sep)
   fileSyncWS.sendFileEvent({
     type:"create",
     projectId,
     fileFolderId: id || null,
+    nodeType: "folder",
     parentId: parentId || null,
-    fileName: absPath.split("/")[absPath.split("/").length - 1] + "/",
+    fileName: absPath.split(path.sep)[absPath.split(path.sep).length - 1] + path.sep,
   })
   try{
     const newFileItem = await db.fileItem.create({
     data: {
       id,
-      name:absPath.split("/")[absPath.split("/").length - 1]+"/",
+      name:absPath.split(path.sep)[absPath.split(path.sep).length - 1]+path.sep,
       type:"folder",
       content: "",
       projectId,
@@ -135,7 +137,7 @@ export async function handleFileDelete(absPath: string, projectId: string) {
   fileSyncWS.sendFileEvent({
     type: "delete",
     projectId,
-    fileName: absPath.split("/")[absPath.split("/").length - 1],
+    fileName: absPath.split(path.sep)[absPath.split(path.sep).length - 1],
     fileId: fileId || null,
   });
   if (fileId) {
@@ -156,10 +158,10 @@ export async function handleFileDelete(absPath: string, projectId: string) {
 // ---------------- FOLDER DELETE ----------------
 
 export async function handleFolderDelete(absPath: string, projectId: string) {
-  const fileId = await FilePathCrud.getFileIdByPath(projectId, absPath + "/");
+  const fileId = await FilePathCrud.getFileIdByPath(projectId, absPath + path.sep);
   fileSyncWS.sendFileEvent({
     type: "delete",
-    fileName: absPath.split("/")[absPath.split("/").length - 1] + path.sep,
+    fileName: absPath.split(path.sep)[absPath.split(path.sep).length - 1] + path.sep,
     projectId,
     fileId: fileId || null,
   });
