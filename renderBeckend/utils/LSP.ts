@@ -5,6 +5,8 @@ export class LSP {
   private projectRoot: string;
   private lsp: ChildProcess;
   private rootUri: string;
+  private buffer = "";
+
   constructor(projectRoot: string) {
     this.projectRoot = projectRoot;
     this.rootUri = "file:///" + this.projectRoot.replace(/\\/g, "/");
@@ -36,9 +38,7 @@ export class LSP {
       },
     });
 
-    this.lsp.stdout.on("data", (chunk) => {
-      console.log("RAW:", chunk.toString());
-    });
+    this.attachStdoutHandler();
 
     this.lsp.stderr.on("data", (data) => {
       console.error("LSP stderr:", data.toString());
@@ -48,7 +48,32 @@ export class LSP {
       console.log("LSP exited with code:", code);
     });
   }
+  private attachStdoutHandler() {
+    this.lsp.stdout.on("data", (chunk) => {
+      this.buffer += chunk.toString();
 
+      while (true) {
+        const headerEnd = this.buffer.indexOf("\r\n\r\n");
+        if (headerEnd === -1) break;
+
+        const header = this.buffer.slice(0, headerEnd);
+        const match = header.match(/Content-Length: (\d+)/);
+
+        if (!match) break;
+
+        const contentLength = parseInt(match[1], 10);
+        const totalLength = headerEnd + 4 + contentLength;
+
+        if (this.buffer.length < totalLength) break;
+
+        const body = this.buffer.slice(headerEnd + 4, totalLength);
+        this.buffer = this.buffer.slice(totalLength);
+
+        const message = JSON.parse(body);
+        console.log("PARSED MESSAGE:", message);
+      }
+    });
+  }
   private send(message: Record<string, unknown>) {
     const json = JSON.stringify(message);
     const contentLength = Buffer.byteLength(json, "utf8");
