@@ -8,11 +8,21 @@ export class LSP {
     this.start();
   }
   private start() {
-    const lsp = spawn("typescript-language-server", ["--stdio"], {
-      cwd: this.projectRoot,
-      argv0: "wsl",
+    const lspPath = path.join(
+    process.cwd(),
+    "node_modules",
+    "typescript-language-server",
+    "lib",
+    "cli.mjs"
+  );
 
-    });
+  const lsp = spawn(
+    process.execPath, 
+    [lspPath, "--stdio"], 
+    {
+      cwd: this.projectRoot,
+    },
+  );
     console.log("LSP started for ", this.projectRoot.split(path.sep).pop());
     lsp.stderr.on("data", (data) => {
       console.error("LSP stderr:", data.toString());
