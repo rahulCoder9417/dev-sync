@@ -11,6 +11,7 @@ import { ensureProjectWatcher, stopProjectWatcher } from "../utils/watcher.js";
 import net from "net";
 import FilePathCrud from "../utils/filePathCrud.js";
 import VNCSessionService from "../utils/VNC.js";
+import { LSP } from "../utils/LSP.js";
 
 // Binary protocol constants
 const MSG_INPUT = 0x01;
@@ -53,7 +54,7 @@ class TerminalWS {
         });
 
         const session = RoomManager.getUserSession(ws.userId);
-        // ✅ AUTO-ASSIGN GUI: Create GUI session when user opens any terminal
+        // AUTO-ASSIGN GUI: Create GUI session when user opens any terminal
         const gui = await VNCSessionService.ensureSession(ws.userId);
         console.log(
           `🖼️  GUI session assigned: DISPLAY=${gui.data?.display} VNC=:${gui.data?.vncPort} for user=${ws.userId}`,
@@ -147,6 +148,7 @@ class TerminalWS {
             ws.send(Buffer.from([MSG_EXIT]));
           }
         });
+        const lsp = new LSP(cwd);
 
         RoomManager.addTerminal(ws.userId, ws.terminalId, ptyProcess);
         ws.on("pong", () => {
