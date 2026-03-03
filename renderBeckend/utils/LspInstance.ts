@@ -1,7 +1,7 @@
 import { spawn, ChildProcess } from "child_process";
 import path from "path";
 
-export class LSP {
+export class LspInstance {
   private projectRoot: string;
   private lsp: ChildProcess;
   private rootUri: string;
@@ -27,6 +27,8 @@ export class LSP {
       shell: isWindows,
     });
 
+    this.attachStdoutHandler();
+
     this.send({
       jsonrpc: "2.0",
       id: 1,
@@ -38,8 +40,6 @@ export class LSP {
       },
     });
 
-    this.attachStdoutHandler();
-
     this.lsp.stderr.on("data", (data) => {
       console.error("LSP stderr:", data.toString());
     });
@@ -48,6 +48,7 @@ export class LSP {
       console.log("LSP exited with code:", code);
     });
   }
+
   private attachStdoutHandler() {
     this.lsp.stdout.on("data", (chunk) => {
       this.buffer += chunk.toString();
@@ -71,9 +72,18 @@ export class LSP {
 
         const message = JSON.parse(body);
         console.log("PARSED MESSAGE:", message);
+        // If this is initialize response
+        if (message.id === 1) {
+          this.send({
+            jsonrpc: "2.0",
+            method: "initialized",
+            params: {},
+          });
+        }
       }
     });
   }
+
   private send(message: Record<string, unknown>) {
     const json = JSON.stringify(message);
     const contentLength = Buffer.byteLength(json, "utf8");
@@ -81,5 +91,9 @@ export class LSP {
     const payload = `Content-Length: ${contentLength}\r\n` + `\r\n` + json;
 
     this.lsp.stdin.write(payload);
+  }
+
+  public dispose() {
+    this.lsp.kill();
   }
 }

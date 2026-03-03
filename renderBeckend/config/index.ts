@@ -93,6 +93,7 @@ class Config {
   get terminal() { return this.config.terminal; }
   get proxy() { return this.config.proxy; }
   get isGarib() { return this.config.isGarib; }
+  
   // Full config for special cases
   getAll(): Readonly<ServerConfig> {
     return Object.freeze({ ...this.config });
