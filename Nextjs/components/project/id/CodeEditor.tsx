@@ -47,7 +47,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   // ============================================
   // State Management
   // ============================================
-  
+
   const [tabToClose, setTabToClose] = useState<string | null>(null);
   const [readOnly, setReadOnly] = useState(false);
   const [isFirstSync, setIsFirstSync] = useState<string | null>(null);
@@ -66,7 +66,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   // ============================================
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
-  const pendingScrollRef = useRef<{top: number, left: number} | null>(null);
+  const pendingScrollRef = useRef<{ top: number, left: number } | null>(null);
   const bindingRef = useRef<any | null>(null);
   const activeTabRef = useRef<Tab | null>(activeTab);
   const silentMode = useRef(false);
@@ -132,16 +132,16 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
     setup();
   }, []);
-  
 
-    
+
+
   // ============================================
   // Effect: Active Tab Changes
   // ============================================
   useEffect(() => {
     if (!activeTab?.id) return;
     setIsFirstSync("")
-    
+
     // Destroy previous binding
     if (bindingRef.current) {
       try {
@@ -164,7 +164,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     setTimeout(() => {
       silentMode.current = false;
     }, 0);
-    
+
     docRef.current = ydoc;
     activeTabRef.current = activeTab;
   }, [activeTab?.id, getOrCreateDoc]);
@@ -208,12 +208,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   // ============================================
   useEffect(() => {
     if (!activeTab?.id) return;
-    
+
     if (collaboratorsMap.length > 0 && userId) {
       const isOwner = collaboratorsMap[0].userId === userId;
       if (!isOwner) {
         if (!readOnly) setReadOnly(true);
-        
+
         if (isFirstSync !== activeTab.id) {
           // FIX: Properly destroy and recreate the binding along with the doc
           setTimeout(() => {
@@ -226,24 +226,24 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
               }
               bindingRef.current = null;
             }
-  
+
             // Destroy old doc
             docRef.current.destroy();
-            
+
             // Create new doc
             const newDoc = new Y.Doc();
             docsRef.current.set(activeTab.id, newDoc);
             docRef.current = newDoc;
-            
+
             // Recreate Monaco binding if editor is ready
             if (editorRef.current && monacoRef.current) {
               const ytext = newDoc.getText("monaco");
               const model = editorRef.current.getModel();
-              
+
               if (model) {
                 // Clear model content
                 model.setValue('');
-                
+
                 // Create new binding
                 const binding = new MonacoBindingRef.current(
                   ytext,
@@ -252,7 +252,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                   null
                 );
                 bindingRef.current = binding;
-                
+
                 // Recreate awareness
                 const awareness = new awarenessProtocol.Awareness(newDoc);
                 awareness.setLocalState({});
@@ -260,7 +260,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                 binding.awareness = awareness;
               }
             }
-            
+
             // Now request sync
             sendMessage("sync", projectId, activeTab.id);
             setIsFirstSync(activeTab.id);
@@ -269,7 +269,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       } else {
         if (readOnly) setReadOnly(false);
       }
-      
+
       if (isFirstSync !== activeTab.id) {
         setIsFirstSync(activeTab.id);
       }
@@ -304,7 +304,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     // Create Monaco binding
     const binding = new MonacoBindingRef.current(ydoc.getText("monaco"), model, new Set([editor]), null);
     bindingRef.current = binding;
-    
+
     const awareness = new awarenessProtocol.Awareness(ydoc);
     awareness.setLocalState({});
     awarenessMap.current.set(activeTab.id, awareness)
@@ -329,7 +329,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     // Theme setup
     monaco.editor.defineTheme("devsync-blue-dark", theme as any)
     monaco.editor.setTheme(readOnly ? "devsync-blue-dark" : "vs-dark")
-    
+
     // Cursor position change
     editor.onDidChangeCursorPosition((e) => {
       if (readOnly) return;
@@ -383,6 +383,54 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         scroll: { top, left }
       });
     });
+
+    // dummy checking for lsp
+    monaco.languages.registerCompletionItemProvider(getLanguage(activeTab.name), {
+      triggerCharacters: ['.', ' ', '<', '@'],
+
+      provideCompletionItems: async (model, position) => {
+        const word = model.getWordUntilPosition(position);
+        if (!word.word) return { suggestions: [] };
+
+        const lineContent = model.getLineContent(position.lineNumber);
+
+        try {
+          const res = await fetch('/api/lsp/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              projectId,
+              fileId: activeTab.id,
+              filePath: activeTab.name,
+              language: getLanguage(activeTab.name),
+              prefix: word.word,
+              line: position.lineNumber - 1,   // LSP is 0-indexed
+              character: position.column - 1,
+              lineContent,
+            }),
+          });
+
+          const data = await res.json();
+
+          return {
+            suggestions: (data.completions ?? []).map((c: any) => ({
+              label: c.label,
+              kind: monaco.languages.CompletionItemKind[c.kind] ?? 1,
+              detail: c.detail ?? '',
+              insertText: c.insertText ?? c.label,
+              range: {
+                startLineNumber: position.lineNumber,
+                endLineNumber: position.lineNumber,
+                startColumn: word.startColumn,
+                endColumn: word.endColumn,
+              },
+            })),
+          };
+        } catch {
+          return { suggestions: [] };
+        }
+      },
+    });
   };
 
   // ============================================
@@ -427,11 +475,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           )
         ) : (
           <div className="flex items-center justify-center h-full text-muted">
-          <div className="text-center">
-            <h3 className="text-lg font-medium mb-2">No file selected</h3>
-            <p className="text-sm">Open a file from the explorer to start editing</p>
+            <div className="text-center">
+              <h3 className="text-lg font-medium mb-2">No file selected</h3>
+              <p className="text-sm">Open a file from the explorer to start editing</p>
+            </div>
           </div>
-        </div>
         )}
       </div>
 
