@@ -278,6 +278,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   // ============================================
   // Editor Mount Handler
   // ============================================
+  //for completions
+  const registeredLanguagesRef = useRef<Set<string>>(new Set());
   const handleEditorMount: OnMount = (editor, monaco) => {
     if (!activeTab || typeof window === "undefined") return;
 
@@ -384,10 +386,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       });
     });
 
-    // dummy checking for lsp
+    const lang = getLanguage(activeTab.name);
+
+  // ── Only register once per language ──
+  if (!registeredLanguagesRef.current.has(lang)) {
+    registeredLanguagesRef.current.add(lang);
+
     monaco.languages.registerCompletionItemProvider(getLanguage(activeTab.name), {
       triggerCharacters: ['.', ' ', '<', '@'],
-
       provideCompletionItems: async (model, position) => {
         const word = model.getWordUntilPosition(position);
         if (!word.word) return { suggestions: [] };
@@ -400,9 +406,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               projectId,
-              fileId: activeTab.id,
-              filePath: activeTab.name,
-              language: getLanguage(activeTab.name),
+              fileId: activeTabRef.current?.id,
+              filePath: activeTabRef.current?.name,
+              language: getLanguage(activeTabRef.current?.name || ''),
               prefix: word.word,
               line: position.lineNumber - 1,   // LSP is 0-indexed
               character: position.column - 1,
@@ -431,6 +437,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         }
       },
     });
+  }
   };
 
   // ============================================
