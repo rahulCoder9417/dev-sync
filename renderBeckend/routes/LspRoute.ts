@@ -1,5 +1,26 @@
 import { Request, Response } from "express";
 
-export function LspRoute(req:Request,res:Response) {
-    res.json({ ok: true, message: "pong" });
+export async function LspRoute(req: Request, res: Response) {
+  const {
+    projectId,
+    fileId,
+    filePath,
+    language,
+    prefix,
+    line,
+    character,
+    lineContent,
+    currentContent,
+  } = req.body;
+
+  console.log("LSP request received:", {
+    projectId,
+    filePath,
+    language,
+    prefix,
+    line,
+    character,
+  });
+
+  res.json({ completions: [] });
 }

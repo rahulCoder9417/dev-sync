@@ -6,6 +6,13 @@ export class LspInstance {
   private lsp: ChildProcess;
   private rootUri: string;
   private buffer = "";
+  private messageId = 1;
+  private pendingRequests = new Map<number, (result: any) => void>();
+  private openFiles = new Set<string>();
+  private fileVersions = new Map<string, number>();
+  private initialized = false;
+  private initPromise: Promise<void>;
+  private initResolve!: () => void;
 
   constructor(projectRoot: string) {
     this.projectRoot = projectRoot;
