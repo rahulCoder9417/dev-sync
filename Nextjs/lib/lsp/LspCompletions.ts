@@ -15,7 +15,7 @@ export async function getLspCompletions(
   const lineContent = model.getLineContent(position.lineNumber);
 
   try {
-    const res = await fetch("/api/lsp/completions", {
+    const res = await fetch(process.env.NEXT_PUBLIC_HTTP_URL_TERMINAL+"/api/lsp/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
