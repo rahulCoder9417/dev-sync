@@ -16,7 +16,23 @@ export interface LspNotification {
   method: LspMethodNames;
   params: Record<string, any>;
 }
-
+export interface CompletionRequest {
+  projectId: string;
+  fileId: string;
+  filePath: string;
+  language: string;
+  prefix: string;
+  line: number;
+  character: number;
+  lineContent: string;
+  currentContent: string;
+}
+export interface LSPCompletionItem {
+  label: string;
+  kind: number;
+  detail?: string;
+  insertText?: string;
+}
 export type LspMethodNames = 
   | "initialize"
   | "initialized"

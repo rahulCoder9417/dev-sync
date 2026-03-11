@@ -27,6 +27,7 @@ import { checkNotEditor } from '@/lib/mainUtils/codeEditor';
 import { Save, XCircle } from "lucide-react";
 import { useShortcut } from "@/components/main/Shortcut";
 import { showToast } from "@/components/main/Toast";
+import { getLspCompletions } from "@/lib/lsp/LspCompletions";
 
 interface CodeEditorProps {
   isTeam: boolean;
@@ -388,56 +389,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
     const lang = getLanguage(activeTab.name);
 
-  // ── Only register once per language ──
-  if (!registeredLanguagesRef.current.has(lang)) {
-    registeredLanguagesRef.current.add(lang);
-
-    monaco.languages.registerCompletionItemProvider(getLanguage(activeTab.name), {
-      triggerCharacters: ['.', ' ', '<', '@'],
-      provideCompletionItems: async (model, position) => {
-        const word = model.getWordUntilPosition(position);
-        if (!word.word) return { suggestions: [] };
-
-        const lineContent = model.getLineContent(position.lineNumber);
-
-        try {
-          const res = await fetch('/api/lsp/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              projectId,
-              fileId: activeTabRef.current?.id,
-              filePath: activeTabRef.current?.name,
-              language: getLanguage(activeTabRef.current?.name || ''),
-              prefix: word.word,
-              line: position.lineNumber - 1,   // LSP is 0-indexed
-              character: position.column - 1,
-              lineContent,
-            }),
-          });
-
-          const data = await res.json();
-
-          return {
-            suggestions: (data.completions ?? []).map((c: any) => ({
-              label: c.label,
-              kind: monaco.languages.CompletionItemKind[c.kind] ?? 1,
-              detail: c.detail ?? '',
-              insertText: c.insertText ?? c.label,
-              range: {
-                startLineNumber: position.lineNumber,
-                endLineNumber: position.lineNumber,
-                startColumn: word.startColumn,
-                endColumn: word.endColumn,
-              },
-            })),
-          };
-        } catch {
-          return { suggestions: [] };
-        }
-      },
-    });
-  }
+    // ── Only register once per language ──
+    if (!registeredLanguagesRef.current.has(lang)) {
+      registeredLanguagesRef.current.add(lang);
+      monaco.languages.registerCompletionItemProvider(getLanguage(activeTab.name), {
+        triggerCharacters: ['.', ' ', '<', '@'],
+        provideCompletionItems: (model, position) => getLspCompletions(model, position, activeTabRef, projectId)
+      });
+    }
   };
 
   // ============================================

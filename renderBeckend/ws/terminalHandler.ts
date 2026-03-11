@@ -11,7 +11,6 @@ import { ensureProjectWatcher, stopProjectWatcher } from "../utils/watcher.js";
 import net from "net";
 import FilePathCrud from "../utils/filePathCrud.js";
 import VNCSessionService from "../utils/VNC.js";
-import { LspManager } from "../utils/LspManager.js";
 
 // Binary protocol constants
 const MSG_INPUT = 0x01;
@@ -148,9 +147,7 @@ class TerminalWS {
             ws.send(Buffer.from([MSG_EXIT]));
           }
         });
-        const lsp = new LspManager();
-        await lsp.getOrCreate(ws.projectId);
-
+    
         RoomManager.addTerminal(ws.userId, ws.terminalId, ptyProcess);
         ws.on("pong", () => {
           ws.isAlive = true;
