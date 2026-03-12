@@ -1,19 +1,19 @@
-export interface LspResponse {
+export interface AutoCompletionResponse {
   jsonrpc: string;
   id: number;
   result: Record<string, any>;
 }
 
-export interface LspRequest {
+export interface AutoCompletionRequest {
   jsonrpc: string;
   id: number;
-  method: LspMethodNames;
+  method: AutoCompletionMethodNames;
   params: Record<string, any>;
 }
 
-export interface LspNotification {
+export interface AutoCompletionNotification {
   jsonrpc: string;
-  method: LspMethodNames;
+  method: AutoCompletionMethodNames;
   params: Record<string, any>;
 }
 export interface CompletionRequest {
@@ -27,13 +27,13 @@ export interface CompletionRequest {
   lineContent: string;
   currentContent: string;
 }
-export interface LSPCompletionItem {
+export interface AutoCompletionItem {
   label: string;
   kind: number;
   detail?: string;
   insertText?: string;
 }
-export type LspMethodNames = 
+export type AutoCompletionMethodNames = 
   | "initialize"
   | "initialized"
   | "textDocument/didOpen"

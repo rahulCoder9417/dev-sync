@@ -1,9 +1,9 @@
 import * as monaco from "monaco-editor";
 import { getLanguage } from "../mainUtils/codeEditor";
 import { Tab } from "../types/types";
-import { CompletionRequest, LSPCompletionItem } from "../types/LspTypes";
+import { CompletionRequest, AutoCompletionItem } from "../types/AutoCompletionTypes";
 
-export async function getLspCompletions(
+export async function getAutoCompletions(
   model: monaco.editor.ITextModel,
   position: monaco.Position,
   activeTabRef: React.RefObject<Tab | null | undefined>,
@@ -15,7 +15,7 @@ export async function getLspCompletions(
   const lineContent = model.getLineContent(position.lineNumber);
 
   try {
-    const res = await fetch(process.env.NEXT_PUBLIC_HTTP_URL_TERMINAL+"/api/lsp/completions", {
+    const res = await fetch(process.env.NEXT_PUBLIC_HTTP_URL_TERMINAL+"/api/auto-completion/get-completions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -24,7 +24,7 @@ export async function getLspCompletions(
         filePath: activeTabRef.current?.name || "",
         language: getLanguage(activeTabRef.current?.name || ""),
         prefix: word.word,
-        line: position.lineNumber - 1, // LSP is 0-indexed
+        line: position.lineNumber - 1, // Monoco is 1-indexed
         character: position.column - 1,
         lineContent,
         currentContent: model.getValue(),
@@ -34,7 +34,7 @@ export async function getLspCompletions(
     const data = await res.json();
 
     return {
-      suggestions: (data.completions ?? []).map((c: LSPCompletionItem) => ({
+      suggestions: (data.completions ?? []).map((c: AutoCompletionItem) => ({
         label: c.label,
         kind: monaco.languages.CompletionItemKind[c.kind] ?? 1,
         detail: c.detail ?? "",

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 
-export async function LspRoute(req: Request, res: Response) {
+export async function AutoCompletionRoute(req: Request, res: Response) {
   const {
     projectId,
     fileId,

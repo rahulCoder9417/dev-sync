@@ -1,7 +1,7 @@
 import { spawn, ChildProcess } from "child_process";
 import path from "path";
 
-export class LspInstance {
+export class AutoCompletionInstance {
   private projectRoot: string;
   private lsp: ChildProcess;
   private rootUri: string;

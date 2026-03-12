@@ -27,7 +27,7 @@ import { checkNotEditor } from '@/lib/mainUtils/codeEditor';
 import { Save, XCircle } from "lucide-react";
 import { useShortcut } from "@/components/main/Shortcut";
 import { showToast } from "@/components/main/Toast";
-import { getLspCompletions } from "@/lib/lsp/LspCompletions";
+import { getAutoCompletions } from "@/lib/autoCompletion/AutoCompletions";
 
 interface CodeEditorProps {
   isTeam: boolean;
@@ -394,7 +394,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       registeredLanguagesRef.current.add(lang);
       monaco.languages.registerCompletionItemProvider(getLanguage(activeTab.name), {
         triggerCharacters: ['.', ' ', '<', '@'],
-        provideCompletionItems: (model, position) => getLspCompletions(model, position, activeTabRef, projectId)
+        provideCompletionItems: (model, position) => getAutoCompletions(model, position, activeTabRef, projectId)
       });
     }
   };
