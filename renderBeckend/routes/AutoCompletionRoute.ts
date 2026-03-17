@@ -43,7 +43,7 @@ export async function AutoCompletionRoute(req: Request, res: Response) {
     // projectRoot is where your project files live inside the container
     const projectRoot = path.join("/projects", projectId);
     const filePath = await filePathCrud.getFilePath(projectId, fileId);
-    const language = getLanguageFromPath(fileId);
+    const language = getLanguageFromPath(filePath);
 
     const lsp = await autoCompletionManager.getOrCreate(
       projectId,
@@ -63,7 +63,7 @@ export async function AutoCompletionRoute(req: Request, res: Response) {
     // ── 4. sync current file content to LSP ──
     // sends didOpen (first time) or didChange (already open)
     // currentContent = full file from model.getValue() — includes unsaved changes
-    await lsp.syncFile(uri, getLanguageFromPath(language), currentContent);
+    await lsp.syncFile(uri, language, currentContent);
 
     // ── 5. get completions at cursor position ──
     const items = await lsp.getCompletions(uri, { line, character });
