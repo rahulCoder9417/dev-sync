@@ -1,6 +1,12 @@
-import { spawn, ChildProcess } from "child_process";
-import { CompletionItem, LSPResponse, Position, TextDocumentItem } from "../types/AutoCompletionTypes.js";
- 
+import { spawn, ChildProcess, execSync } from "child_process";
+import {
+  CompletionItem,
+  LSPResponse,
+  Position,
+  TextDocumentItem,
+} from "../types/AutoCompletionTypes.js";
+import { platform, release } from "os";
+
 // ─────────────────────────────────────────────
 // AutoCompletionInstance
 // ─────────────────────────────────────────────
@@ -48,16 +54,17 @@ export class AutoCompletionInstance {
   // LSP spec section: Lifecycle Messages → Initialize
   // ─────────────────────────────────────────────
   private start() {
-    const isWindows = process.platform === "win32";
-    const command = isWindows ? "npx" : "typescript-language-server";
-    const args = isWindows
-      ? ["typescript-language-server", "--stdio"]
-      : ["--stdio"];
+ const isWindows = process.platform === "win32";
 
-    this.lsp = spawn(command, args, {
-      cwd: this.projectRoot,
-      shell: isWindows,
-    });
+  const command = isWindows ? "npx" : "typescript-language-server";
+  const args = isWindows
+    ? ["typescript-language-server", "--stdio"]
+    : ["--stdio"];
+
+  this.lsp = spawn(command, args, {
+    cwd: this.projectRoot,
+    shell: isWindows,
+  });
 
     // attach stdout reader before sending anything
     this.attachStdoutHandler();
@@ -204,7 +211,7 @@ export class AutoCompletionInstance {
         params: {
           textDocument: {
             uri,
-            languageId,  // "typescript", "javascript" etc
+            languageId, // "typescript", "javascript" etc
             version: 1,
             text: content,
           } as TextDocumentItem,
@@ -238,15 +245,15 @@ export class AutoCompletionInstance {
     }
   }
 
-  // ==============================================================================
+  //
   // STEP 4: Request completions
   // LSP spec section: Language Features → Completion Proposals
   //
   // This is a Request (has id) — LSP will respond with completion items
-  // ==============================================================================
+  // ─────────────────────────────────────────────
   public async getCompletions(
     uri: string,
-    position: Position
+    position: Position,
   ): Promise<CompletionItem[]> {
     await this.initPromise;
 
@@ -261,7 +268,7 @@ export class AutoCompletionInstance {
     if (!result) return [];
     const items: CompletionItem[] = Array.isArray(result)
       ? result
-      : result.items ?? [];
+      : (result.items ?? []);
 
     console.log("[LSP] completions received:", items.length);
     return items;

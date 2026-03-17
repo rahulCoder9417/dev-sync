@@ -1,7 +1,10 @@
 import * as monaco from "monaco-editor";
 import { getLanguage } from "../mainUtils/codeEditor";
 import { Tab } from "../types/types";
-import { CompletionRequest, AutoCompletionItem } from "../types/AutoCompletionTypes";
+import {
+  CompletionRequest,
+  AutoCompletionItem,
+} from "../types/AutoCompletionTypes";
 
 export async function getAutoCompletions(
   model: monaco.editor.ITextModel,
@@ -15,21 +18,24 @@ export async function getAutoCompletions(
   const lineContent = model.getLineContent(position.lineNumber);
 
   try {
-    const res = await fetch(process.env.NEXT_PUBLIC_HTTP_URL_TERMINAL+"/api/auto-completion/get-completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        projectId,
-        fileId: activeTabRef.current?.id || "",
-        filePath: activeTabRef.current?.name || "",
-        language: getLanguage(activeTabRef.current?.name || ""),
-        prefix: word.word,
-        line: position.lineNumber - 1, // Monoco is 1-indexed
-        character: position.column - 1,
-        lineContent,
-        currentContent: model.getValue(),
-      } as CompletionRequest),
-    });
+    const res = await fetch(
+      process.env.NEXT_PUBLIC_HTTP_URL_TERMINAL +
+        "/api/auto-completion/get-completions",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          fileId: activeTabRef.current?.id || "",
+          language: getLanguage(activeTabRef.current?.name || ""),
+          prefix: word.word,
+          line: position.lineNumber - 1, // Monoco is 1-indexed
+          character: position.column - 1,
+          lineContent,
+          currentContent: model.getValue(),
+        } as CompletionRequest),
+      },
+    );
 
     const data = await res.json();
 
