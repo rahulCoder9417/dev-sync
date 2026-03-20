@@ -1,11 +1,18 @@
-import { spawn, ChildProcess, execSync } from "child_process";
+import {
+  spawn,
+  ChildProcess,
+  execSync,
+  execFile,
+  execFileSync,
+  spawnSync,
+} from "child_process";
 import {
   CompletionItem,
   LSPResponse,
   Position,
   TextDocumentItem,
 } from "../types/AutoCompletionTypes.js";
-import { platform, release } from "os";
+import { existsSync } from "fs"; // ← add this at top of file
 
 // ─────────────────────────────────────────────
 // AutoCompletionInstance
@@ -53,8 +60,8 @@ export class AutoCompletionInstance {
   // STEP 1: Spawn LSP process and send initialize
   // LSP spec section: Lifecycle Messages → Initialize
   // ─────────────────────────────────────────────
-  private start() {
- const isWindows = process.platform === "win32";
+private start() {
+  const isWindows = process.platform === "win32";
 
   const command = isWindows ? "npx" : "typescript-language-server";
   const args = isWindows
@@ -62,50 +69,52 @@ export class AutoCompletionInstance {
     : ["--stdio"];
 
   this.lsp = spawn(command, args, {
-    cwd: this.projectRoot,
+    cwd:  this.projectRoot ,
     shell: isWindows,
+    env: {
+      ...process.env,
+    },
   });
 
-    // attach stdout reader before sending anything
-    this.attachStdoutHandler();
+  this.attachStdoutHandler();
 
-    // send initialize request — MUST be the first message per LSP spec
-    // this is a Request (has id) — LSP will respond with id:1
-    this.sendRaw({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "initialize",
-      params: {
-        processId: process.pid,
-        rootUri: this.rootUri,
-        // capabilities tell LSP what features our client supports
-        capabilities: {
-          textDocument: {
-            completion: {
-              completionItem: {
-                snippetSupport: false, // keep simple for now
-              },
+  this.sendRaw({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "initialize",
+    params: {
+      processId: process.pid,
+      rootUri: this.rootUri,
+      capabilities: {
+        textDocument: {
+          completion: {
+            completionItem: {
+              snippetSupport: false,
             },
           },
         },
-        // workspace folders — tells LSP which directories to index
-        workspaceFolders: [
-          {
-            uri: this.rootUri,
-            name: "project",
-          },
-        ],
       },
-    });
+      workspaceFolders: [
+        {
+          uri: this.rootUri,
+          name: "project",
+        },
+      ],
+    },
+  });
 
-    this.lsp.stderr?.on("data", (data) => {
-      console.error("[LSP stderr]", data.toString());
-    });
+  this.lsp.on("error", (err) => {
+    console.error("[LSP] spawn error:", err);
+  });
 
-    this.lsp.on("exit", (code) => {
-      console.log("[LSP] process exited with code:", code);
-    });
-  }
+  this.lsp.stderr?.on("data", (data) => {
+    console.error("[LSP stderr]", data.toString());
+  });
+
+  this.lsp.on("exit", (code) => {
+    console.log("[LSP] exited:", code);
+  });
+}
 
   // ─────────────────────────────────────────────
   // STEP 2: Read LSP stdout and parse messages

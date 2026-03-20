@@ -2,6 +2,11 @@ import { Request, Response } from "express";
 import { autoCompletionManager } from "../utils/AutoCompletionManager.js";
 import path from "path";
 import filePathCrud from "../utils/filePathCrud.js";
+import { existsSync } from "fs";  // ← add this at top of file
+import { getRealProjectDir } from "../utils/getProjectDir.js";
+import config from "../config/index.js";
+
+
 // map file extension → LSP languageId
 // covers everything common, easy to add more
 function getLanguageFromPath(filePath: string): string {
@@ -41,7 +46,7 @@ export async function AutoCompletionRoute(req: Request, res: Response) {
   try {
     // ── 1. get or create LSP instance ──
     // projectRoot is where your project files live inside the container
-    const projectRoot = path.join("/projects", projectId);
+    const projectRoot = await getRealProjectDir(config.projectRoot, projectId);
     const filePath = await filePathCrud.getFilePath(projectId, fileId);
     const language = getLanguageFromPath(filePath);
 
