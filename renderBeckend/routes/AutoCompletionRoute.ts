@@ -62,8 +62,7 @@ export async function AutoCompletionRoute(req: Request, res: Response) {
     // ── 3. build the file URI ──
     // LSP spec: URIs must be file:// format
     // e.g. file:///projects/proj-123/src/components/users.tsx
-    const absolutePath = path.join(projectRoot, filePath);
-    const uri = "file://" + absolutePath.replace(/\\/g, "/");
+    const uri = "file://" + filePath.replace(/\\/g, "/");
 
     // ── 4. sync current file content to LSP ──
     // sends didOpen (first time) or didChange (already open)
