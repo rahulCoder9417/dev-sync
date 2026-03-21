@@ -27,7 +27,6 @@ export async function getAutoCompletions(
         body: JSON.stringify({
           projectId,
           fileId: activeTabRef.current?.id || "",
-          language: getLanguage(activeTabRef.current?.name || ""),
           prefix: word.word,
           line: position.lineNumber - 1, // Monoco is 1-indexed
           character: position.column - 1,
@@ -42,7 +41,7 @@ export async function getAutoCompletions(
     return {
       suggestions: (data.completions ?? []).map((c: AutoCompletionItem) => ({
         label: c.label,
-        kind: monaco.languages.CompletionItemKind[c.kind] ?? 1,
+        kind:c.kind ?? 1,
         detail: c.detail ?? "",
         insertText: c.insertText ?? c.label,
         range: {

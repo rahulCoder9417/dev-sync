@@ -23,8 +23,8 @@ export class AutoCompletionInstance {
   private lsp!: ChildProcess;
   private rootUri: string;
 
-  // buffer for incoming stdout data
-  private buffer = "";
+
+private rawBuffer = Buffer.alloc(0);
 
   // message id counter — starts at 2 because 1 is used by initialize
   private messageId = 1;
@@ -125,46 +125,59 @@ private start() {
   //   \r\n
   //   { "jsonrpc": "2.0", "id": 1, "result": { ... } }
   // ─────────────────────────────────────────────
-  private attachStdoutHandler() {
-    this.lsp.stdout?.on("data", (chunk: Buffer) => {
-      this.buffer += chunk.toString();
 
-      // keep parsing as long as there are complete messages in the buffer
-      while (true) {
-        // find the \r\n\r\n that separates header from body
-        const headerEnd = this.buffer.indexOf("\r\n\r\n");
-        if (headerEnd === -1) break; // header not fully received yet
+private attachStdoutHandler() {
+  this.lsp.stdout?.on("data", (chunk: Buffer) => {
+    // keep everything as raw bytes — never toString() the whole thing
+    this.rawBuffer = Buffer.concat([this.rawBuffer, chunk]);
 
-        const header = this.buffer.slice(0, headerEnd);
+    while (true) {
+      // find "Content-Length: " in raw bytes
+      const headerStr = this.rawBuffer.toString("ascii", 0, Math.min(200, this.rawBuffer.length));
+      
+      const clMatch = headerStr.match(/Content-Length: (\d+)/);
+      if (!clMatch) break;
 
-        // extract Content-Length from header
-        const match = header.match(/Content-Length: (\d+)/);
-        if (!match) break;
+      const contentLength = parseInt(clMatch[1], 10);
 
-        const contentLength = parseInt(match[1], 10);
-
-        // check if the full body has arrived
-        // headerEnd + 4 = skip the \r\n\r\n separator
-        const totalLength = headerEnd + 4 + contentLength;
-        if (this.buffer.length < totalLength) break; // body not fully received yet
-
-        // extract the body and remove it from buffer
-        const body = this.buffer.slice(headerEnd + 4, totalLength);
-        this.buffer = this.buffer.slice(totalLength);
-
-        let message: LSPResponse;
-        try {
-          message = JSON.parse(body);
-        } catch (e) {
-          console.error("[LSP] failed to parse message:", body);
-          continue;
+      // find \r\n\r\n separator
+      const separator = Buffer.from("\r\n\r\n");
+      let sepIndex = -1;
+      for (let i = 0; i < this.rawBuffer.length - 3; i++) {
+        if (
+          this.rawBuffer[i] === 13 &&
+          this.rawBuffer[i + 1] === 10 &&
+          this.rawBuffer[i + 2] === 13 &&
+          this.rawBuffer[i + 3] === 10
+        ) {
+          sepIndex = i;
+          break;
         }
-
-        this.handleMessage(message);
       }
-    });
-  }
 
+      if (sepIndex === -1) break;
+
+      const bodyStart = sepIndex + 4;
+
+      // check if full body arrived — use BYTE count not char count
+      if (this.rawBuffer.length < bodyStart + contentLength) break;
+
+      // extract body as utf8 string — exactly contentLength BYTES
+      const body = this.rawBuffer.slice(bodyStart, bodyStart + contentLength).toString("utf8");
+
+      // remove this message from buffer — in bytes
+      this.rawBuffer = this.rawBuffer.slice(bodyStart + contentLength);
+
+      try {
+        const message = JSON.parse(body);
+        console.log("[LSP] parsed:", message.id ?? message.method);
+        this.handleMessage(message);
+      } catch (e) {
+        console.error("[LSP] parse error:", body.slice(0, 100));
+      }
+    }
+  });
+}
   // ─────────────────────────────────────────────
   // Handle incoming LSP messages
   // ─────────────────────────────────────────────
