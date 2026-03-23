@@ -4,7 +4,7 @@ import fileSyncWS from "../ws/fileSyncHandler.js";
 import { getAuthData } from "./auth.js";
 import { verifyPreviewToken } from "./verifyToken.js";
 import http from "http";
-import { devProxy, getPortFromHost } from "../lib/db/dev/index.js";
+import path from "path";
 export async function handleUpgrade(request: any, socket: any, head: any) {
   const { pathname } = parse(request.url || "");
 
@@ -57,7 +57,7 @@ export async function handleUpgrade(request: any, socket: any, head: any) {
     // Preview WebSocket (for Express apps with WebSocket support).yeh likh diya hai ,ise kam krne ke liye project me specify krna hoga uska ws url preview/userid/port?token=token ,aur addiditional  info deni hogi
     else if (pathname.startsWith("/preview/")) {
       console.log("✅ Matched: Preview WebSocket");
-      const pathParts = pathname.split("/");
+      const pathParts = pathname.split(path.sep);
       const userId = pathParts[2];
       const port = pathParts[3];
       const token = new URL(
@@ -86,19 +86,19 @@ export async function handleUpgrade(request: any, socket: any, head: any) {
 
       console.log("✅ Token verified, creating WebSocket proxy...");
 
-      const pathAfterPort = "/" + pathParts.slice(4).join("/");
+      const pathAfterPort = path.sep + pathParts.slice(4).join(path.sep);
       const rewrittenPath =
-        (pathAfterPort === "/" ? "" : pathAfterPort) + pathname.search;
+        (pathAfterPort === path.sep ? "" : pathAfterPort) + pathname.search;
 
-      console.log(`🔄 Path rewrite: ${pathname} → ${rewrittenPath || "/"}`);
+      console.log(`🔄 Path rewrite: ${pathname} → ${rewrittenPath || path.sep}`);
       console.log(
-        `➡️  Connecting to: localhost:${port}${rewrittenPath || "/"}`
+        `➡️  Connecting to: localhost:${port}${rewrittenPath || path.sep}`
       );
 
       const proxyReq = http.request({
         hostname: "localhost",
         port: parseInt(port),
-        path: rewrittenPath || "/",
+        path: rewrittenPath || path.sep,
         headers: request.headers,
       });
 
@@ -133,31 +133,15 @@ export async function handleUpgrade(request: any, socket: any, head: any) {
       proxyReq.on("error", (err) => {
         console.error("❌ ============ WEBSOCKET PROXY ERROR ============");
         console.error(`🔴 Error: ${err.message}`);
-        console.error(`🔴 Target: localhost:${port}${rewrittenPath || "/"}`);
+        console.error(`🔴 Target: localhost:${port}${rewrittenPath || path.sep}`);
         socket.destroy();
       });
 
       proxyReq.end();
       return;
     } else {
-        const host = request.headers.host;
-
-  if (!host || !host.includes(".dev.")) {
-    socket.destroy();
-    return;
-  }
-
-  const port = getPortFromHost(host);
-  if (!port) {
-    socket.destroy();
-    return;
-  }
-
-  devProxy.ws(request, socket, head, {
-    target: `ws://127.0.0.1:${port}`,
-  });
-      console.error(`Unknown WebSocket path: ${pathname}`);
-     
+       socket.destroy();
+       console.log("❌ Unknown WebSocket path: " + pathname);
     }
   } catch (err) {
     console.error("WebSocket upgrade error:", err);

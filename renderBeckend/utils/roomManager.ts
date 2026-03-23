@@ -5,9 +5,11 @@ import path from "path";
 //@ts-ignore
 import { PtyProcess } from "node-pty";
 import { fileURLToPath } from "url";
+import config from "../config/index.js";
 class RoomManager {
     private sessions: Record<string, Session> = {};
-    public PROJECT_ROOT = "/usr/src/app/projects"
+    public PROJECT_ROOT = config.projectRoot
+    
     public getUserSession(userId: string) {
         if (!this.sessions[userId]) {
           this.sessions[userId] = { terminals: {}, gui: null, previews: {} };

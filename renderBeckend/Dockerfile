@@ -88,6 +88,10 @@ RUN wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-p
     && rm /tmp/msprod.deb \
     && rm -rf /var/lib/apt/lists/*
 
+# ===================================================================
+# 9.5 ADD Type script lsp server
+# ===================================================================
+RUN npm install -g typescript typescript-language-server
 # # =====================================================================
 # # 10. Install gcc/g++
 # # =====================================================================

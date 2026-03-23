@@ -190,9 +190,17 @@ export default function useCollab(opts: UseCollabOptions = {}) {
                   "on file ->" +
                   payload.fileName,
               );
-
               if (payload.action === "create") {
                 dispatch(
+                (payload.from.userId===""&& payload.from.fullName==="From terminal")?
+                createNodeWithAncestors({
+                   type: payload.action,
+                    name: payload.newNode!.name,
+                    id: payload.fileId,
+                    newNode: payload.newNode!,
+                    projectId: payload.projectId,
+                })
+                  :
                   createNodeWithAncestors({
                     type: payload.action,
                     name: payload.fileName!,

@@ -107,13 +107,15 @@ const fileNodeSlice = createSlice({
     },
     createNode(state, action: { payload: { newNode: FileNodeWithChildren } }) {
       if (!state.map) return;
-      const newNode = action.payload.newNode;
-      if (!newNode) return;
+      const incoming = action.payload.newNode;
+      if (!incoming) return;
 
-      if (!newNode.ancestorIds) newNode.ancestorIds = [];
-      if (!newNode.fileChildren) newNode.fileChildren = [];
-      if (!newNode.folderChildren) newNode.folderChildren = [];
-
+      const newNode: FileNodeWithChildren = {
+        ...incoming,
+        ancestorIds: incoming.ancestorIds ?? [],
+        fileChildren: incoming.fileChildren ?? [],
+        folderChildren: incoming.folderChildren ?? [],
+      };
       state.map[newNode.id] = newNode;
 
       if (newNode.parentId === null) {
@@ -151,60 +153,60 @@ const fileNodeSlice = createSlice({
           }
         });
     },
-   _moveNodeInternal(
-  state,
-  action: { payload: { nodeId: string; newParentId: string | null } },
-) {
-  const { nodeId, newParentId } = action.payload;
-  const node = state.map[nodeId];
-  if (!node) return;
+    _moveNodeInternal(
+      state,
+      action: { payload: { nodeId: string; newParentId: string | null } },
+    ) {
+      const { nodeId, newParentId } = action.payload;
+      const node = state.map[nodeId];
+      if (!node) return;
 
-  const oldParentId = node.parentId;
+      const oldParentId = node.parentId;
 
-  if (oldParentId) {
-    const oldParent = state.map[oldParentId];
-    if (oldParent) {
-      oldParent.fileChildren = oldParent.fileChildren.filter(
-        (id) => id !== nodeId,
-      );
-      oldParent.folderChildren = oldParent.folderChildren.filter(
-        (id) => id !== nodeId,
-      );
-    }
-  }
+      if (oldParentId) {
+        const oldParent = state.map[oldParentId];
+        if (oldParent) {
+          oldParent.fileChildren = oldParent.fileChildren.filter(
+            (id) => id !== nodeId,
+          );
+          oldParent.folderChildren = oldParent.folderChildren.filter(
+            (id) => id !== nodeId,
+          );
+        }
+      }
 
-  if (oldParentId === null) {
-    state.fileRoot = state.fileRoot.filter((n) => n.id !== nodeId);
-    state.folderRoot = state.folderRoot.filter((n) => n.id !== nodeId);
-  }
+      if (oldParentId === null) {
+        state.fileRoot = state.fileRoot.filter((n) => n.id !== nodeId);
+        state.folderRoot = state.folderRoot.filter((n) => n.id !== nodeId);
+      }
 
-  if (newParentId === null || newParentId === "root") {
-    if (node.type === "file") {
-      state.fileRoot.push(node);
-    } else {
-      state.folderRoot.push(node);
-    }
-  } else {
-    const newParent = state.map[newParentId];
-    if (!newParent) return;
+      if (newParentId === null || newParentId === "root") {
+        if (node.type === "file") {
+          state.fileRoot.push(node);
+        } else {
+          state.folderRoot.push(node);
+        }
+      } else {
+        const newParent = state.map[newParentId];
+        if (!newParent) return;
 
-    if (node.type === "file") {
-      newParent.fileChildren.push(nodeId);
-    } else {
-      newParent.folderChildren.push(nodeId);
-    }
-  }
+        if (node.type === "file") {
+          newParent.fileChildren.push(nodeId);
+        } else {
+          newParent.folderChildren.push(nodeId);
+        }
+      }
 
-  node.parentId = newParentId;
+      node.parentId = newParentId;
 
-  const computeAncestors = createComputeAncestors(state.map);
-  const newAncestors =
-    newParentId && newParentId !== "root"
-      ? [...state.map[newParentId].ancestorIds, newParentId]
-      : [];
+      const computeAncestors = createComputeAncestors(state.map);
+      const newAncestors =
+        newParentId && newParentId !== "root"
+          ? [...state.map[newParentId].ancestorIds, newParentId]
+          : [];
 
-  computeAncestors(node, newAncestors);
-},
+      computeAncestors(node, newAncestors);
+    },
   },
 });
 export default fileNodeSlice.reducer;

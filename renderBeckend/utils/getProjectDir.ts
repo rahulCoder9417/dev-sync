@@ -8,6 +8,7 @@ export async function getRealProjectDir(baseDir: string, projectId: string)
   const root = path.join(baseDir, projectId);
 
   try {
+    
     await fs.access(root);
   } catch (error) {
   const result =   await FilePathCrud.loadProject(projectId);

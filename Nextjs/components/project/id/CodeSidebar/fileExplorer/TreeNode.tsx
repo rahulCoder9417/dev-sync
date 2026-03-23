@@ -51,10 +51,12 @@ const TreeNodeInner: React.FC<Props> = ({ setExpandedFolders, parentDetails, han
 
    const selectNodes = useMemo(makeSelectNodesByIds, []);
   const nodeChildrenFilesIds = useAppSelector(
-    (state) => state.projectFile.map?.[node.id]?.fileChildren ?? []
+    (state) => state.projectFile.map?.[node.id]?.fileChildren ?? [],
+    shallowEqual
   );
   const nodeChildrenFoldersIds = useAppSelector(
-    (state) => state.projectFile.map?.[node.id]?.folderChildren ?? []
+    (state) => state.projectFile.map?.[node.id]?.folderChildren ?? [],
+    shallowEqual
   );
 
   const nodeChildrenFiles = useAppSelector((state) =>

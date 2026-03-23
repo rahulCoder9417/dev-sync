@@ -9,7 +9,6 @@ import { authenticatePreview, createPreviewProxy } from "./utils/previewPort.js"
 import session from "express-session";
 import { verifyPreviewToken } from "./utils/verifyToken.js";
 import { createProxyMiddleware } from "http-proxy-middleware";
-import { testDev } from "./lib/db/dev/index.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -21,7 +20,6 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 }));
-testDev(app);
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -36,7 +34,7 @@ app.get("/health", (req, res) => {
 
 
 
-app.use("/projects", express.static("/usr/src/app/projects"));
+app.use("/projects", express.static(config.projectRoot));
 
 // ---- SERVE noVNC STATIC FILES ----
 app.use("/novnc", express.static("/usr/share/novnc"));
@@ -77,34 +75,6 @@ app.get("/gui/:userId", async (req, res) => {
   const url = `/novnc/vnc.html?path=websockify/${encodedUser}&autoconnect=true&resize=scale`;
   res.redirect(url);
 });
-//testing build server
-// import httpProxy from "http-proxy";
-
-// export const devProxy = httpProxy.createProxyServer({
-//   ws: true,
-//   changeOrigin: true,
-//   xfwd: true,
-// });
-// export function getPortFromHost(host: string) {
-//   // example: u123-5173.dev.yourdomain.com
-//   const match = host.match(/-(\d+)\./);
-//   return match ? Number(match[1]) : null;
-// }
-
-// app.use((req, res, next) => {
-//   const host = req.headers.host;
-//   if (!host?.includes(".dev.")) return next();
-
-//   const port = getPortFromHost(host);
-//   if (!port) return res.status(400).send("Invalid dev preview host");
-
-//   devProxy.web(req, res, {
-//     target: `http://127.0.0.1:${port}`,
-//   });
-// });
-
-
-// ---- SECURE REVERSE PROXY (PRODUCTION BUILD PREVIEW) ----
 app.use("/preview/:userId/:port*", (req, res, next) => {
   if(!req.params){
     return res.status(403).send("Missing params");

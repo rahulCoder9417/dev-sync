@@ -44,7 +44,6 @@ export class FileSystemService {
   async loadProject(projectId: string): Promise<ServiceResult<void>> {
     try {
       const projectRoot = path.join(config.projectRoot, projectId);
-      
       // Check if already loaded AND exists on disk
       if (this.cache.has(projectId)) { 
         try {

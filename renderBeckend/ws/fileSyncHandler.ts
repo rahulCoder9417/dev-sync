@@ -68,6 +68,7 @@ type OutGoingFileBroadcast =
   | {
       type: "create";
       projectId: string;
+      nodeType: "file" | "folder";
       fileFolderId: string;
       parentId: string;
       fileName: string;
@@ -77,7 +78,7 @@ const IGNORED = new Set(["node_modules", "dist", "build", ".next", "out"]);
 export class FileSyncWS {
   private wss: WebSocketServer;
   private heartbeatInterval: NodeJS.Timeout | null = null;
-  private PROJECT_ROOT = "/usr/src/app/projects";
+  
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
@@ -85,7 +86,7 @@ export class FileSyncWS {
   }
 
   private isIgnored(rel: string) {
-    const first = rel.split("/").filter(Boolean)[0];
+    const first = rel.split(path.sep).filter(Boolean)[0];
     return first && IGNORED.has(first);
   }
 
@@ -95,7 +96,6 @@ export class FileSyncWS {
   }
 
   private async handleEvent(ev: RenderFileEvent) {
-    const projectDir = this.PROJECT_ROOT;
 
     switch (ev.type) {
       // Disappearance events happen instantly.
